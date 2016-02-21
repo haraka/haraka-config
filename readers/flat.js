@@ -2,10 +2,10 @@
 
 var fs = require('fs');
 
-exports.load = function(name, type, options, regex) {
+exports.load = function (name, type, options, regex) {
     var result = [];
 
-    var data = fs.readFileSync(name, "UTF-8");
+    var data = fs.readFileSync(name, 'UTF-8');
     if (type === 'data') {
         while (data.length > 0) {
             var match = data.match(/^([^\r\n]*)\r?\n?/);
@@ -26,10 +26,9 @@ exports.load = function(name, type, options, regex) {
         result.push(line_data[1].trim());
     });
 
-    if (result && type !== 'list' && type !== 'data') {
+    if (result.length && type !== 'list' && type !== 'data') {
         result = result[0];
-        if (options && 
-            require('../utils').in_array(result, options.booleans)) {
+        if (options && in_array(result, options.booleans)) {
             result = regex.is_truth.test(result);
         }
         else if (regex.is_integer.test(result)) {
@@ -38,6 +37,7 @@ exports.load = function(name, type, options, regex) {
         else if (regex.is_float.test(result)) {
             result = parseFloat(result);
         }
+        return result;
     }
 
     // Return hostname for 'me' if no result
@@ -62,3 +62,9 @@ exports.empty = function (options, type) {
     }
     return [];
 };
+
+function in_array (item, array) {
+    if (!array) return false;
+    if (!Array.isArray(array)) return false;
+    return (array.indexOf(item) !== -1);
+}

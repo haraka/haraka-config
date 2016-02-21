@@ -1,0 +1,69 @@
+{
+  "author": "Haraka Team <harakamail@gmail.com>",
+  "name": "haraka-config",
+  "license": "MIT",
+  "description": "Haraka's config file loader",
+  "version": "1.0.0",
+  "homepage": "http://haraka.github.io",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:haraka/haraka-config.git"
+  },
+  "main": "index.js",
+  "engines": {
+    "node": ">= 4.3"
+  },
+  "dependencies": {
+    "js-yaml": "^3.5.3"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true
+    },
+    "rules": {
+      "camelcase": [
+        0,
+        {
+          "properties": "never"
+        }
+      ],
+      "dot-notation": 2,
+      "indent": [
+        2,
+        4,
+        {
+          "SwitchCase": 1
+        }
+      ],
+      "one-var": [
+        2,
+        "never"
+      ],
+      "no-trailing-spaces": [
+        2,
+        {
+          "skipBlankLines": false
+        }
+      ],
+      "keyword-spacing": [
+        2,
+        {
+          "overrides": {}
+        }
+      ]
+    }
+  },
+  "optionalDependencies": {},
+  "devDependencies": {
+    "eslint": ">=2.0.0",
+    "grunt": "*",
+    "grunt-eslint": "*"
+  },
+  "bugs": {
+    "mail": "helpme@gmail.com",
+    "url": "https://github.com/haraka/haraka-config/issues"
+  },
+  "scripts": {
+    "test": "./run_tests"
+  }
+}
