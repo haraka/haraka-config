@@ -2,12 +2,19 @@
 
 var path      = require('path');
 
-// var Plugin    = require('./fixtures/stub_plugin');
 var config    = require('../config');
-// var plugin    = require('../plugins');
 
 var cb = function () { return false; };
 var opts = { booleans: ['arg1'] };
+
+exports.module_config = {
+    'new' : function (test) {
+        test.expect(1);
+        var c = config.module_config('foo', 'bar');
+        test.ok(c.root_path);
+        test.done();
+    }
+};
 
 exports.arrange_args = {
     // config.get('name');
@@ -148,7 +155,7 @@ var yamlRes = {
 
 function _test_get(test, name, type, callback, options, expected) {
     test.expect(1);
-    test.deepEqual(config.get(name,type,callback,options), expected);
+    test.deepEqual(config.get(name, type, callback, options), expected);
     test.done();
 }
 
@@ -237,22 +244,36 @@ exports.get = {
     },
 };
 
-// exports.plugin_get_merge = {
-//     'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
-//         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
-
-//         var p = new plugin.Plugin('test-plugin');
-
-//         test.expect(2);
-//         var flat_config = p.config.get('test-plugin-flat');
-//         test.equal(flat_config, 'flatisloaded');
-//         var ini_config = p.config.get('test-plugin.ini', 'ini');
-//         test.deepEqual(ini_config, {
-//             main: { main1: 'foo', main2: 'blah' },
-//             sub1: { sub1: 'foo', sub2: 'blah' },
-//             sub2: { sub1: 'foo', sub2: 'foo' },
-//             sub3: { new: 'foo' }
-//         });
-//         test.done();
-//     },
-// }
+exports.merged = {
+    'before_merge' : function (test) {
+        test.expect(1);
+        this.config = require('../config').module_config(
+            path.join('test','default')
+        );
+        test.deepEqual(this.config.get('test.ini'),
+            { main: {}, defaults: { one: 'one', two: 'two' } }
+            );
+        test.done();
+    },
+    'after_merge': function (test) {
+        test.expect(1);
+        this.config = require('../config').module_config(
+            path.join('test','default'),
+            path.join('test','override')
+        );
+        test.deepEqual(this.config.get('test.ini'),
+            { main: {}, defaults: { one: 'three', two: 'four' } }
+            );
+        test.done();
+    },
+    'flat overridden' : function (test) {
+        test.expect(1);
+        this.config = require('../config').module_config(
+            path.join('test','default'),
+            path.join('test','override')
+        );
+        var cfg = this.config.get('test.flat');
+        test.equal(cfg, 'flatoverrode');
+        test.done();
+    },
+}

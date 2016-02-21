@@ -5,25 +5,11 @@
 
 Haraka config file loader and parser
 
-
 # Config Files
 
+## Config file type/formats
+
 Haraka's config loader can load several types of configuration files.
-
-The API is fairly simple:
-
-    // From within a plugin:
-    var cfg = this.config.get(name, [type], [callback], [options]);
-
-`name` is not a full path, but a filename in the config/ directory. For example:
-
-    var cfg = this.config.get('rambling.paths', 'list');
-
-This will load the file config/rambling.paths in the Haraka directory.
-
-# Config file type/formats
-
-`type` can be one of:
 
 * 'value' - load a flat file containing a single value (default)
 * 'ini'   - load an ini file
@@ -33,17 +19,29 @@ This will load the file config/rambling.paths in the Haraka directory.
 * 'data'  - load a flat file containing a list of values, keeping comments and whitespace.
 * 'binary' - load a binary file into a Buffer
 
-If the ini, json, or yaml files have `.ini`, `.json` or `.yaml` suffixes,
-the `type` parameter can be omitted.
-
 See the [File Formats](#file_formats) section below for a more detailed
 explaination of each of the formats.
 
+# Usage
+
+    // From within a plugin:
+    var cfg = this.config.get(name, [type], [callback], [options]);
+
+This will load the file config/rambling.paths in the Haraka directory.
+
+`name` is not a full path, but a filename in the config/ directory. For example:
+
+    var cfg = this.config.get('rambling.paths', 'list');
+
+`type` can be any of the types listed above.
+
+If the file name has an `.ini`, `.json` or `.yaml` suffix,
+the `type` parameter can be omitted.
+
 `callback` is an optional callback function that will be called when
 an update is detected on the file after the configuration cache has been
-updated by re-reading the file.  You can use this to refresh configuration
-variables within your plugin if you are not calling `config.get` within
-one of the hooks (e.g. if you use the `register()` function):
+updated by re-reading the file.  Use this to refresh configuration
+variables within your plugin. Example:
 
 `````javascript
 var cfg;  // variable global to this plugin only
@@ -56,12 +54,12 @@ exports.register = function () {
 
 exports.load_my_plugin_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('my_plugin.ini', function () {
+    plugin.cfg = plugin.config.get('my_plugin.ini', function onIniChange () {
         // This closure is run a few milliseconds after my_plugin.ini changes
         // Re-run the outer function again
         plugin.load_my_plugin_ini();
     });
-    plugin.loginfo('cfg=' + JSON.stringify(cfg));
+    plugin.loginfo('cfg=' + JSON.stringify(plugin.cfg));
 }
 
 exports.hook_connect = function (next, connection) {
@@ -69,7 +67,7 @@ exports.hook_connect = function (next, connection) {
 }
 `````
 
-The optional `options` object can accepts the following keys:
+The `options` object can accepts the following keys:
 
 * `no_watch` (default: false) - prevents Haraka from watching for updates.
 * `no_cache` (default: false) - prevents Haraka from caching the file. This
