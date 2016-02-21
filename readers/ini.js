@@ -118,17 +118,6 @@ exports.init_booleans = function (options, result) {
 };
 
 exports.logger = function (msg, level) {
-    if (!level) level = 'logwarn';
-    if (!this.haLogger) {
-        try {
-            // even inside try, loading logger makes bad things happen.
-            // this.haLogger = require('../logger');
-        }
-        catch (ignore) {}
-    }
-
-    if (!this.haLogger) { return console.log(msg); }
-
-    try { this.haLogger[level](msg); }
-    catch (e) { console.log(e); console.log(msg); }
+    // if (!level) level = 'logwarn';
+    console.log(msg);
 };

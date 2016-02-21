@@ -3,7 +3,6 @@
 var path         = require('path');
 
 var cfreader     = require('./configfile');
-// var logger       = require('./logger');
 
 module.exports = new Config();
 
