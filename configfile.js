@@ -1,8 +1,8 @@
 'use strict';
+
 // Config file loader
 var fs   = require('fs');
 var path = require('path');
-var logger;
 
 // for "ini" type files
 var regex = exports.regex = {
@@ -44,7 +44,7 @@ cfreader.on_watch_event = function (name, type, options, cb) {
             delete cfreader._sedation_timers[name];
             if (typeof cb === 'function') cb();
         }, 5 * 1000);
-        // logger.logdebug('Detected ' + fse + ' on ' + name);
+
         if (fse !== 'rename') return;
         // https://github.com/joyent/node/issues/2062
         // After a rename event, re-watch the file
@@ -86,7 +86,7 @@ cfreader.watch_dir = function () {
             delete cfreader._sedation_timers[filename];
             if (typeof args.cb === 'function') args.cb();
         }, 5 * 1000);
-        // logger.logdebug('Detected ' + fse + ' on ' + filename);
+
     };
     try {
         cfreader._watchers[cp] = fs.watch(cp, { persistent: false }, watcher);
@@ -158,7 +158,6 @@ cfreader.read_config = function(name, type, cb, options) {
     if (!process.env.WITHOUT_CONFIG_CACHE) {
         var cache_key = cfreader.get_cache_key(name, options);
         if (cfreader._config_cache[cache_key]) {
-            // logger.logdebug('Returning cached file: ' + name);
             var cached = cfreader._config_cache[cache_key];
             // Make sure that any .ini file booleans are applied
             if (type === 'ini' && (options && options.booleans &&
@@ -290,7 +289,7 @@ cfreader.process_file_overrides = function (name, result) {
         if (keys[j].substr(0,1) !== '!') continue;
         var fn = keys[j].substr(1);
         // Overwrite the config cache for this filename
-        logger.logwarn('Overriding file ' + fn + ' with config from ' + name);
+        console.log('Overriding file ' + fn + ' with config from ' + name);
         cfreader._config_cache[path.join(cp, fn)] = result[keys[j]];
     }
 };
