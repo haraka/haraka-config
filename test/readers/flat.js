@@ -44,4 +44,11 @@ exports.load = {
         test.deepEqual(result, 'line1');
         test.done();
     },
+    'returns hostname for "me"': function(test) {
+        test.expect(1);
+        var result = this.flat.load( 'test/config/me', null, null, regex);
+        console.log(result);
+        test.ok(result);
+        test.done();
+    },
 };
