@@ -57,7 +57,8 @@
   "devDependencies": {
     "eslint": ">=2.0.0",
     "grunt": "*",
-    "grunt-eslint": "*"
+    "grunt-eslint": "*",
+    "nodeunit": "^0.9.1"
   },
   "bugs": {
     "mail": "helpme@gmail.com",
