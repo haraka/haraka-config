@@ -9,13 +9,20 @@ var config    = require('../config');
 var cb = function () { return false; };
 var opts = { booleans: ['arg1'] };
 
-exports.module_config = {
+exports.config = {
     'new' : function (test) {
         test.expect(1);
-        var c = config.module_config('foo', 'bar');
-        test.ok(c.root_path);
+        // console.log(config);
+        test.ok(/haraka\-config\/test\/config$/.test(config.root_path));
         test.done();
-    }
+    },
+    'module_config' : function (test) {
+        test.expect(2);
+        var c = config.module_config('foo', 'bar');
+        test.equal(c.root_path, 'foo/config');
+        test.equal(c.overrides_path, 'bar/config');
+        test.done();
+    },
 };
 
 exports.arrange_args = {
@@ -157,7 +164,11 @@ var yamlRes = {
 
 function _test_get(test, name, type, callback, options, expected) {
     test.expect(1);
-    test.deepEqual(config.get(name, type, callback, options), expected);
+    var cfg = config.get(name, type, callback, options);
+    if (cfg && typeof cfg === 'object' && cfg.cached !== undefined) {
+        // delete cfg.cached;
+    }
+    test.deepEqual(cfg, expected);
     test.done();
 }
 
@@ -165,6 +176,12 @@ exports.get = {
     // config.get('name');
     'test (non-existing)' : function (test) {
         _test_get(test, 'test', null, null, null, null);
+    },
+    'test (non-existing, cached)' : function (test) {
+        test.expect(1);
+        var cfg = config.get('test', null, null);
+        test.deepEqual(cfg, null);
+        test.done();
     },
 
     // config.get('test.ini');
