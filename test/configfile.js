@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.NODE_ENV === 'test';
+
 var _set_up = function (done) {
     this.cfreader = require('../configfile');
     this.opts = { booleans: ['main.bool_true','main.bool_false'] };

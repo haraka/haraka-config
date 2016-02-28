@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.NODE_ENV = 'test'
+
 var path      = require('path');
 
 var config    = require('../config');
@@ -161,16 +163,13 @@ function _test_get(test, name, type, callback, options, expected) {
 
 exports.get = {
     // config.get('name');
-    'name=test (non-existing)' : function (test) {
+    'test (non-existing)' : function (test) {
         _test_get(test, 'test', null, null, null, null);
     },
 
-    // config.get('name.ini');
-    'name.ini' : function (test) {
-        _test_get(test, 'test.ini', null, null, null, { "main": {} });
-    },
+    // config.get('test.ini');
     'test.ini, no opts' : function (test) {
-        _test_get(test, '../test/config/test.ini', null, null, null, {
+        _test_get(test, 'test.ini', null, null, null, {
             main: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             sect1: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             whitespace: { str_no_trail: 'true', str_trail: 'true' },
@@ -191,7 +190,7 @@ exports.get = {
 
     // config.get('test.flat');
     'test.flat, type=' : function (test) {
-        _test_get(test, '../test/config/test.flat', null, null, null, 'line1');
+        _test_get(test, 'test.flat', null, null, null, 'line1');
     },
 
     // NOTE: the test.flat file had to be duplicated for these tests, to avoid
@@ -199,45 +198,45 @@ exports.get = {
 
     // config.get('test.flat', 'value');
     'test.flat, type=value' : function (test) {
-        _test_get(test, '../test/config/test.value', 'value', null, null, 'line1');
+        _test_get(test, 'test.value', 'value', null, null, 'line1');
     },
     // config.get('test.flat', 'list');
     'test.flat, type=list' : function (test) {
-        _test_get(test, '../test/config/test.list', 'list', null, null,
+        _test_get(test, 'test.list', 'list', null, null,
             ['line1', 'line2','line3', 'line5'] );
     },
     // config.get('test.flat', 'data');
     'test.flat, type=data' : function (test) {
-        _test_get(test, '../test/config/test.data', 'data', null, null,
+        _test_get(test, 'test.data', 'data', null, null,
             ['line1', 'line2','line3', '', 'line5'] );
     },
 
     // config.get('test.json');
     'test.json, type=' : function (test) {
-        _test_get(test, '../test/config/test.json', null, null, null, jsonRes);
+        _test_get(test, 'test.json', null, null, null, jsonRes);
     },
     // config.get('test.json', 'json');
     'test.json, type=json' : function (test) {
-        _test_get(test, '../test/config/test.json', 'json', null, null, jsonRes);
+        _test_get(test, 'test.json', 'json', null, null, jsonRes);
     },
 
     // config.get('test.yaml');
     'test.yaml, type=' : function (test) {
-        _test_get(test, '../test/config/test.yaml', null, null, null, yamlRes);
+        _test_get(test, 'test.yaml', null, null, null, yamlRes);
     },
     // config.get('test.yaml', 'yaml');
     'test.yaml, type=yaml' : function (test) {
-        _test_get(test, '../test/config/test.yaml', 'yaml', null, null, yamlRes);
+        _test_get(test, 'test.yaml', 'yaml', null, null, yamlRes);
     },
     // config.get('missing.json');
     'missing.yaml, asked for json' : function (test) {
-        _test_get(test, '../test/config/missing.json', 'json', null, null, {"matt": "waz here"});
+        _test_get(test, 'missing.json', 'json', null, null, {"matt": "waz here"});
     },
 
     // config.get('test.bin', 'binary');
     'test.bin, type=binary' : function (test) {
         test.expect(2);
-        var res = config.get('../test/config/test.binary', 'binary');
+        var res = config.get('test.binary', 'binary');
         test.equal(res.length, 120);
         test.ok(Buffer.isBuffer(res));
         test.done();

@@ -20,9 +20,37 @@ var regex = exports.regex = {
 
 var cfreader = exports;
 
-cfreader.config_path = process.env.HARAKA ?
-                       path.join(process.env.HARAKA, 'config')
-                     : path.join(__dirname, './config');
+var config_dirs = [
+    path.join(__dirname, 'config'),    // Haraka ./config dir
+    __dirname,                         // npm packaged plugins
+];
+
+function get_path_to_config_dir () {
+    if (process.env.HARAKA) {
+        cfreader.config_path = path.join(process.env.HARAKA, 'config');
+        return;
+    }
+
+    if (process.env.NODE_ENV === 'test') {
+        cfreader.config_path = path.join(__dirname, 'test', 'config');
+        return;
+    }
+
+    for (var i=0; i < config_dirs.length; i++) {
+        try {
+            var stat = fs.statSync(config_dirs[i]);
+            if (stat && stat.isDirectory()) {
+                cfreader.config_path = config_dirs[i];
+                return;
+            }
+        }
+        catch (ignore) {
+            console.error(ignore.message);
+        }
+    }
+}
+get_path_to_config_dir();
+// console.log('cfreader.config_path: ' + cfreader.config_path);
 
 cfreader.watch_files = true;
 cfreader._config_cache = {};
