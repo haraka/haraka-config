@@ -2,35 +2,76 @@
 
 process.env.NODE_ENV = 'test'
 
-var path      = require('path');
-
-var config    = require('../config');
+var path = require('path');
 
 var cb = function () { return false; };
 var opts = { booleans: ['arg1'] };
 
+function clearRequireCache () {
+    // node_unit runs all the tests in the same process, so the process.env
+    // changes affect other tests. Icky. Work around by invalidating
+    // the require cache, so config and configfile re-initialize
+    delete require.cache[
+        path.resolve(__dirname, '../config') + '.js'
+    ];
+    delete require.cache[
+        path.resolve(__dirname, '../configfile') + '.js'
+    ];
+}
+
+function setUp (done) {
+    process.env.HARAKA = '';
+    clearRequireCache();
+    this.config = require('../config');
+    done();
+};
+
 exports.config = {
+    'setUp' : setUp,
     'new' : function (test) {
         test.expect(1);
-        // console.log(config);
-        test.ok(/haraka\-config\/test\/config$/.test(config.root_path));
+        test.ok(/haraka\-config\/test\/config$/.test(this.config.root_path));
         test.done();
     },
     'module_config' : function (test) {
         test.expect(2);
-        var c = config.module_config('foo', 'bar');
+        var c = this.config.module_config('foo', 'bar');
         test.equal(c.root_path, 'foo/config');
         test.equal(c.overrides_path, 'bar/config');
         test.done();
     },
 };
 
+exports.config_path = {
+    'config_path process.env.HARAKA': function (test) {
+        test.expect(1);
+        process.env.HARAKA = '/tmp';
+        clearRequireCache();
+        var config = require('../config');
+        // console.log(config);
+        test.equal(config.root_path, '/tmp/config');
+        test.done();
+    },
+    'config_path process.env.NODE_ENV': function (test) {
+        test.expect(1);
+        process.env.HARAKA = '';
+        process.env.NODE_ENV = 'not-test';
+        clearRequireCache();
+        var config = require('../config');
+        // ./config doesn't exist so path will be resolved ./
+        test.ok(/haraka\-config$/.test(config.root_path));
+        process.env.NODE_ENV = 'test';
+        test.done();
+    },
+};
+
 exports.arrange_args = {
+    'setUp' : setUp,
     // config.get('name');
     'name' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini']),
+            this.config.arrange_args(['test.ini']),
             ['test.ini', 'ini', undefined, undefined]);
         test.done();
     },
@@ -38,7 +79,7 @@ exports.arrange_args = {
     'name, type' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','ini']),
+            this.config.arrange_args(['test.ini','ini']),
             ['test.ini', 'ini', undefined, undefined]);
         test.done();
     },
@@ -46,7 +87,7 @@ exports.arrange_args = {
     'name, callback' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini',cb]),
+            this.config.arrange_args(['test.ini',cb]),
             ['test.ini', 'ini', cb, undefined]);
         test.done();
     },
@@ -54,7 +95,7 @@ exports.arrange_args = {
     'name, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini',cb,opts]),
+            this.config.arrange_args(['test.ini',cb,opts]),
             ['test.ini', 'ini', cb, opts]);
         test.done();
     },
@@ -62,7 +103,7 @@ exports.arrange_args = {
     'name, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini',opts]),
+            this.config.arrange_args(['test.ini',opts]),
             ['test.ini', 'ini', undefined, opts]);
         test.done();
     },
@@ -70,7 +111,7 @@ exports.arrange_args = {
     'name, type, callback' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','ini',cb]),
+            this.config.arrange_args(['test.ini','ini',cb]),
             ['test.ini', 'ini', cb, undefined]);
         test.done();
     },
@@ -78,7 +119,7 @@ exports.arrange_args = {
     'name, type, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','ini',opts]),
+            this.config.arrange_args(['test.ini','ini',opts]),
             ['test.ini', 'ini', undefined, opts]);
         test.done();
     },
@@ -86,7 +127,7 @@ exports.arrange_args = {
     'name, type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','ini',cb, opts]),
+            this.config.arrange_args(['test.ini','ini',cb, opts]),
             ['test.ini', 'ini', cb, opts]);
         test.done();
     },
@@ -94,7 +135,7 @@ exports.arrange_args = {
     'name, list type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','list',cb, opts]),
+            this.config.arrange_args(['test.ini','list',cb, opts]),
             ['test.ini', 'list', cb, opts]);
         test.done();
     },
@@ -102,7 +143,7 @@ exports.arrange_args = {
     'name, binary type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','binary',cb, opts]),
+            this.config.arrange_args(['test.ini','binary',cb, opts]),
             ['test.ini', 'binary', cb, opts]);
         test.done();
     },
@@ -110,7 +151,7 @@ exports.arrange_args = {
     'name, value type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','value',cb, opts]),
+            this.config.arrange_args(['test.ini','value',cb, opts]),
             ['test.ini', 'value', cb, opts]);
         test.done();
     },
@@ -118,7 +159,7 @@ exports.arrange_args = {
     'name, json type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','json',cb, opts]),
+            this.config.arrange_args(['test.ini','json',cb, opts]),
             ['test.ini', 'json', cb, opts]);
         test.done();
     },
@@ -126,7 +167,7 @@ exports.arrange_args = {
     'name, data type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','data',cb, opts]),
+            this.config.arrange_args(['test.ini','data',cb, opts]),
             ['test.ini', 'data', cb, opts]);
         test.done();
     },
@@ -164,22 +205,21 @@ var yamlRes = {
 
 function _test_get(test, name, type, callback, options, expected) {
     test.expect(1);
+    var config = require('../config');
     var cfg = config.get(name, type, callback, options);
-    if (cfg && typeof cfg === 'object' && cfg.cached !== undefined) {
-        // delete cfg.cached;
-    }
     test.deepEqual(cfg, expected);
     test.done();
 }
 
 exports.get = {
+    'setUp' : setUp,
     // config.get('name');
     'test (non-existing)' : function (test) {
         _test_get(test, 'test', null, null, null, null);
     },
     'test (non-existing, cached)' : function (test) {
         test.expect(1);
-        var cfg = config.get('test', null, null);
+        var cfg = this.config.get('test', null, null);
         test.deepEqual(cfg, null);
         test.done();
     },
@@ -253,7 +293,7 @@ exports.get = {
     // config.get('test.bin', 'binary');
     'test.bin, type=binary' : function (test) {
         test.expect(2);
-        var res = config.get('test.binary', 'binary');
+        var res = this.config.get('test.binary', 'binary');
         test.equal(res.length, 120);
         test.ok(Buffer.isBuffer(res));
         test.done();
@@ -261,35 +301,35 @@ exports.get = {
 };
 
 exports.merged = {
+    'setUp' : setUp,
     'before_merge' : function (test) {
         test.expect(1);
-        this.config = require('../config').module_config(
+        var lc = this.config.module_config(
             path.join('test','default')
         );
-        test.deepEqual(this.config.get('test.ini'),
+        test.deepEqual(lc.get('test.ini'),
             { main: {}, defaults: { one: 'one', two: 'two' } }
             );
         test.done();
     },
     'after_merge': function (test) {
         test.expect(1);
-        this.config = require('../config').module_config(
+        var lc = this.config.module_config(
             path.join('test','default'),
             path.join('test','override')
         );
-        test.deepEqual(this.config.get('test.ini'),
+        test.deepEqual(lc.get('test.ini'),
             { main: {}, defaults: { one: 'three', two: 'four' } }
             );
         test.done();
     },
     'flat overridden' : function (test) {
         test.expect(1);
-        this.config = require('../config').module_config(
+        var lc = this.config.module_config(
             path.join('test','default'),
             path.join('test','override')
         );
-        var cfg = this.config.get('test.flat');
-        test.equal(cfg, 'flatoverrode');
+        test.equal(lc.get('test.flat'), 'flatoverrode');
         test.done();
     },
 }

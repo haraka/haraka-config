@@ -8,6 +8,7 @@ module.exports = new Config();
 
 function Config (root_path) {
     this.root_path = root_path || cfreader.config_path;
+    // console.log('root_path: ' + this.root_path);
     this.module_config = function (defaults_path, overrides_path) {
         var cfg = new Config(path.join(defaults_path, 'config'));
         if (overrides_path) {

@@ -27,6 +27,7 @@ var config_dir_candidates = [
 
 function get_path_to_config_dir () {
     if (process.env.HARAKA) {
+        // console.log('process.env.HARAKA: ' + process.env.HARAKA);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
         return;
     }
