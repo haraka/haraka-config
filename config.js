@@ -1,13 +1,14 @@
 'use strict';
 
-var path         = require('path');
+var path       = require('path');
 
-var cfreader     = require('./configfile');
+var cfreader   = require('./configfile');
 
 module.exports = new Config();
 
 function Config (root_path) {
     this.root_path = root_path || cfreader.config_path;
+    // console.log('root_path: ' + this.root_path);
     this.module_config = function (defaults_path, overrides_path) {
         var cfg = new Config(path.join(defaults_path, 'config'));
         if (overrides_path) {
@@ -17,7 +18,7 @@ function Config (root_path) {
     };
 }
 
-Config.prototype.get = function(name, type, cb, options) {
+Config.prototype.get = function (name, type, cb, options) {
     var a = this.arrange_args([name, type, cb, options]);
     if (!a[1]) a[1] = 'value';
 

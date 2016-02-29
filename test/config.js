@@ -1,27 +1,77 @@
 'use strict';
 
-var path      = require('path');
+process.env.NODE_ENV = 'test'
 
-var config    = require('../config');
+var path = require('path');
 
 var cb = function () { return false; };
 var opts = { booleans: ['arg1'] };
 
-exports.module_config = {
+function clearRequireCache () {
+    // node_unit runs all the tests in the same process, so the process.env
+    // changes affect other tests. Icky. Work around by invalidating
+    // the require cache, so config and configfile re-initialize
+    delete require.cache[
+        path.resolve(__dirname, '../config') + '.js'
+    ];
+    delete require.cache[
+        path.resolve(__dirname, '../configfile') + '.js'
+    ];
+}
+
+function setUp (done) {
+    process.env.HARAKA = '';
+    clearRequireCache();
+    this.config = require('../config');
+    done();
+};
+
+exports.config = {
+    'setUp' : setUp,
     'new' : function (test) {
         test.expect(1);
-        var c = config.module_config('foo', 'bar');
-        test.ok(c.root_path);
+        test.ok(/haraka\-config\/test\/config$/.test(this.config.root_path));
         test.done();
-    }
+    },
+    'module_config' : function (test) {
+        test.expect(2);
+        var c = this.config.module_config('foo', 'bar');
+        test.equal(c.root_path, 'foo/config');
+        test.equal(c.overrides_path, 'bar/config');
+        test.done();
+    },
+};
+
+exports.config_path = {
+    'config_path process.env.HARAKA': function (test) {
+        test.expect(1);
+        process.env.HARAKA = '/tmp';
+        clearRequireCache();
+        var config = require('../config');
+        // console.log(config);
+        test.equal(config.root_path, '/tmp/config');
+        test.done();
+    },
+    'config_path process.env.NODE_ENV': function (test) {
+        test.expect(1);
+        process.env.HARAKA = '';
+        process.env.NODE_ENV = 'not-test';
+        clearRequireCache();
+        var config = require('../config');
+        // ./config doesn't exist so path will be resolved ./
+        test.ok(/haraka\-config$/.test(config.root_path));
+        process.env.NODE_ENV = 'test';
+        test.done();
+    },
 };
 
 exports.arrange_args = {
+    'setUp' : setUp,
     // config.get('name');
     'name' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini']),
+            this.config.arrange_args(['test.ini']),
             ['test.ini', 'ini', undefined, undefined]);
         test.done();
     },
@@ -29,7 +79,7 @@ exports.arrange_args = {
     'name, type' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','ini']),
+            this.config.arrange_args(['test.ini','ini']),
             ['test.ini', 'ini', undefined, undefined]);
         test.done();
     },
@@ -37,7 +87,7 @@ exports.arrange_args = {
     'name, callback' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini',cb]),
+            this.config.arrange_args(['test.ini',cb]),
             ['test.ini', 'ini', cb, undefined]);
         test.done();
     },
@@ -45,7 +95,7 @@ exports.arrange_args = {
     'name, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini',cb,opts]),
+            this.config.arrange_args(['test.ini',cb,opts]),
             ['test.ini', 'ini', cb, opts]);
         test.done();
     },
@@ -53,7 +103,7 @@ exports.arrange_args = {
     'name, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini',opts]),
+            this.config.arrange_args(['test.ini',opts]),
             ['test.ini', 'ini', undefined, opts]);
         test.done();
     },
@@ -61,7 +111,7 @@ exports.arrange_args = {
     'name, type, callback' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','ini',cb]),
+            this.config.arrange_args(['test.ini','ini',cb]),
             ['test.ini', 'ini', cb, undefined]);
         test.done();
     },
@@ -69,7 +119,7 @@ exports.arrange_args = {
     'name, type, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','ini',opts]),
+            this.config.arrange_args(['test.ini','ini',opts]),
             ['test.ini', 'ini', undefined, opts]);
         test.done();
     },
@@ -77,7 +127,7 @@ exports.arrange_args = {
     'name, type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','ini',cb, opts]),
+            this.config.arrange_args(['test.ini','ini',cb, opts]),
             ['test.ini', 'ini', cb, opts]);
         test.done();
     },
@@ -85,7 +135,7 @@ exports.arrange_args = {
     'name, list type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','list',cb, opts]),
+            this.config.arrange_args(['test.ini','list',cb, opts]),
             ['test.ini', 'list', cb, opts]);
         test.done();
     },
@@ -93,7 +143,7 @@ exports.arrange_args = {
     'name, binary type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','binary',cb, opts]),
+            this.config.arrange_args(['test.ini','binary',cb, opts]),
             ['test.ini', 'binary', cb, opts]);
         test.done();
     },
@@ -101,7 +151,7 @@ exports.arrange_args = {
     'name, value type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','value',cb, opts]),
+            this.config.arrange_args(['test.ini','value',cb, opts]),
             ['test.ini', 'value', cb, opts]);
         test.done();
     },
@@ -109,7 +159,7 @@ exports.arrange_args = {
     'name, json type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','json',cb, opts]),
+            this.config.arrange_args(['test.ini','json',cb, opts]),
             ['test.ini', 'json', cb, opts]);
         test.done();
     },
@@ -117,7 +167,7 @@ exports.arrange_args = {
     'name, data type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
-            config.arrange_args(['test.ini','data',cb, opts]),
+            this.config.arrange_args(['test.ini','data',cb, opts]),
             ['test.ini', 'data', cb, opts]);
         test.done();
     },
@@ -155,22 +205,28 @@ var yamlRes = {
 
 function _test_get(test, name, type, callback, options, expected) {
     test.expect(1);
-    test.deepEqual(config.get(name, type, callback, options), expected);
+    var config = require('../config');
+    var cfg = config.get(name, type, callback, options);
+    test.deepEqual(cfg, expected);
     test.done();
 }
 
 exports.get = {
+    'setUp' : setUp,
     // config.get('name');
-    'name=test (non-existing)' : function (test) {
+    'test (non-existing)' : function (test) {
         _test_get(test, 'test', null, null, null, null);
     },
-
-    // config.get('name.ini');
-    'name.ini' : function (test) {
-        _test_get(test, 'test.ini', null, null, null, { "main": {} });
+    'test (non-existing, cached)' : function (test) {
+        test.expect(1);
+        var cfg = this.config.get('test', null, null);
+        test.deepEqual(cfg, null);
+        test.done();
     },
+
+    // config.get('test.ini');
     'test.ini, no opts' : function (test) {
-        _test_get(test, '../test/config/test.ini', null, null, null, {
+        _test_get(test, 'test.ini', null, null, null, {
             main: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             sect1: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             whitespace: { str_no_trail: 'true', str_trail: 'true' },
@@ -191,7 +247,7 @@ exports.get = {
 
     // config.get('test.flat');
     'test.flat, type=' : function (test) {
-        _test_get(test, '../test/config/test.flat', null, null, null, 'line1');
+        _test_get(test, 'test.flat', null, null, null, 'line1');
     },
 
     // NOTE: the test.flat file had to be duplicated for these tests, to avoid
@@ -199,45 +255,45 @@ exports.get = {
 
     // config.get('test.flat', 'value');
     'test.flat, type=value' : function (test) {
-        _test_get(test, '../test/config/test.value', 'value', null, null, 'line1');
+        _test_get(test, 'test.value', 'value', null, null, 'line1');
     },
     // config.get('test.flat', 'list');
     'test.flat, type=list' : function (test) {
-        _test_get(test, '../test/config/test.list', 'list', null, null,
+        _test_get(test, 'test.list', 'list', null, null,
             ['line1', 'line2','line3', 'line5'] );
     },
     // config.get('test.flat', 'data');
     'test.flat, type=data' : function (test) {
-        _test_get(test, '../test/config/test.data', 'data', null, null,
+        _test_get(test, 'test.data', 'data', null, null,
             ['line1', 'line2','line3', '', 'line5'] );
     },
 
     // config.get('test.json');
     'test.json, type=' : function (test) {
-        _test_get(test, '../test/config/test.json', null, null, null, jsonRes);
+        _test_get(test, 'test.json', null, null, null, jsonRes);
     },
     // config.get('test.json', 'json');
     'test.json, type=json' : function (test) {
-        _test_get(test, '../test/config/test.json', 'json', null, null, jsonRes);
+        _test_get(test, 'test.json', 'json', null, null, jsonRes);
     },
 
     // config.get('test.yaml');
     'test.yaml, type=' : function (test) {
-        _test_get(test, '../test/config/test.yaml', null, null, null, yamlRes);
+        _test_get(test, 'test.yaml', null, null, null, yamlRes);
     },
     // config.get('test.yaml', 'yaml');
     'test.yaml, type=yaml' : function (test) {
-        _test_get(test, '../test/config/test.yaml', 'yaml', null, null, yamlRes);
+        _test_get(test, 'test.yaml', 'yaml', null, null, yamlRes);
     },
     // config.get('missing.json');
     'missing.yaml, asked for json' : function (test) {
-        _test_get(test, '../test/config/missing.json', 'json', null, null, {"matt": "waz here"});
+        _test_get(test, 'missing.json', 'json', null, null, {"matt": "waz here"});
     },
 
     // config.get('test.bin', 'binary');
     'test.bin, type=binary' : function (test) {
         test.expect(2);
-        var res = config.get('../test/config/test.binary', 'binary');
+        var res = this.config.get('test.binary', 'binary');
         test.equal(res.length, 120);
         test.ok(Buffer.isBuffer(res));
         test.done();
@@ -245,35 +301,35 @@ exports.get = {
 };
 
 exports.merged = {
+    'setUp' : setUp,
     'before_merge' : function (test) {
         test.expect(1);
-        this.config = require('../config').module_config(
+        var lc = this.config.module_config(
             path.join('test','default')
         );
-        test.deepEqual(this.config.get('test.ini'),
+        test.deepEqual(lc.get('test.ini'),
             { main: {}, defaults: { one: 'one', two: 'two' } }
             );
         test.done();
     },
     'after_merge': function (test) {
         test.expect(1);
-        this.config = require('../config').module_config(
+        var lc = this.config.module_config(
             path.join('test','default'),
             path.join('test','override')
         );
-        test.deepEqual(this.config.get('test.ini'),
+        test.deepEqual(lc.get('test.ini'),
             { main: {}, defaults: { one: 'three', two: 'four' } }
             );
         test.done();
     },
     'flat overridden' : function (test) {
         test.expect(1);
-        this.config = require('../config').module_config(
+        var lc = this.config.module_config(
             path.join('test','default'),
             path.join('test','override')
         );
-        var cfg = this.config.get('test.flat');
-        test.equal(cfg, 'flatoverrode');
+        test.equal(lc.get('test.flat'), 'flatoverrode');
         test.done();
     },
 }

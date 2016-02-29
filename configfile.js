@@ -20,9 +20,38 @@ var regex = exports.regex = {
 
 var cfreader = exports;
 
-cfreader.config_path = process.env.HARAKA ?
-                       path.join(process.env.HARAKA, 'config')
-                     : path.join(__dirname, './config');
+var config_dir_candidates = [
+    path.join(__dirname, 'config'),    // Haraka ./config dir
+    __dirname,                         // npm packaged plugins
+];
+
+function get_path_to_config_dir () {
+    if (process.env.HARAKA) {
+        // console.log('process.env.HARAKA: ' + process.env.HARAKA);
+        cfreader.config_path = path.join(process.env.HARAKA, 'config');
+        return;
+    }
+
+    if (process.env.NODE_ENV === 'test') {
+        cfreader.config_path = path.join(__dirname, 'test', 'config');
+        return;
+    }
+
+    for (var i=0; i < config_dir_candidates.length; i++) {
+        try {
+            var stat = fs.statSync(config_dir_candidates[i]);
+            if (stat && stat.isDirectory()) {
+                cfreader.config_path = config_dir_candidates[i];
+                return;
+            }
+        }
+        catch (ignore) {
+            console.error(ignore.message);
+        }
+    }
+}
+get_path_to_config_dir();
+// console.log('cfreader.config_path: ' + cfreader.config_path);
 
 cfreader.watch_files = true;
 cfreader._config_cache = {};
@@ -157,14 +186,10 @@ cfreader.read_config = function(name, type, cb, options) {
     // Check cache first
     if (!process.env.WITHOUT_CONFIG_CACHE) {
         var cache_key = cfreader.get_cache_key(name, options);
+        // console.log('\tcache_key: ' + cache_key);
         if (cfreader._config_cache[cache_key]) {
             var cached = cfreader._config_cache[cache_key];
-            // Make sure that any .ini file booleans are applied
-            if (type === 'ini' && (options && options.booleans &&
-                Array.isArray(options.booleans)))
-            {
-                cfreader.init_booleans(options, cached);
-            }
+            // console.log('\t' + name + ' is cached');
             return cached;
         }
     }
@@ -244,6 +269,7 @@ cfreader.load_config = function (name, type, options) {
         cfrType = cfreader.get_filetype_reader(type);
     }
 
+    var cache_key = cfreader.get_cache_key(name, options);
     try {
         switch (type) {
             case 'ini':
@@ -252,29 +278,31 @@ cfreader.load_config = function (name, type, options) {
             case 'json':
             case 'yaml':
                 result = cfrType.load(name);
-                cfreader.process_file_overrides(name, result);
+                cfreader.process_file_overrides(name, options, result);
                 break;
             // case 'binary':
             default:
                 result = cfrType.load(name, type, options, regex);
         }
+        cfreader._config_cache[cache_key] = result;
     }
     catch (err) {
         if (err.code !== 'EBADF') throw err;
-        if (cfreader._config_cache[name]) {
-            result = cfreader._config_cache[name];
+        if (cfreader._config_cache[cache_key]) {
+            result = cfreader._config_cache[cache_key];
         }
     }
     return result;
 };
 
-cfreader.process_file_overrides = function (name, result) {
+cfreader.process_file_overrides = function (name, options, result) {
     // We might be re-loading this file:
     //     * build a list of cached overrides
     //     * remove them and add them back
     var cp = cfreader.config_path;
-    if (cfreader._config_cache[name]) {
-        var ck_keys = Object.keys(cfreader._config_cache[name]);
+    var cache_key = cfreader.get_cache_key(name, options);
+    if (cfreader._config_cache[cache_key]) {
+        var ck_keys = Object.keys(cfreader._config_cache[cache_key]);
         for (var i=0; i<ck_keys.length; i++) {
             if (ck_keys[i].substr(0,1) !== '!') continue;
             delete cfreader._config_cache[path.join(cp, ck_keys[i].substr(1))];
