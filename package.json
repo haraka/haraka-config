@@ -3,7 +3,7 @@
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -11,7 +11,7 @@
   },
   "main": "config.js",
   "engines": {
-    "node": ">= 4.3"
+    "node": ">= 0.10.43"
   },
   "dependencies": {
     "js-yaml": "^3.5.3"
