@@ -33,7 +33,14 @@ function get_path_to_config_dir () {
     }
 
     if (process.env.NODE_ENV === 'test') {
+        // loaded by haraka-config/test/*
         cfreader.config_path = path.join(__dirname, 'test', 'config');
+        return;
+    }
+
+    if (/node_modules\/haraka-config$/.test(__dirname)) {
+        // loaded by a npm packaged module
+        cfreader.config_path = path.resolve(__dirname, '..', '..');
         return;
     }
 
