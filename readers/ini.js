@@ -60,8 +60,11 @@ exports.load = function (name, options, regex) {
         }
 
         if (options && Array.isArray(options.booleans) &&
-            exports.bool_matches.indexOf(
-                current_sect_name + '.' + match[1]) !== -1) {
+            (
+                exports.bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1
+                ||
+                exports.bool_matches.indexOf('*.' + match[1]) !== -1
+            )) {
             current_sect[match[1]] = regex.is_truth.test(match[2]);
             // var msg = 'Using boolean ' + current_sect[match[1]] +
             // ' for ' + current_sect_name + '.' + match[1] + '=' + match[2];

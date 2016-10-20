@@ -4,7 +4,9 @@ var regex = require('../../configfile').regex;
 
 var _set_up = function (done) {
     this.ini = require('../../readers/ini');
-    this.opts = { booleans: ['main.bool_true','main.bool_false'] };
+    this.opts = {
+        booleans: [ 'main.bool_true', 'main.bool_false' ]
+    };
     done();
 };
 
@@ -72,6 +74,15 @@ exports.load = {
         test.strictEqual(r.sect1.str_false, 'false');
         test.strictEqual(r.sect1.bool_true_default, true);
         test.strictEqual(r.sect1.bool_false_default, false);
+        test.done();
+    },
+    'test.ini, wildcard boolean' : function (test) {
+        test.expect(2);
+        var r = this.ini.load('test/config/test.ini', {
+            booleans: [ '*.is_bool' ]
+        }, regex);
+        test.strictEqual(r['foo.com'].is_bool, true);
+        test.strictEqual(r['bar.com'].is_bool, false);
         test.done();
     },
 };
