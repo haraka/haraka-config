@@ -236,7 +236,9 @@ exports.get = {
             array_test: {
                 hostlist: [ 'first_host', 'second_host', 'third_host' ],
                 intlist: [ '123', '456', '789' ],
-            }
+            },
+            'foo.com': { is_bool: 'true' },
+            'bar.com': { is_bool: 'false' }
         });
     },
 
