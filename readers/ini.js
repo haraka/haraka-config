@@ -108,6 +108,8 @@ exports.init_booleans = function (options, result) {
         if (section.match(/^(\-|\+)/)) section = section.substr(1);
         if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
 
+        if (section === '*') continue;  // wildcard, don't initialize
+
         // so boolean detection in the next section will match
         if (options.booleans.indexOf(section + '.' + key) === -1) {
             this.bool_matches.push(section + '.' + key);
