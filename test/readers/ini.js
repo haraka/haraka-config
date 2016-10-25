@@ -65,8 +65,12 @@ exports.load = {
     'test.ini, sect1, opts, w/defaults' : function (test) {
         test.expect(6);
         var r = this.ini.load('test/config/test.ini', {
-            booleans: ['+sect1.bool_true','-sect1.bool_false',
-            '+sect1.bool_true_default', 'sect1.-bool_false_default']
+            booleans: [
+                '+sect1.bool_true',
+                '-sect1.bool_false',
+                '+sect1.bool_true_default',
+                'sect1.-bool_false_default'
+            ]
         }, regex);
         test.strictEqual(r.sect1.bool_true, true);
         test.strictEqual(r.sect1.bool_false, false);
@@ -77,10 +81,13 @@ exports.load = {
         test.done();
     },
     'test.ini, wildcard boolean' : function (test) {
-        test.expect(2);
+        test.expect(5);
         var r = this.ini.load('test/config/test.ini', {
-            booleans: [ '*.is_bool' ]
+            booleans: [ '+main.bool_true', '*.is_bool' ]
         }, regex);
+        test.strictEqual(r['*'], undefined);
+        test.strictEqual(r.main.bool_true, true);
+        test.strictEqual(r.main.is_bool, undefined);
         test.strictEqual(r['foo.com'].is_bool, true);
         test.strictEqual(r['bar.com'].is_bool, false);
         test.done();
