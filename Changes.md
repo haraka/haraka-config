@@ -1,5 +1,5 @@
 
-# 1.0.4 - 2016-10-25
+# 1.0.5 - 2016-10-25
 
     * do not leave behind a `*` section in config (due to wildcard boolean)
 
