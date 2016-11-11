@@ -153,3 +153,13 @@ exports.empty = {
         test.done();
     },
 };
+
+exports.invalid = {
+    setUp: _set_up,
+    'goobers.ini has invalid entry' : function (test) {
+        test.expect(1);
+        var result = this.ini.load('test/config/goobers.ini',  {}, regex);
+        test.deepEqual(result, { main: { } } );
+        test.done();
+    },
+}
