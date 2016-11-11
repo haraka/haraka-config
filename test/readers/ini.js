@@ -26,11 +26,10 @@ exports.load = {
         test.expect(1);
         var result = this.ini.load('test/config/test.ini',  {}, regex);
         // console.log(result);
-        test.deepEqual(result.main,
-                { bool_true: 'true', bool_false: 'false',
-                    str_true: 'true', str_false: 'false'
-                }
-                );
+        test.deepEqual(result.main, {
+            bool_true: 'true', bool_false: 'false',
+            str_true: 'true', str_false: 'false'
+        });
         test.done();
     },
     'test.ini, no opts' : function (test) {
