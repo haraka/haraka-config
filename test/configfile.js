@@ -301,3 +301,74 @@ exports.get_cache_key = {
         test.done();
     }
 };
+
+exports.regex = {
+    setUp: _set_up,
+    'section': function (test) {
+        test.expect(4);
+        test.equal(this.cfreader.regex.section.test('[foo]'), true);
+        test.equal(this.cfreader.regex.section.test('bar'), false);
+        test.equal(this.cfreader.regex.section.test('[bar'), false);
+        test.equal(this.cfreader.regex.section.test('bar]'), false);
+        test.done();
+    },
+    'param': function (test) {
+        test.expect(2);
+        test.equal(this.cfreader.regex.param.exec('foo=true')[1], 'foo');
+        test.equal(this.cfreader.regex.param.exec(';foo=true'), undefined);
+        test.done();
+    },
+    'comment': function (test) {
+        test.expect(2);
+        test.equal(this.cfreader.regex.comment.test('; true'), true);
+        test.equal(this.cfreader.regex.comment.test('false'), false);
+        test.done();
+    },
+    'line': function (test) {
+        test.expect(2);
+        test.equal(this.cfreader.regex.line.test(' boo '), true);
+        test.equal(this.cfreader.regex.line.test('foo'), true);
+        test.done();
+    },
+    'blank': function (test) {
+        test.expect(2);
+        test.equal(this.cfreader.regex.blank.test('foo'), false);
+        test.equal(this.cfreader.regex.blank.test(' '), true);
+        test.done();
+    },
+    // 'continuation': function (test) {
+    //     test.expect(1);
+    //     test.done();
+    // },
+    'is_integer': function (test) {
+        test.expect(3);
+        test.equal(this.cfreader.regex.is_integer.test(1), true);
+        test.equal(this.cfreader.regex.is_integer.test(''), false);
+        test.equal(this.cfreader.regex.is_integer.test('a'), false);
+        test.done();
+    },
+    'is_float': function (test) {
+        test.expect(3);
+        test.equal(this.cfreader.regex.is_float.test('1.0'), true);
+        test.equal(this.cfreader.regex.is_float.test(''), false);
+        test.equal(this.cfreader.regex.is_float.test('45'), false);
+        test.done();
+    },
+    'is_truth': function (test) {
+        test.expect(6);
+        test.equal(this.cfreader.regex.is_truth.test('no'), false);
+        test.equal(this.cfreader.regex.is_truth.test('nope'), false);
+        test.equal(this.cfreader.regex.is_truth.test('nuh uh'), false);
+        test.equal(this.cfreader.regex.is_truth.test('yes'), true);
+        test.equal(this.cfreader.regex.is_truth.test('true'), true);
+        test.equal(this.cfreader.regex.is_truth.test(true), true);
+        test.done();
+    },
+    'is_array': function (test) {
+        test.expect(3);
+        test.equal(this.cfreader.regex.is_array.test('foo=bar'), false);
+        test.equal(this.cfreader.regex.is_array.test('foo'), false);
+        test.equal(this.cfreader.regex.is_array.test('foo[]'), true);
+        test.done();
+    },
+}
