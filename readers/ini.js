@@ -15,7 +15,6 @@ exports.load = function (name, options, regex) {
     result = this.init_booleans(options, result);
 
     var match;
-    var is_array_match;
     var setter;
     var pre = '';
 
@@ -45,9 +44,10 @@ exports.load = function (name, options, regex) {
         if (!match) {
             exports.logger(
                     'Invalid line in config file \'' + name + '\': ' + line);
+            return;
         }
 
-        is_array_match = regex.is_array.exec(match[1]);
+        var is_array_match = regex.is_array.exec(match[1]);
         if (is_array_match) {
             setter = function(key, value) {
                 key = key.replace('[]', '');
