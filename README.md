@@ -1,5 +1,6 @@
 [![Build Status][ci-img]][ci-url]
 [![Coverage Status][cov-img]][cov-url]
+[![Code Climate][clim-img]][clim-url]
 
 # haraka-config
 
@@ -286,3 +287,5 @@ Haraka will be unable to update them after changes.
 [ci-url]: https://travis-ci.org/haraka/haraka-config
 [cov-img]: https://codecov.io/github/haraka/haraka-config/coverage.svg
 [cov-url]: https://codecov.io/github/haraka/haraka-config?branch=master
+[clim-img]: https://codeclimate.com/github/haraka/haraka-config/badges/gpa.svg
+[clim-url]: https://codeclimate.com/github/haraka/haraka-config
