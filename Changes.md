@@ -1,4 +1,8 @@
 
+# 1.0.7 - 2016-11-17
+
+    * update tests for appveyor (Windows) compatibility #9
+
 # 1.0.6 - 2016-11-10
 
     * handle invalid .ini lines properly (skip them)
