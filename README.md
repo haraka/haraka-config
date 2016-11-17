@@ -1,6 +1,7 @@
 [![Build Status][ci-img]][ci-url]
 [![Coverage Status][cov-img]][cov-url]
 [![Code Climate][clim-img]][clim-url]
+[![Windows Build status][apv-img]][apv-url]
 
 # haraka-config
 
@@ -289,3 +290,5 @@ Haraka will be unable to update them after changes.
 [cov-url]: https://codecov.io/github/haraka/haraka-config?branch=master
 [clim-img]: https://codeclimate.com/github/haraka/haraka-config/badges/gpa.svg
 [clim-url]: https://codeclimate.com/github/haraka/haraka-config
+[apv-img]: https://ci.appveyor.com/api/projects/status/lme4otppxe22me0j/branch/master?svg=true
+[apv-url]: https://ci.appveyor.com/project/msimerson/haraka-config/branch/master
