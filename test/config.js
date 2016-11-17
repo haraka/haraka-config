@@ -30,14 +30,14 @@ exports.config = {
     'setUp' : setUp,
     'new' : function (test) {
         test.expect(1);
-        test.ok(/haraka\-config\/test\/config$/.test(this.config.root_path));
+        test.equal(path.resolve('test','config'), this.config.root_path);
         test.done();
     },
     'module_config' : function (test) {
         test.expect(2);
         var c = this.config.module_config('foo', 'bar');
-        test.equal(c.root_path, 'foo/config');
-        test.equal(c.overrides_path, 'bar/config');
+        test.equal(c.root_path, path.join('foo','config'));
+        test.equal(c.overrides_path, path.join('bar','config'));
         test.done();
     },
 };
@@ -49,7 +49,7 @@ exports.config_path = {
         clearRequireCache();
         var config = require('../config');
         // console.log(config);
-        test.equal(config.root_path, '/tmp/config');
+        test.equal(config.root_path, path.join('/tmp','config'));
         test.done();
     },
     'config_path process.env.NODE_ENV': function (test) {
