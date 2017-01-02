@@ -24,7 +24,7 @@ function setUp (done) {
     clearRequireCache();
     this.config = require('../config');
     done();
-};
+}
 
 exports.config = {
     'setUp' : setUp,

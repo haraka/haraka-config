@@ -95,7 +95,6 @@ Config.prototype.arrange_args = function (args) {
 
     for (var i=0; i < args.length; i++) {
         if (args[i] === undefined) continue;
-        var what_is_it = args[i];
         switch (typeof args[i]) {   // what is it?
             case 'function':
                 cb = args[i];
