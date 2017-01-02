@@ -58,7 +58,7 @@
     "eslint": ">=2",
     "grunt": "*",
     "grunt-eslint": "*",
-    "nodeunit": "^0.9.1"
+    "nodeunit": "^0.10.2"
   },
   "bugs": {
     "mail": "helpme@gmail.com",
