@@ -1,4 +1,13 @@
 
+# 1.0.9 - 2017-__-__
+
+    * config cache fix (see haraka/Haraka#1738)
+
+# 1.0.8 - 2017-01-02
+
+    * version bump, lint updates & sync
+    * lint fixes
+
 # 1.0.7 - 2016-11-17
 
     * update tests for appveyor (Windows) compatibility #9

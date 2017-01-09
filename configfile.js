@@ -194,10 +194,9 @@ cfreader.read_config = function(name, type, cb, options) {
     if (!process.env.WITHOUT_CONFIG_CACHE) {
         var cache_key = cfreader.get_cache_key(name, options);
         // console.log('\tcache_key: ' + cache_key);
-        if (cfreader._config_cache[cache_key]) {
-            var cached = cfreader._config_cache[cache_key];
+        if (cfreader._config_cache[cache_key] !== undefined) {
             // console.log('\t' + name + ' is cached');
-            return cached;
+            return cfreader._config_cache[cache_key];
         }
     }
 
