@@ -2,10 +2,9 @@
 [![Coverage Status][cov-img]][cov-url]
 [![Code Climate][clim-img]][clim-url]
 [![Windows Build status][apv-img]][apv-url]
+[![Greenkeeper badge](https://badges.greenkeeper.io/haraka/haraka-config.svg)](https://greenkeeper.io/)
 
 # haraka-config
-
-[![Greenkeeper badge](https://badges.greenkeeper.io/haraka/haraka-config.svg)](https://greenkeeper.io/)
 
 Haraka config file loader and parser
 
