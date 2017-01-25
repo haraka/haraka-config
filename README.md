@@ -5,6 +5,8 @@
 
 # haraka-config
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/haraka/haraka-config.svg)](https://greenkeeper.io/)
+
 Haraka config file loader and parser
 
 # Config Files
