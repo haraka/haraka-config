@@ -3,7 +3,7 @@
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -19,8 +19,7 @@
   "optionalDependencies": {},
   "devDependencies": {
     "eslint": "*",
-    "grunt": "*",
-    "grunt-eslint": "*",
+    "eslint-plugin-haraka": "*",
     "nodeunit": "*"
   },
   "bugs": {
@@ -29,7 +28,8 @@
   },
   "scripts": {
     "test": "./run_tests",
-    "lint": "./node_modules/.bin/grunt lint",
+    "lint": "./node_modules/.bin/eslint *.js test/**/*.js",
+    "lintfix": "./node_modules/.bin/eslint --fix *.js test/**/*.js",
     "cover": "./node_modules/.bin/istanbul cov run_tests"
   }
 }

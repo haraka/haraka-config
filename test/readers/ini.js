@@ -17,12 +17,12 @@ exports.load = {
         test.ok(this.ini);
         test.done();
     },
-    'has a load function': function(test) {
+    'has a load function': function (test) {
         test.expect(1);
         test.ok(typeof this.ini.load === 'function');
         test.done();
     },
-    'loads the test ini file': function(test) {
+    'loads the test ini file': function (test) {
         test.expect(1);
         var result = this.ini.load('test/config/test.ini',  {}, regex);
         // console.log(result);

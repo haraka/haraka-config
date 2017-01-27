@@ -14,12 +14,12 @@ exports.load = {
         test.ok(this.bin);
         test.done();
     },
-    'has a load function': function(test) {
+    'has a load function': function (test) {
         test.expect(1);
         test.ok(typeof this.bin.load === 'function');
         test.done();
     },
-    'throws when file is non-existent': function(test) {
+    'throws when file is non-existent': function (test) {
         test.expect(2);
         try {
             this.bin.load('test/config/non-existent.bin');
@@ -30,7 +30,7 @@ exports.load = {
         }
         test.done();
     },
-    'loads the test binary file': function(test) {
+    'loads the test binary file': function (test) {
         test.expect(3);
         var testBin = 'test/config/test.binary';
         var result = this.bin.load(testBin);
