@@ -1,7 +1,12 @@
 
-# 1.0.9 - 2017-__-__
+# 1.0.9 - 2017-01-27
 
-    * config cache fix (see haraka/Haraka#1738)
+    - config cache fix (see haraka/Haraka#1738)
+    - config: add overrides handling (sync with Haraka)
+    - configfile: add win64 watching (sync with Haraka)
+    - remove grunt
+    - use haraka-eslint plugin (vs local copy of .eslintrc)
+    - lint updates
 
 # 1.0.8 - 2017-01-02
 
@@ -20,7 +25,7 @@
 
     * do not leave behind a `*` section in config (due to wildcard boolean)
 
-# 1.0.3 
+# 1.0.3
 
     * added wildcard boolean support
     * reduce node required 4.3 -> 0.10.43

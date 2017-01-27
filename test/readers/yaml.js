@@ -12,12 +12,12 @@ exports.load = {
         test.ok(this.yaml);
         test.done();
     },
-    'has a load function': function(test) {
+    'has a load function': function (test) {
         test.expect(1);
         test.ok(typeof this.yaml.load === 'function');
         test.done();
     },
-    'throws when file is non-existent': function(test) {
+    'throws when file is non-existent': function (test) {
         test.expect(2);
         try {
             this.yaml.load('test/config/non-existent.haml');
@@ -28,7 +28,7 @@ exports.load = {
         }
         test.done();
     },
-    'loads the test yaml file': function(test) {
+    'loads the test yaml file': function (test) {
         test.expect(4);
         var result = this.yaml.load('test/config/test.yaml');
         // console.log(result);

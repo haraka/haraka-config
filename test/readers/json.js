@@ -12,12 +12,12 @@ exports.load = {
         test.ok(this.json);
         test.done();
     },
-    'has a load function': function(test) {
+    'has a load function': function (test) {
         test.expect(1);
         test.ok(typeof this.json.load === 'function');
         test.done();
     },
-    'throws when file is non-existent': function(test) {
+    'throws when file is non-existent': function (test) {
         test.expect(2);
         try {
             this.json.load('test/config/non-existent.json');
@@ -28,7 +28,7 @@ exports.load = {
         }
         test.done();
     },
-    'loads the test JSON file': function(test) {
+    'loads the test JSON file': function (test) {
         test.expect(3);
         var result = this.json.load('test/config/test.json');
         // console.log(result);

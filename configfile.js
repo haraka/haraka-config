@@ -20,6 +20,15 @@ var regex = exports.regex = {
 
 var cfreader = exports;
 
+cfreader.watch_files = true;
+cfreader._config_cache = {};
+cfreader._read_args = {};
+cfreader._watchers = {};
+cfreader._enoent_timer = false;
+cfreader._enoent_files = {};
+cfreader._sedation_timers = {};
+cfreader._overrides = {};
+
 var config_dir_candidates = [
     path.join(__dirname, 'config'),    // Haraka ./config dir
     __dirname,                         // npm packaged plugins
@@ -44,11 +53,12 @@ function get_path_to_config_dir () {
         return;
     }
 
-    for (var i=0; i < config_dir_candidates.length; i++) {
+    for (let i=0; i < config_dir_candidates.length; i++) {
+        let candidate = config_dir_candidates[i];
         try {
-            var stat = fs.statSync(config_dir_candidates[i]);
+            var stat = fs.statSync(candidate);
             if (stat && stat.isDirectory()) {
-                cfreader.config_path = config_dir_candidates[i];
+                cfreader.config_path = candidate;
                 return;
             }
         }
@@ -59,15 +69,6 @@ function get_path_to_config_dir () {
 }
 get_path_to_config_dir();
 // console.log('cfreader.config_path: ' + cfreader.config_path);
-
-cfreader.watch_files = true;
-cfreader._config_cache = {};
-cfreader._read_args = {};
-cfreader._watchers = {};
-cfreader._enoent_timer = false;
-cfreader._enoent_files = {};
-cfreader._sedation_timers = {};
-cfreader._overrides = {};
 
 cfreader.on_watch_event = function (name, type, options, cb) {
     return function (fse, filename) {
@@ -179,7 +180,7 @@ cfreader.get_cache_key = function (name, options) {
     return result;
 };
 
-cfreader.read_config = function(name, type, cb, options) {
+cfreader.read_config = function (name, type, cb, options) {
     // Store arguments used so we can re-use them by filename later
     // and so we know which files we've attempted to read so that
     // we can ignore any other files written to the same directory.
@@ -206,14 +207,17 @@ cfreader.read_config = function(name, type, cb, options) {
 
     // We can watch the directory on these platforms which
     // allows us to notice when files are newly created.
-    var os = process.platform;
-    if (os === 'linux' || os === 'win32') {
-        cfreader.watch_dir();
-        return result;
+    switch (process.platform) {
+        case 'win32':
+        case 'win64':
+        case 'linux':
+            cfreader.watch_dir();
+            break;
+        default:
+            // All other operating systems
+            cfreader.watch_file(name, type, cb, options);
     }
 
-    // All other operating systems
-    cfreader.watch_file(name, type, cb, options);
     return result;
 };
 
