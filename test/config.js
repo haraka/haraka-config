@@ -12,10 +12,10 @@ function clearRequireCache () {
     // changes affect other tests. Icky. Work around by invalidating
     // the require cache, so config and configfile re-initialize
     delete require.cache[
-        path.resolve(__dirname, '../config') + '.js'
+        path.resolve(__dirname, '..','config') + '.js'
     ];
     delete require.cache[
-        path.resolve(__dirname, '../configfile') + '.js'
+        path.resolve(__dirname, '..','configfile') + '.js'
     ];
 }
 
