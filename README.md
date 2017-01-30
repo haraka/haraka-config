@@ -2,7 +2,7 @@
 [![Coverage Status][cov-img]][cov-url]
 [![Code Climate][clim-img]][clim-url]
 [![Windows Build status][apv-img]][apv-url]
-[![Greenkeeper badge](https://badges.greenkeeper.io/haraka/haraka-config.svg)](https://greenkeeper.io/)
+[![Greenkeeper badge][gk-img]][gk-url]
 
 # haraka-config
 
@@ -293,3 +293,5 @@ Haraka will be unable to update them after changes.
 [clim-url]: https://codeclimate.com/github/haraka/haraka-config
 [apv-img]: https://ci.appveyor.com/api/projects/status/lme4otppxe22me0j/branch/master?svg=true
 [apv-url]: https://ci.appveyor.com/project/msimerson/haraka-config/branch/master
+[gk-img]: https://badges.greenkeeper.io/haraka/haraka-config.svg
+[gk-url]: https://greenkeeper.io/

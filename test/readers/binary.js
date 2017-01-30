@@ -19,17 +19,6 @@ exports.load = {
         test.ok(typeof this.bin.load === 'function');
         test.done();
     },
-    'throws when file is non-existent': function (test) {
-        test.expect(2);
-        try {
-            this.bin.load('test/config/non-existent.bin');
-        }
-        catch (e) {
-            test.equal(e.code, 'ENOENT');
-            test.ok(/no such file or dir/.test(e.message));
-        }
-        test.done();
-    },
     'loads the test binary file': function (test) {
         test.expect(3);
         var testBin = 'test/config/test.binary';
