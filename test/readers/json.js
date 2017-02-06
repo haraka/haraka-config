@@ -17,17 +17,6 @@ exports.load = {
         test.ok(typeof this.json.load === 'function');
         test.done();
     },
-    'throws when file is non-existent': function (test) {
-        test.expect(2);
-        try {
-            this.json.load('test/config/non-existent.json');
-        }
-        catch (e) {
-            test.equal(e.code, 'ENOENT');
-            test.ok(/no such file or dir/.test(e.message));
-        }
-        test.done();
-    },
     'loads the test JSON file': function (test) {
         test.expect(3);
         var result = this.json.load('test/config/test.json');

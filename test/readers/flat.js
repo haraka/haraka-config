@@ -19,17 +19,6 @@ exports.load = {
         test.ok(typeof this.flat.load === 'function');
         test.done();
     },
-    'throws when file is non-existent': function (test) {
-        test.expect(2);
-        try {
-            this.flat.load('test/config/non-existent.flat');
-        }
-        catch (e) {
-            test.equal(e.code, 'ENOENT');
-            test.ok(/no such file or dir/.test(e.message));
-        }
-        test.done();
-    },
     'loads the test flat file, as list': function (test) {
         test.expect(1);
         var result = this.flat.load(

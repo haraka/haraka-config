@@ -2,7 +2,7 @@
 [![Coverage Status][cov-img]][cov-url]
 [![Code Climate][clim-img]][clim-url]
 [![Windows Build status][apv-img]][apv-url]
-[![Greenkeeper badge](https://badges.greenkeeper.io/haraka/haraka-config.svg)](https://greenkeeper.io/)
+[![Greenkeeper badge][gk-img]][gk-url]
 
 # haraka-config
 
@@ -23,7 +23,7 @@ Haraka's config loader can load several types of configuration files.
 * 'binary' - load a binary file into a Buffer
 
 See the [File Formats](#file_formats) section below for a more detailed
-explaination of each of the formats.
+explanation of each of the formats.
 
 # Usage
 
@@ -46,9 +46,7 @@ an update is detected on the file after the configuration cache has been
 updated by re-reading the file.  Use this to refresh configuration
 variables within your plugin. Example:
 
-`````javascript
-var cfg;  // variable global to this plugin only
-
+```js
 exports.register = function () {
     var plugin = this;
     plugin.loginfo('register function called');
@@ -57,7 +55,7 @@ exports.register = function () {
 
 exports.load_my_plugin_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('my_plugin.ini', function onIniChange () {
+    plugin.cfg = plugin.config.get('my_plugin.ini', function onCfgChange () {
         // This closure is run a few milliseconds after my_plugin.ini changes
         // Re-run the outer function again
         plugin.load_my_plugin_ini();
@@ -68,7 +66,7 @@ exports.load_my_plugin_ini = function () {
 exports.hook_connect = function (next, connection) {
     // plugin.cfg in here will always be up-to-date
 }
-`````
+```
 
 The `options` object can accepts the following keys:
 
@@ -291,5 +289,7 @@ Haraka will be unable to update them after changes.
 [cov-url]: https://codecov.io/github/haraka/haraka-config?branch=master
 [clim-img]: https://codeclimate.com/github/haraka/haraka-config/badges/gpa.svg
 [clim-url]: https://codeclimate.com/github/haraka/haraka-config
-[apv-img]: https://ci.appveyor.com/api/projects/status/lme4otppxe22me0j/branch/master?svg=true
+[apv-img]: https://ci.appveyor.com/api/projects/status/9qh720gq77e2h5x4?svg=true
 [apv-url]: https://ci.appveyor.com/project/msimerson/haraka-config/branch/master
+[gk-img]: https://badges.greenkeeper.io/haraka/haraka-config.svg
+[gk-url]: https://greenkeeper.io/
