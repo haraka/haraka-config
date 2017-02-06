@@ -1,0 +1,6 @@
+blacklist:
+    - subject: dcdresptest
+      body: \nT\[: 0-9 -.\]  DEBUG.*SetError
+    - subject: regex2
+whitelist:
+    - subject: dcdresptest\.1

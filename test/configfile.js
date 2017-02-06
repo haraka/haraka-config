@@ -372,3 +372,13 @@ exports.regex = {
         test.done();
     },
 }
+
+exports.bad_config = {
+    setUp: _set_up,
+    'bad.yaml returns empty' : function (test) {
+        test.expect(1);
+        var res = this.cfreader.load_config('test/config/bad.yaml');
+        test.deepEqual(res, {});
+        test.done();
+    },
+}

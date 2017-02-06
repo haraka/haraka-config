@@ -297,10 +297,11 @@ cfreader.load_config = function (name, type, options) {
         cfreader._config_cache[cache_key] = result;
     }
     catch (err) {
-        if (err.code !== 'EBADF') throw err;
+        console.error(err.message);
         if (cfreader._config_cache[cache_key]) {
-            result = cfreader._config_cache[cache_key];
+            return cfreader._config_cache[cache_key];
         }
+        return cfrType.empty(options, type);
     }
     return result;
 };
