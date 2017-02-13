@@ -6,7 +6,7 @@
 
 # haraka-config
 
-Haraka config file loader and parser
+Haraka config file loader, parser, and watcher.
 
 # Config Files
 
@@ -56,7 +56,7 @@ exports.register = function () {
 exports.load_my_plugin_ini = function () {
     var plugin = this;
     plugin.cfg = plugin.config.get('my_plugin.ini', function onCfgChange () {
-        // This closure is run a few milliseconds after my_plugin.ini changes
+        // This closure is run a few seconds after my_plugin.ini changes
         // Re-run the outer function again
         plugin.load_my_plugin_ini();
     });
@@ -64,7 +64,7 @@ exports.load_my_plugin_ini = function () {
 }
 
 exports.hook_connect = function (next, connection) {
-    // plugin.cfg in here will always be up-to-date
+    // plugin.cfg here will be kept updated
 }
 ```
 
@@ -78,12 +78,18 @@ loop, and will slow down Haraka.
 * `booleans` (default: none) - for .ini files, this allows specifying
 boolean type keys. Default true or false can be specified.
 
-<a name="overrides">Default Config and Overrides</a>
-===========
+## <a name="overrides">Default Config and Overrides</a>
 
-The config loader supports dual config files - a file containing default
-values, and overridden values installed by a user. This can be useful if
-publishing your plugin to npm (and is used by some core plugins).
+The config loader supports dual config files - a file containing defaults,
+and another user installed file containing overrides. The default configs
+reside:
+
+- Haraka: within the config directory in the Haraka install (where `npm i`
+installed Haraka)
+- NPM plugins - inside the module/config directory
+
+Config files with overrides are **always** installed in the Haraka config
+directory, which you specified when you ran `haraka -i`.
 
 Overrides work in the following manner:
 
@@ -290,6 +296,6 @@ Haraka will be unable to update them after changes.
 [clim-img]: https://codeclimate.com/github/haraka/haraka-config/badges/gpa.svg
 [clim-url]: https://codeclimate.com/github/haraka/haraka-config
 [apv-img]: https://ci.appveyor.com/api/projects/status/9qh720gq77e2h5x4?svg=true
-[apv-url]: https://ci.appveyor.com/project/msimerson/haraka-config/branch/master
+[apv-url]: https://ci.appveyor.com/project/msimerson/haraka-config
 [gk-img]: https://badges.greenkeeper.io/haraka/haraka-config.svg
 [gk-url]: https://greenkeeper.io/
