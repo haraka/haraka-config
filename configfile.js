@@ -105,9 +105,11 @@ cfreader.on_watch_event = function (name, type, options, cb) {
 };
 
 cfreader.watch_dir = function () {
-    // NOTE: This only works on Linux and Windows
+    // NOTE: Has OS platform limitations:
+    // https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener
     var cp = cfreader.config_path;
     if (cfreader._watchers[cp]) return;
+
     var watcher = function (fse, filename) {
         if (!filename) return;
         var full_path = path.join(cp, filename);
@@ -240,7 +242,30 @@ function fsReadDir (filepath) {
     })
 }
 
+function fsWatchDir (dirPath) {
+
+    if (cfreader._watchers[dirPath]) return;
+
+    cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false }, function (fse, filename) {
+        // console.log('event: ' + fse + ', ' + filename);
+        if (!filename) return;
+        var full_path = path.join(dirPath, filename);
+        var args = cfreader._read_args[dirPath];
+        // console.log(args);
+        if (cfreader._sedation_timers[full_path]) {
+            clearTimeout(cfreader._sedation_timers[full_path]);
+        }
+        cfreader._sedation_timers[full_path] = setTimeout(function () {
+            delete cfreader._sedation_timers[full_path];
+            args.opts.watchCb();
+        }, 2 * 1000);
+    });
+}
+
 cfreader.read_dir = function (name, type, opts, done) {
+
+    cfreader._read_args[name] = { type: type, opts: opts }
+
     isDirectory(name)
     .then(function (result) {
         return fsReadDir(name);
@@ -258,6 +283,8 @@ cfreader.read_dir = function (name, type, opts, done) {
         // console.log(fileList);
         done(null, fileList);
     })
+
+    if (opts.watchCb) fsWatchDir(name);
 };
 
 cfreader.ensure_enoent_timer = function () {
