@@ -181,9 +181,10 @@ cfreader.get_cache_key = function (name, options) {
 };
 
 cfreader.read_config = function (name, type, cb, options) {
-    // Store arguments used so we can re-use them by filename later
-    // and so we know which files we've attempted to read so that
-    // we can ignore any other files written to the same directory.
+    // Store arguments used so we can:
+    // 1. re-use them by filename later
+    // 2. to know which files we've read, so we can ignore
+    //    other files written to the same directory.
 
     cfreader._read_args[name] = {
         type: type,
@@ -219,6 +220,44 @@ cfreader.read_config = function (name, type, cb, options) {
     }
 
     return result;
+};
+
+function isDirectory (filepath) {
+    return new Promise(function (resolve, reject) {
+        fs.stat(filepath, function (err, stat) {
+            if (err) return reject(err);
+            resolve(stat.isDirectory());
+        })
+    })
+}
+
+function fsReadDir (filepath) {
+    return new Promise(function (resolve, reject) {
+        fs.readdir(filepath, function (err, fileList) {
+            if (err) return reject(err);
+            resolve(fileList);
+        })
+    })
+}
+
+cfreader.read_dir = function (name, type, opts, done) {
+    isDirectory(name)
+    .then(function (result) {
+        return fsReadDir(name);
+    })
+    .then(function (result2) {
+        var reader = require('./readers/' + type);
+        var promises = [];
+        result2.forEach(function (file) {
+            promises.push(reader.loadP(path.resolve(name, file)))
+        });
+        return Promise.all(promises);
+    })
+    .catch(done)
+    .then(function (fileList) {
+        // console.log(fileList);
+        done(null, fileList);
+    })
 };
 
 cfreader.ensure_enoent_timer = function () {

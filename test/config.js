@@ -203,7 +203,7 @@ var yamlRes = {
     }
 };
 
-function _test_get(test, name, type, callback, options, expected) {
+function _test_get (test, name, type, callback, options, expected) {
     test.expect(1);
     var config = require('../config');
     var cfg = config.get(name, type, callback, options);
@@ -334,4 +334,19 @@ exports.merged = {
         test.equal(lc.get('test.flat'), 'flatoverrode');
         test.done();
     },
+}
+
+exports.getDir = {
+    'setUp' : setUp,
+    'loads all files in dir' : function (test) {
+        test.expect(4);
+        this.config.getDir('dir', 'binary', {}, function (err, files) {
+            // console.log(files);
+            test.equal(err, null);
+            test.equal(files.length, 3);
+            test.equal(files[0].toString(), 'contents1\n');
+            test.equal(files[2].toString(), 'contents3\n');
+            test.done();
+        })
+    }
 }

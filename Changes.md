@@ -1,7 +1,7 @@
 
-# 1.0.11 - 2017-0_-_
+# 1.0.11 - 2017-03-04
 
-- 
+- add config.getDir, loads all files in a directory
 
 # 1.0.10 - 2017-02-05
 
