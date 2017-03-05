@@ -267,10 +267,10 @@ cfreader.read_dir = function (name, type, opts, done) {
     cfreader._read_args[name] = { type: type, opts: opts }
 
     isDirectory(name)
-    .then(function (result) {
+    .then((result) => {
         return fsReadDir(name);
     })
-    .then(function (result2) {
+    .then((result2) => {
         var reader = require('./readers/' + type);
         var promises = [];
         result2.forEach(function (file) {
@@ -278,10 +278,12 @@ cfreader.read_dir = function (name, type, opts, done) {
         });
         return Promise.all(promises);
     })
-    .catch(done)
-    .then(function (fileList) {
+    .then((fileList) => {
         // console.log(fileList);
         done(null, fileList);
+    })
+    .catch((error) => {
+        done(error);
     })
 
     if (opts.watchCb) fsWatchDir(name);

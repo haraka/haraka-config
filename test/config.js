@@ -355,6 +355,14 @@ exports.getDir = {
             test.done();
         })
     },
+    'errs on invalid dir' : function (test) {
+        test.expect(1);
+        this.config.getDir('dirInvalid', 'binary', {}, function (err, files) {
+            // console.log(arguments);
+            test.equal(err.code, 'ENOENT');
+            test.done();
+        })
+    },
     'reloads when file in dir is touched' : function (test) {
         test.expect(6);
         var self = this;
