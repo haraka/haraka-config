@@ -275,7 +275,7 @@ cfreader.read_dir = function (name, opts, done) {
         var reader = require('./readers/' + type);
         var promises = [];
         result2.forEach(function (file) {
-            promises.push(reader.loadP(path.resolve(name, file)))
+            promises.push(reader.loadPromise(path.resolve(name, file)))
         });
         return Promise.all(promises);
     })

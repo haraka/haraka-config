@@ -350,8 +350,8 @@ exports.getDir = {
             // console.log(files);
             test.equal(err, null);
             test.equal(files.length, 3);
-            test.equal(files[0].toString(), 'contents1\n');
-            test.equal(files[2].toString(), 'contents3\n');
+            test.equal(files[0].data, 'contents1\n');
+            test.equal(files[2].data, 'contents3\n');
             test.done();
         })
     },
@@ -376,8 +376,8 @@ exports.getDir = {
                 // console.log(files);
                 test.equal(err, null);
                 test.equal(files.length, 3);
-                test.equal(files[0].toString(), 'contents1\n');
-                test.equal(files[2].toString(), 'contents3\n');
+                test.equal(files[0].data, 'contents1\n');
+                test.equal(files[2].data, 'contents3\n');
                 fs.writeFile(tmpFile, 'contents4\n', function (err, res) {
                     test.equal(err, null);
                     // console.log('file touched, waiting for callback');
@@ -386,7 +386,7 @@ exports.getDir = {
                 return;
             }
             if (callCount === 2) {
-                test.equal(files[3].toString(), 'contents4\n');
+                test.equal(files[3].data, 'contents4\n');
                 test.done();
             }
         }
