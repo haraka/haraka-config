@@ -45,10 +45,8 @@ Config.prototype.get = function (name, type, cb, options) {
     return results;
 };
 
-Config.prototype.getDir = function (name, type, opts, done) {
-    cfreader.read_dir(
-        path.resolve(this.root_path, name), type, opts, done
-    );
+Config.prototype.getDir = function (name, opts, done) {
+    cfreader.read_dir(path.resolve(this.root_path, name), opts, done);
 };
 
 function merge_config (defaults, overrides, type) {

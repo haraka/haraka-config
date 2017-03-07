@@ -346,7 +346,7 @@ exports.getDir = {
     },
     'loads all files in dir' : function (test) {
         test.expect(4);
-        this.config.getDir('dir', 'binary', {}, function (err, files) {
+        this.config.getDir('dir', { type: 'binary' }, function (err, files) {
             // console.log(files);
             test.equal(err, null);
             test.equal(files.length, 3);
@@ -357,7 +357,7 @@ exports.getDir = {
     },
     'errs on invalid dir' : function (test) {
         test.expect(1);
-        this.config.getDir('dirInvalid', 'binary', {}, function (err, files) {
+        this.config.getDir('dirInvalid', { type: 'binary' }, function (err, files) {
             // console.log(arguments);
             test.equal(err.code, 'ENOENT');
             test.done();
@@ -391,7 +391,8 @@ exports.getDir = {
             }
         }
         var getDir = function () {
-            self.config.getDir('dir', 'binary', { watchCb: getDir }, getDirDone);
+            var opts = { type: 'binary', watchCb: getDir };
+            self.config.getDir('dir', opts, getDirDone);
         };
         getDir();
     }

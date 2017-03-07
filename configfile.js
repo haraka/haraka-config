@@ -262,9 +262,10 @@ function fsWatchDir (dirPath) {
     });
 }
 
-cfreader.read_dir = function (name, type, opts, done) {
+cfreader.read_dir = function (name, opts, done) {
 
-    cfreader._read_args[name] = { type: type, opts: opts }
+    cfreader._read_args[name] = { opts: opts }
+    var type = opts.type || 'binary';
 
     isDirectory(name)
     .then((result) => {
