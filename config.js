@@ -45,20 +45,25 @@ Config.prototype.get = function (name, type, cb, options) {
     return results;
 };
 
+Config.prototype.getDir = function (name, opts, done) {
+    cfreader.read_dir(path.resolve(this.root_path, name), opts, done);
+};
+
 function merge_config (defaults, overrides, type) {
     if (type === 'ini' || type === 'json' || type === 'yaml') {
         return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides);
     }
-    else if (Array.isArray(overrides) && Array.isArray(defaults) &&
+
+    if (Array.isArray(overrides) && Array.isArray(defaults) &&
         overrides.length > 0) {
         return overrides;
     }
-    else if (overrides != null) {
+
+    if (overrides != null) {
         return overrides;
     }
-    else {
-        return defaults;
-    }
+
+    return defaults;
 }
 
 function merge_struct (defaults, overrides) {

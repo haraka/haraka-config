@@ -105,9 +105,11 @@ cfreader.on_watch_event = function (name, type, options, cb) {
 };
 
 cfreader.watch_dir = function () {
-    // NOTE: This only works on Linux and Windows
+    // NOTE: Has OS platform limitations:
+    // https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener
     var cp = cfreader.config_path;
     if (cfreader._watchers[cp]) return;
+
     var watcher = function (fse, filename) {
         if (!filename) return;
         var full_path = path.join(cp, filename);
@@ -181,9 +183,10 @@ cfreader.get_cache_key = function (name, options) {
 };
 
 cfreader.read_config = function (name, type, cb, options) {
-    // Store arguments used so we can re-use them by filename later
-    // and so we know which files we've attempted to read so that
-    // we can ignore any other files written to the same directory.
+    // Store arguments used so we can:
+    // 1. re-use them by filename later
+    // 2. to know which files we've read, so we can ignore
+    //    other files written to the same directory.
 
     cfreader._read_args[name] = {
         type: type,
@@ -219,6 +222,72 @@ cfreader.read_config = function (name, type, cb, options) {
     }
 
     return result;
+};
+
+function isDirectory (filepath) {
+    return new Promise(function (resolve, reject) {
+        fs.stat(filepath, function (err, stat) {
+            if (err) return reject(err);
+            resolve(stat.isDirectory());
+        })
+    })
+}
+
+function fsReadDir (filepath) {
+    return new Promise(function (resolve, reject) {
+        fs.readdir(filepath, function (err, fileList) {
+            if (err) return reject(err);
+            resolve(fileList);
+        })
+    })
+}
+
+function fsWatchDir (dirPath) {
+
+    if (cfreader._watchers[dirPath]) return;
+
+    cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false }, function (fse, filename) {
+        // console.log('event: ' + fse + ', ' + filename);
+        if (!filename) return;
+        var full_path = path.join(dirPath, filename);
+        var args = cfreader._read_args[dirPath];
+        // console.log(args);
+        if (cfreader._sedation_timers[full_path]) {
+            clearTimeout(cfreader._sedation_timers[full_path]);
+        }
+        cfreader._sedation_timers[full_path] = setTimeout(function () {
+            delete cfreader._sedation_timers[full_path];
+            args.opts.watchCb();
+        }, 2 * 1000);
+    });
+}
+
+cfreader.read_dir = function (name, opts, done) {
+
+    cfreader._read_args[name] = { opts: opts }
+    var type = opts.type || 'binary';
+
+    isDirectory(name)
+    .then((result) => {
+        return fsReadDir(name);
+    })
+    .then((result2) => {
+        var reader = require('./readers/' + type);
+        var promises = [];
+        result2.forEach(function (file) {
+            promises.push(reader.loadPromise(path.resolve(name, file)))
+        });
+        return Promise.all(promises);
+    })
+    .then((fileList) => {
+        // console.log(fileList);
+        done(null, fileList);
+    })
+    .catch((error) => {
+        done(error);
+    })
+
+    if (opts.watchCb) fsWatchDir(name);
 };
 
 cfreader.ensure_enoent_timer = function () {

@@ -2,6 +2,7 @@
 
 process.env.NODE_ENV = 'test'
 
+var fs   = require('fs');
 var path = require('path');
 
 var cb = function () { return false; };
@@ -203,7 +204,7 @@ var yamlRes = {
     }
 };
 
-function _test_get(test, name, type, callback, options, expected) {
+function _test_get (test, name, type, callback, options, expected) {
     test.expect(1);
     var config = require('../config');
     var cfg = config.get(name, type, callback, options);
@@ -334,4 +335,65 @@ exports.merged = {
         test.equal(lc.get('test.flat'), 'flatoverrode');
         test.done();
     },
+}
+
+exports.getDir = {
+    'setUp' : setUp,
+    'tearDown' : function (done) {
+        fs.unlink(path.resolve('test','config','dir', '4.ext'), function () {
+            done();
+        })
+    },
+    'loads all files in dir' : function (test) {
+        test.expect(4);
+        this.config.getDir('dir', { type: 'binary' }, function (err, files) {
+            // console.log(files);
+            test.equal(err, null);
+            test.equal(files.length, 3);
+            test.equal(files[0].data, 'contents1\n');
+            test.equal(files[2].data, 'contents3\n');
+            test.done();
+        })
+    },
+    'errs on invalid dir' : function (test) {
+        test.expect(1);
+        this.config.getDir('dirInvalid', { type: 'binary' }, function (err, files) {
+            // console.log(arguments);
+            test.equal(err.code, 'ENOENT');
+            test.done();
+        })
+    },
+    'reloads when file in dir is touched' : function (test) {
+        test.expect(6);
+        var self = this;
+        var tmpFile = path.resolve('test','config','dir', '4.ext');
+        var callCount = 0;
+        var getDirDone = function (err, files) {
+            // console.log('Loading: test/config/dir');
+            if (err) console.error(err);
+            callCount++;
+            if (callCount === 1) {
+                // console.log(files);
+                test.equal(err, null);
+                test.equal(files.length, 3);
+                test.equal(files[0].data, 'contents1\n');
+                test.equal(files[2].data, 'contents3\n');
+                fs.writeFile(tmpFile, 'contents4\n', function (err, res) {
+                    test.equal(err, null);
+                    // console.log('file touched, waiting for callback');
+                    // console.log(res);
+                });
+                return;
+            }
+            if (callCount === 2) {
+                test.equal(files[3].data, 'contents4\n');
+                test.done();
+            }
+        }
+        var getDir = function () {
+            var opts = { type: 'binary', watchCb: getDir };
+            self.config.getDir('dir', opts, getDirDone);
+        };
+        getDir();
+    }
 }
