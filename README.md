@@ -26,16 +26,16 @@ See the [File Formats](#file_formats) section below for a more detailed
 explanation of each of the formats.
 
 # Usage
-
+```js
     // From within a plugin:
     var cfg = this.config.get(name, [type], [callback], [options]);
-
+```
 This will load the file config/rambling.paths in the Haraka directory.
 
 `name` is not a full path, but a filename in the config/ directory. For example:
-
+```js
     var cfg = this.config.get('rambling.paths', 'list');
-
+```
 `type` can be any of the types listed above.
 
 If the file name has an `.ini`, `.json` or `.yaml` suffix,
@@ -150,7 +150,7 @@ INI files have their heritage in early versions of Microsoft Windows.
 Entries are a simple format of key=value pairs, with optional [sections].
 
 Here is a typical example:
-
+```
     first_name=Matt
     last_name=Sergeant
 
@@ -162,10 +162,10 @@ Here is a typical example:
     haraka
     qpsmtpd
     spamassassin
-
+```
 That produces the following Javascript object:
 
-````javascript
+```javascript
 {
     main: {
         first_name: 'Matt',
@@ -181,7 +181,7 @@ That produces the following Javascript object:
         spamassassin: undefined,
     }
 }
-````
+```
 
 Items before any [section] marker are in the implicit [main] section.
 
@@ -193,38 +193,38 @@ The key=value pairs support continuation lines using the
 backslash "\" character.
 
 The `options` object allows you to specify which keys are boolean:
-
+```javascript
     { booleans: ['reject','some_true_value'] }
-
+```
 On the options declarations, key names are formatted as section.key.
 If the key name does not specify a section, it is presumed to be [main].
 
 This ensures these values are converted to true Javascript booleans when parsed,
 and supports the following options for boolean values:
-
+```
     true, yes, ok, enabled, on, 1
-
+```
 Anything else is treated as false.
 
 To default a boolean as true (when the key is undefined or the config file is
 missing), prefix the key with +:
-
+```js
     { booleans: [ '+reject' ] }
-
+```
 For completeness the inverse is also allowed:
-
+```js
     { booleans: [ '-reject' ] }
-
+```
 Lists are supported using this syntax:
-
+```javascript
     hosts[] = first_host
     hosts[] = second_host
     hosts[] = third_host
-
+```
 which produces this javascript array:
-
+```js
     ['first_host', 'second_host', 'third_host']
-
+```
 
 Flat Files
 ----------
@@ -248,11 +248,11 @@ because YAML files are far easier for a human to write.
 You can use JSON or YAML files to override any other file by prefixing the
 outer variable name with a `!` e.g.
 
-``````
+```js
 {
     "!smtpgreeting": [ 'this is line one', 'this is line two' ]
 }
-`````
+```
 
 If the config/smtpgreeting file did not exist, then this value would replace
 it.
