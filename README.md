@@ -109,7 +109,7 @@ Haraka local install directory.
 can be overridden on a key-by-key basis. A default
 `plugin_name.ini` might contain:
 
-```
+```ini
 toplevel1=foo
 toplevel2=bar
 
@@ -119,7 +119,7 @@ sub1=something
 
 And the local `plugin_name.ini` might contain:
 
-```
+```ini
 toplevel2=blee
 
 [subsection]
@@ -128,7 +128,7 @@ sub2=otherthing
 
 This would be the equivalent of loading config containing:
 
-```
+```ini
 toplevel1=foo
 toplevel2=blee
 
@@ -150,7 +150,7 @@ INI files have their heritage in early versions of Microsoft Windows.
 Entries are a simple format of key=value pairs, with optional [sections].
 
 Here is a typical example:
-```
+```ini
     first_name=Matt
     last_name=Sergeant
 
@@ -165,7 +165,7 @@ Here is a typical example:
 ```
 That produces the following Javascript object:
 
-```javascript
+```js
 {
     main: {
         first_name: 'Matt',
@@ -193,7 +193,7 @@ The key=value pairs support continuation lines using the
 backslash "\" character.
 
 The `options` object allows you to specify which keys are boolean:
-```javascript
+```js
     { booleans: ['reject','some_true_value'] }
 ```
 On the options declarations, key names are formatted as section.key.
@@ -216,7 +216,7 @@ For completeness the inverse is also allowed:
     { booleans: [ '-reject' ] }
 ```
 Lists are supported using this syntax:
-```javascript
+```ini
     hosts[] = first_host
     hosts[] = second_host
     hosts[] = third_host
