@@ -314,6 +314,7 @@ cfreader.ensure_enoent_timer = function () {
             })(fileOuter); // END BLOCK SCOPE
         }
     }, 60 * 1000);
+    cfreader._enoent_timer.unref(); // This shouldn't block exit
 };
 
 cfreader.get_filetype_reader = function (type) {
