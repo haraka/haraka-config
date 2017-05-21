@@ -1,3 +1,6 @@
+# 1.0.12 - 2017-05-21
+
+- unref() the setInterval so that Haraka can gracefully exit
 
 # 1.0.11 - 2017-03-04
 
