@@ -268,24 +268,24 @@ cfreader.read_dir = function (name, opts, done) {
     var type = opts.type || 'binary';
 
     isDirectory(name)
-    .then((result) => {
-        return fsReadDir(name);
-    })
-    .then((result2) => {
-        var reader = require('./readers/' + type);
-        var promises = [];
-        result2.forEach(function (file) {
-            promises.push(reader.loadPromise(path.resolve(name, file)))
-        });
-        return Promise.all(promises);
-    })
-    .then((fileList) => {
+        .then((result) => {
+            return fsReadDir(name);
+        })
+        .then((result2) => {
+            var reader = require('./readers/' + type);
+            var promises = [];
+            result2.forEach(function (file) {
+                promises.push(reader.loadPromise(path.resolve(name, file)))
+            });
+            return Promise.all(promises);
+        })
+        .then((fileList) => {
         // console.log(fileList);
-        done(null, fileList);
-    })
-    .catch((error) => {
-        done(error);
-    })
+            done(null, fileList);
+        })
+        .catch((error) => {
+            done(error);
+        })
 
     if (opts.watchCb) fsWatchDir(name);
 };
