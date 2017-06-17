@@ -4,6 +4,5 @@
   ],
   "extends": ["eslint:recommended", "plugin:haraka/recommended"],
   "rules": {
-    "no-console": 0
   }
 }

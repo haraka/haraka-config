@@ -103,53 +103,53 @@ exports.empty = {
     'non-exist.ini boolean' : function (test) {
         test.expect(1);
         test.deepEqual(
-                this.ini.empty({ booleans: ['reject']}),
-                { main: { reject: false } }
-                );
+            this.ini.empty({ booleans: ['reject']}),
+            { main: { reject: false } }
+        );
         test.done();
     },
     'non-exist.ini boolean true default' : function (test) {
         test.expect(3);
         test.deepEqual(
-                this.ini.empty({ booleans: ['+reject']}),
-                { main: { reject: true } }
-                );
+            this.ini.empty({ booleans: ['+reject']}),
+            { main: { reject: true } }
+        );
         test.deepEqual(
-                this.ini.empty({ booleans: ['+main.reject']}),
-                { main: { reject: true } }
-                );
+            this.ini.empty({ booleans: ['+main.reject']}),
+            { main: { reject: true } }
+        );
         test.deepEqual(
-                this.ini.empty({ booleans: ['main.+reject']}),
-                { main: { reject: true } }
-                );
+            this.ini.empty({ booleans: ['main.+reject']}),
+            { main: { reject: true } }
+        );
         test.done();
     },
     'non-exist.ini boolean false default' : function (test) {
         test.expect(3);
         test.deepEqual(
-                this.ini.empty({ booleans: ['-reject']}),
-                { main: { reject: false } }
-                );
+            this.ini.empty({ booleans: ['-reject']}),
+            { main: { reject: false } }
+        );
         test.deepEqual(
-                this.ini.empty({ booleans: ['-main.reject']}),
-                { main: { reject: false } }
-                );
+            this.ini.empty({ booleans: ['-main.reject']}),
+            { main: { reject: false } }
+        );
         test.deepEqual(
-                this.ini.empty({ booleans: ['main.-reject']}),
-                { main: { reject: false } }
-                );
+            this.ini.empty({ booleans: ['main.-reject']}),
+            { main: { reject: false } }
+        );
         test.done();
     },
     'non-exist.ini boolean false default, section' : function (test) {
         test.expect(2);
         test.deepEqual(
-                this.ini.empty({ booleans: ['-reject.boolf']}),
-                { main: { }, reject: {boolf: false} }
-                );
+            this.ini.empty({ booleans: ['-reject.boolf']}),
+            { main: { }, reject: {boolf: false} }
+        );
         test.deepEqual(
-                this.ini.empty({ booleans: ['+reject.boolt']}),
-                { main: { }, reject: {boolt: true} }
-                );
+            this.ini.empty({ booleans: ['+reject.boolt']}),
+            { main: { }, reject: {boolt: true} }
+        );
         test.done();
     },
 };

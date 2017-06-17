@@ -1,3 +1,8 @@
+
+# 1.0.13 - 2017-06-16
+
+- lint updates for eslint 4
+
 # 1.0.12 - 2017-05-21
 
 - unref() the setInterval so that Haraka can gracefully exit
