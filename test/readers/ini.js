@@ -1,8 +1,8 @@
 'use strict';
 
-var regex = require('../../configfile').regex;
+const regex = require('../../configfile').regex;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
     this.ini = require('../../readers/ini');
     this.opts = {
         booleans: [ 'main.bool_true', 'main.bool_false' ]
@@ -24,7 +24,7 @@ exports.load = {
     },
     'loads the test ini file': function (test) {
         test.expect(1);
-        var result = this.ini.load('test/config/test.ini',  {}, regex);
+        const result = this.ini.load('test/config/test.ini',  {}, regex);
         // console.log(result);
         test.deepEqual(result.main, {
             bool_true: 'true', bool_false: 'false',
@@ -34,7 +34,7 @@ exports.load = {
     },
     'test.ini, no opts' : function (test) {
         test.expect(4);
-        var r = this.ini.load('test/config/test.ini', {}, regex);
+        const r = this.ini.load('test/config/test.ini', {}, regex);
         test.strictEqual(r.main.bool_true, 'true');
         test.strictEqual(r.main.bool_false, 'false');
         test.strictEqual(r.main.str_true, 'true');
@@ -43,7 +43,7 @@ exports.load = {
     },
     'test.ini, opts' : function (test) {
         test.expect(4);
-        var r = this.ini.load('test/config/test.ini', this.opts, regex).main;
+        const r = this.ini.load('test/config/test.ini', this.opts, regex).main;
         test.strictEqual(r.bool_true, true);
         test.strictEqual(r.bool_false, false);
         test.strictEqual(r.str_true, 'true');
@@ -52,7 +52,7 @@ exports.load = {
     },
     'test.ini, sect1, opts' : function (test) {
         test.expect(4);
-        var r = this.ini.load('test/config/test.ini', {
+        const r = this.ini.load('test/config/test.ini', {
             booleans: ['sect1.bool_true','sect1.bool_false']
         }, regex);
         test.strictEqual(r.sect1.bool_true, true);
@@ -63,7 +63,7 @@ exports.load = {
     },
     'test.ini, sect1, opts, w/defaults' : function (test) {
         test.expect(6);
-        var r = this.ini.load('test/config/test.ini', {
+        const r = this.ini.load('test/config/test.ini', {
             booleans: [
                 '+sect1.bool_true',
                 '-sect1.bool_false',
@@ -81,7 +81,7 @@ exports.load = {
     },
     'test.ini, wildcard boolean' : function (test) {
         test.expect(5);
-        var r = this.ini.load('test/config/test.ini', {
+        const r = this.ini.load('test/config/test.ini', {
             booleans: [ '+main.bool_true', '*.is_bool' ]
         }, regex);
         test.strictEqual(r['*'], undefined);
@@ -158,7 +158,7 @@ exports.invalid = {
     setUp: _set_up,
     'goobers.ini has invalid entry' : function (test) {
         test.expect(1);
-        var result = this.ini.load('test/config/goobers.ini',  {}, regex);
+        const result = this.ini.load('test/config/goobers.ini',  {}, regex);
         test.deepEqual(result, { main: { } } );
         test.done();
     },

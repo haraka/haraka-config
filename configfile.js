@@ -1,11 +1,11 @@
 'use strict';
 
 // Config file loader
-var fs   = require('fs');
-var path = require('path');
+const fs   = require('fs');
+const path = require('path');
 
 // for "ini" type files
-var regex = exports.regex = {
+const regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
     param:          /^\s*([\w@:\._\-\/\[\]]+)\s*(?:=\s*(.*?)\s*)?$/,
     comment:        /^\s*[;#].*$/,
@@ -18,7 +18,7 @@ var regex = exports.regex = {
     is_array:       /(.+)\[\]$/,
 };
 
-var cfreader = exports;
+const cfreader = exports;
 
 cfreader.watch_files = true;
 cfreader._config_cache = {};
@@ -29,7 +29,7 @@ cfreader._enoent_files = {};
 cfreader._sedation_timers = {};
 cfreader._overrides = {};
 
-var config_dir_candidates = [
+const config_dir_candidates = [
     path.join(__dirname, 'config'),    // Haraka ./config dir
     __dirname,                         // npm packaged plugins
 ];
@@ -54,9 +54,9 @@ function get_path_to_config_dir () {
     }
 
     for (let i=0; i < config_dir_candidates.length; i++) {
-        let candidate = config_dir_candidates[i];
+        const candidate = config_dir_candidates[i];
         try {
-            var stat = fs.statSync(candidate);
+            const stat = fs.statSync(candidate);
             if (stat && stat.isDirectory()) {
                 cfreader.config_path = candidate;
                 return;
@@ -107,14 +107,14 @@ cfreader.on_watch_event = function (name, type, options, cb) {
 cfreader.watch_dir = function () {
     // NOTE: Has OS platform limitations:
     // https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener
-    var cp = cfreader.config_path;
+    const cp = cfreader.config_path;
     if (cfreader._watchers[cp]) return;
 
-    var watcher = function (fse, filename) {
+    const watcher = function (fse, filename) {
         if (!filename) return;
-        var full_path = path.join(cp, filename);
+        const full_path = path.join(cp, filename);
         if (!cfreader._read_args[full_path]) return;
-        var args = cfreader._read_args[full_path];
+        const args = cfreader._read_args[full_path];
         if (args.options && args.options.no_watch) return;
         if (cfreader._sedation_timers[filename]) {
             clearTimeout(cfreader._sedation_timers[filename]);
@@ -161,7 +161,7 @@ cfreader.watch_file = function (name, type, cb, options) {
 };
 
 cfreader.get_cache_key = function (name, options) {
-    var result;
+    let result;
 
     // Ignore options etc. if this is an overriden value
     if (cfreader._overrides[name]) {
@@ -196,7 +196,7 @@ cfreader.read_config = function (name, type, cb, options) {
 
     // Check cache first
     if (!process.env.WITHOUT_CONFIG_CACHE) {
-        var cache_key = cfreader.get_cache_key(name, options);
+        const cache_key = cfreader.get_cache_key(name, options);
         // console.log('\tcache_key: ' + cache_key);
         if (cfreader._config_cache[cache_key] !== undefined) {
             // console.log('\t' + name + ' is cached');
@@ -205,7 +205,7 @@ cfreader.read_config = function (name, type, cb, options) {
     }
 
     // load config file
-    var result = cfreader.load_config(name, type, options);
+    const result = cfreader.load_config(name, type, options);
     if (!cfreader.watch_files) return result;
 
     // We can watch the directory on these platforms which
@@ -249,8 +249,8 @@ function fsWatchDir (dirPath) {
     cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false }, function (fse, filename) {
         // console.log('event: ' + fse + ', ' + filename);
         if (!filename) return;
-        var full_path = path.join(dirPath, filename);
-        var args = cfreader._read_args[dirPath];
+        const full_path = path.join(dirPath, filename);
+        const args = cfreader._read_args[dirPath];
         // console.log(args);
         if (cfreader._sedation_timers[full_path]) {
             clearTimeout(cfreader._sedation_timers[full_path]);
@@ -265,15 +265,15 @@ function fsWatchDir (dirPath) {
 cfreader.read_dir = function (name, opts, done) {
 
     cfreader._read_args[name] = { opts: opts }
-    var type = opts.type || 'binary';
+    const type = opts.type || 'binary';
 
     isDirectory(name)
         .then((result) => {
             return fsReadDir(name);
         })
         .then((result2) => {
-            var reader = require('./readers/' + type);
-            var promises = [];
+            const reader = require('./readers/' + type);
+            const promises = [];
             result2.forEach(function (file) {
                 promises.push(reader.loadPromise(path.resolve(name, file)))
             });
@@ -294,16 +294,16 @@ cfreader.ensure_enoent_timer = function () {
     if (cfreader._enoent_timer) return;
     // Create timer
     cfreader._enoent_timer = setInterval(function () {
-        var files = Object.keys(cfreader._enoent_files);
-        for (var i=0; i<files.length; i++) {
-            var fileOuter = files[i];
+        const files = Object.keys(cfreader._enoent_files);
+        for (let i=0; i<files.length; i++) {
+            const fileOuter = files[i];
             /* BLOCK SCOPE */
             (function (file) {
                 fs.stat(file, function (err) {
                     if (err) return;
                     // File now exists
                     delete(cfreader._enoent_files[file]);
-                    var args = cfreader._read_args[file];
+                    const args = cfreader._read_args[file];
                     cfreader.load_config(
                         file, args.type, args.options, args.cb);
                     cfreader._watchers[file] = fs.watch(
@@ -325,13 +325,13 @@ cfreader.get_filetype_reader = function (type) {
 };
 
 cfreader.load_config = function (name, type, options) {
-    var result;
+    let result;
 
     if (!type) {
         type = path.extname(name).toLowerCase().substring(1);
     }
 
-    var cfrType = cfreader.get_filetype_reader(type);
+    let cfrType = cfreader.get_filetype_reader(type);
 
     if (!fs.existsSync(name)) {
 
@@ -339,7 +339,7 @@ cfreader.load_config = function (name, type, options) {
             return cfrType.empty(options, type);
         }
 
-        var yaml_name = name.replace(/\.json$/, '.yaml');
+        const yaml_name = name.replace(/\.json$/, '.yaml');
         if (!fs.existsSync(yaml_name)) {
             return cfrType.empty(options, type);
         }
@@ -349,7 +349,7 @@ cfreader.load_config = function (name, type, options) {
         cfrType = cfreader.get_filetype_reader(type);
     }
 
-    var cache_key = cfreader.get_cache_key(name, options);
+    const cache_key = cfreader.get_cache_key(name, options);
     try {
         switch (type) {
             case 'ini':
@@ -380,11 +380,11 @@ cfreader.process_file_overrides = function (name, options, result) {
     // We might be re-loading this file:
     //     * build a list of cached overrides
     //     * remove them and add them back
-    var cp = cfreader.config_path;
-    var cache_key = cfreader.get_cache_key(name, options);
+    const cp = cfreader.config_path;
+    const cache_key = cfreader.get_cache_key(name, options);
     if (cfreader._config_cache[cache_key]) {
-        var ck_keys = Object.keys(cfreader._config_cache[cache_key]);
-        for (var i=0; i<ck_keys.length; i++) {
+        const ck_keys = Object.keys(cfreader._config_cache[cache_key]);
+        for (let i=0; i<ck_keys.length; i++) {
             if (ck_keys[i].substr(0,1) !== '!') continue;
             delete cfreader._config_cache[path.join(cp, ck_keys[i].substr(1))];
         }
@@ -393,10 +393,10 @@ cfreader.process_file_overrides = function (name, options, result) {
     // Allow JSON files to create or overwrite other
     // configuration file data by prefixing the
     // outer variable name with ! e.g. !smtp.ini
-    var keys = Object.keys(result);
-    for (var j=0; j<keys.length; j++) {
+    const keys = Object.keys(result);
+    for (let j=0; j<keys.length; j++) {
         if (keys[j].substr(0,1) !== '!') continue;
-        var fn = keys[j].substr(1);
+        const fn = keys[j].substr(1);
         // Overwrite the config cache for this filename
         console.log('Overriding file ' + fn + ' with config from ' + name);
         cfreader._config_cache[path.join(cp, fn)] = result[keys[j]];

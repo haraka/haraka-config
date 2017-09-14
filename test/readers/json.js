@@ -1,6 +1,6 @@
 'use strict';
 
-var _set_up = function (done) {
+const _set_up = function (done) {
     this.json = require('../../readers/json');
     done();
 };
@@ -19,7 +19,7 @@ exports.load = {
     },
     'loads the test JSON file': function (test) {
         test.expect(3);
-        var result = this.json.load('test/config/test.json');
+        const result = this.json.load('test/config/test.json');
         // console.log(result);
         test.equal(result.matt, 'waz here');
         test.ok(result.array.length);

@@ -1,8 +1,8 @@
 'use strict';
 
-var fs = require('fs');
+const fs = require('fs');
 
-var _set_up = function (done) {
+const _set_up = function (done) {
     this.bin = require('../../readers/binary');
     done();
 };
@@ -21,8 +21,8 @@ exports.load = {
     },
     'loads the test binary file': function (test) {
         test.expect(3);
-        var testBin = 'test/config/test.binary';
-        var result = this.bin.load(testBin);
+        const testBin = 'test/config/test.binary';
+        const result = this.bin.load(testBin);
         test.ok(Buffer.isBuffer(result));
         test.equal(result.length, 120);
         test.deepEqual(result, fs.readFileSync(testBin));

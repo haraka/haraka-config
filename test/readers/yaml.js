@@ -1,6 +1,6 @@
 'use strict';
 
-var _set_up = function (done) {
+const _set_up = function (done) {
     this.yaml = require('../../readers/yaml');
     done();
 };
@@ -19,7 +19,7 @@ exports.load = {
     },
     'loads the test yaml file': function (test) {
         test.expect(4);
-        var result = this.yaml.load('test/config/test.yaml');
+        const result = this.yaml.load('test/config/test.yaml');
         test.strictEqual(result.main.bool_true, true);
         test.equal(result.matt, 'waz here');
         test.ok(result.array.length);
