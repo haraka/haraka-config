@@ -1,8 +1,8 @@
 'use strict';
 
-var regex = require('../../configfile').regex;
+const regex = require('../../configfile').regex;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
     this.flat = require('../../readers/flat');
     done();
 };
@@ -21,21 +21,21 @@ exports.load = {
     },
     'loads the test flat file, as list': function (test) {
         test.expect(1);
-        var result = this.flat.load(
+        const result = this.flat.load(
             'test/config/test.flat', 'list', null, regex);
         test.deepEqual(result, [ 'line1', 'line2', 'line3', 'line5' ]);
         test.done();
     },
     'loads the test flat file, unspecified type': function (test) {
         test.expect(1);
-        var result = this.flat.load(
+        const result = this.flat.load(
             'test/config/test.flat', null, null, regex);
         test.deepEqual(result, 'line1');
         test.done();
     },
     'returns hostname for empty "me"': function (test) {
         test.expect(1);
-        var result = this.flat.load( 'test/config/me', null, null, regex);
+        const result = this.flat.load( 'test/config/me', null, null, regex);
         console.log(result);
         test.ok(result);
         test.done();
