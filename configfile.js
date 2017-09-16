@@ -7,7 +7,7 @@ const path = require('path');
 // for "ini" type files
 const regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
-    param:          /^\s*([\w@:\._\-\/\[\]]+)\s*(?:=\s*(.*?)\s*)?$/,
+    param:          /^\s*([\w@:._\-/[\]]+)\s*(?:=\s*(.*?)\s*)?$/,
     comment:        /^\s*[;#].*$/,
     line:           /^\s*(.*?)\s*$/,
     blank:          /^\s*$/,
