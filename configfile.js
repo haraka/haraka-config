@@ -30,7 +30,7 @@ cfreader._sedation_timers = {};
 cfreader._overrides = {};
 
 let config_dir_candidates = [
-    // these work when this file is required as './config.js'
+    // these work when this file is loaded as require('./config.js')
     path.join(__dirname, 'config'),    // Haraka ./config dir
     __dirname,                         // npm packaged plugins
 ];
@@ -48,14 +48,11 @@ function get_path_to_config_dir () {
         return;
     }
 
-    // these work when this file is required as 'haraka-config'
+    // these work when this is loaded with require('haraka-config')
     if (/node_modules\/haraka-config$/.test(__dirname)) {
         config_dir_candidates = [
-            // haraka/Haraka/tests/*
-            path.resolve(__dirname, '..', '..', 'config'),
-
-            // npm packaged modules
-            path.resolve(__dirname, '..', '..'),
+            path.join(__dirname, '..', '..', 'config'),  // haraka/Haraka/*
+            path.join(__dirname, '..', '..'),            // npm packaged modules
         ]
     }
 
@@ -277,16 +274,16 @@ cfreader.read_dir = function (name, opts, done) {
         .then((result) => {
             return fsReadDir(name);
         })
-        .then((result2) => {
+        .then((fileList) => {
             const reader = require('./readers/' + type);
             const promises = [];
-            result2.forEach(function (file) {
+            fileList.forEach((file) => {
                 promises.push(reader.loadPromise(path.resolve(name, file)))
             });
             return Promise.all(promises);
         })
         .then((fileList) => {
-        // console.log(fileList);
+            // console.log(fileList);
             done(null, fileList);
         })
         .catch((error) => {

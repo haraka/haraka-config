@@ -337,12 +337,23 @@ exports.merged = {
     },
 }
 
+const tmpFile = path.resolve('test', 'config', 'dir', '4.ext');
+
+function cleanup (done) {
+    fs.unlink(tmpFile, () => {
+        done();
+    })
+}
+
 exports.getDir = {
-    'setUp' : setUp,
+    'setUp' : function (done) {
+        process.env.HARAKA = '';
+        clearRequireCache();
+        this.config = require('../config');
+        cleanup(done);
+    },
     'tearDown' : function (done) {
-        fs.unlink(path.resolve('test','config','dir', '4.ext'), function () {
-            done();
-        })
+        cleanup(done);
     },
     'loads all files in dir' : function (test) {
         test.expect(4);
@@ -366,9 +377,8 @@ exports.getDir = {
     'reloads when file in dir is touched' : function (test) {
         test.expect(6);
         const self = this;
-        const tmpFile = path.resolve('test','config','dir', '4.ext');
         let callCount = 0;
-        const getDirDone = function (err, files) {
+        function getDirDone (err, files) {
             // console.log('Loading: test/config/dir');
             if (err) console.error(err);
             callCount++;
@@ -378,12 +388,11 @@ exports.getDir = {
                 test.equal(files.length, 3);
                 test.equal(files[0].data, 'contents1\n');
                 test.equal(files[2].data, 'contents3\n');
-                fs.writeFile(tmpFile, 'contents4\n', function (err2, res) {
+                fs.writeFile(tmpFile, 'contents4\n', (err2, res) => {
                     test.equal(err2, null);
                     // console.log('file touched, waiting for callback');
                     // console.log(res);
                 });
-                return;
             }
             if (callCount === 2) {
                 test.equal(files[3].data, 'contents4\n');
