@@ -1,6 +1,7 @@
 
 ## 1.0.14 - 2017-09-19
 
+- add __dirname/../../config to config_dir_candidates for haraka/Haraka/tests/*
 - sync process.env.HARAKA_TEST_DIR from haraka/Haraka/config
 - eslint no-var updates #25
 
