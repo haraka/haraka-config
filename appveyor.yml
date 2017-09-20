@@ -1,7 +1,7 @@
 version: 1.0.{build}
 
 environment:
-  nodejs_version: "4"
+  nodejs_version: "6"
 
 # Install scripts. (runs after repo cloning)
 install:

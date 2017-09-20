@@ -2,11 +2,11 @@
 
 process.env.NODE_ENV = 'test'
 
-var fs   = require('fs');
-var path = require('path');
+const fs   = require('fs');
+const path = require('path');
 
-var cb = function () { return false; };
-var opts = { booleans: ['arg1'] };
+const cb = function () { return false; };
+const opts = { booleans: ['arg1'] };
 
 function clearRequireCache () {
     // node_unit runs all the tests in the same process, so the process.env
@@ -36,7 +36,7 @@ exports.config = {
     },
     'module_config' : function (test) {
         test.expect(2);
-        var c = this.config.module_config('foo', 'bar');
+        const c = this.config.module_config('foo', 'bar');
         test.equal(c.root_path, path.join('foo','config'));
         test.equal(c.overrides_path, path.join('bar','config'));
         test.done();
@@ -48,7 +48,7 @@ exports.config_path = {
         test.expect(1);
         process.env.HARAKA = '/tmp';
         clearRequireCache();
-        var config = require('../config');
+        const config = require('../config');
         // console.log(config);
         test.equal(config.root_path, path.join('/tmp','config'));
         test.done();
@@ -58,9 +58,9 @@ exports.config_path = {
         process.env.HARAKA = '';
         process.env.NODE_ENV = 'not-test';
         clearRequireCache();
-        var config = require('../config');
+        const config = require('../config');
         // ./config doesn't exist so path will be resolved ./
-        test.ok(/haraka\-config$/.test(config.root_path));
+        test.ok(/haraka-config$/.test(config.root_path));
         process.env.NODE_ENV = 'test';
         test.done();
     },
@@ -174,13 +174,13 @@ exports.arrange_args = {
     },
 };
 
-var jsonRes = {
+const jsonRes = {
     matt: 'waz here',
     array: [ 'has an element' ],
     objecty: { 'has a property': 'with a value' }
 };
 
-var yamlRes = {
+const yamlRes = {
     main: {
         bool_true: true,
         bool_false: false,
@@ -206,8 +206,8 @@ var yamlRes = {
 
 function _test_get (test, name, type, callback, options, expected) {
     test.expect(1);
-    var config = require('../config');
-    var cfg = config.get(name, type, callback, options);
+    const config = require('../config');
+    const cfg = config.get(name, type, callback, options);
     test.deepEqual(cfg, expected);
     test.done();
 }
@@ -220,7 +220,7 @@ exports.get = {
     },
     'test (non-existing, cached)' : function (test) {
         test.expect(1);
-        var cfg = this.config.get('test', null, null);
+        const cfg = this.config.get('test', null, null);
         test.deepEqual(cfg, null);
         test.done();
     },
@@ -296,7 +296,7 @@ exports.get = {
     // config.get('test.bin', 'binary');
     'test.bin, type=binary' : function (test) {
         test.expect(2);
-        var res = this.config.get('test.binary', 'binary');
+        const res = this.config.get('test.binary', 'binary');
         test.equal(res.length, 120);
         test.ok(Buffer.isBuffer(res));
         test.done();
@@ -307,28 +307,28 @@ exports.merged = {
     'setUp' : setUp,
     'before_merge' : function (test) {
         test.expect(1);
-        var lc = this.config.module_config(
+        const lc = this.config.module_config(
             path.join('test','default')
         );
         test.deepEqual(lc.get('test.ini'),
             { main: {}, defaults: { one: 'one', two: 'two' } }
-            );
+        );
         test.done();
     },
     'after_merge': function (test) {
         test.expect(1);
-        var lc = this.config.module_config(
+        const lc = this.config.module_config(
             path.join('test','default'),
             path.join('test','override')
         );
         test.deepEqual(lc.get('test.ini'),
             { main: {}, defaults: { one: 'three', two: 'four' } }
-            );
+        );
         test.done();
     },
     'flat overridden' : function (test) {
         test.expect(1);
-        var lc = this.config.module_config(
+        const lc = this.config.module_config(
             path.join('test','default'),
             path.join('test','override')
         );
@@ -337,12 +337,23 @@ exports.merged = {
     },
 }
 
+const tmpFile = path.resolve('test', 'config', 'dir', '4.ext');
+
+function cleanup (done) {
+    fs.unlink(tmpFile, () => {
+        done();
+    })
+}
+
 exports.getDir = {
-    'setUp' : setUp,
+    'setUp' : function (done) {
+        process.env.HARAKA = '';
+        clearRequireCache();
+        this.config = require('../config');
+        cleanup(done);
+    },
     'tearDown' : function (done) {
-        fs.unlink(path.resolve('test','config','dir', '4.ext'), function () {
-            done();
-        })
+        cleanup(done);
     },
     'loads all files in dir' : function (test) {
         test.expect(4);
@@ -365,10 +376,9 @@ exports.getDir = {
     },
     'reloads when file in dir is touched' : function (test) {
         test.expect(6);
-        var self = this;
-        var tmpFile = path.resolve('test','config','dir', '4.ext');
-        var callCount = 0;
-        var getDirDone = function (err, files) {
+        const self = this;
+        let callCount = 0;
+        function getDirDone (err, files) {
             // console.log('Loading: test/config/dir');
             if (err) console.error(err);
             callCount++;
@@ -378,22 +388,21 @@ exports.getDir = {
                 test.equal(files.length, 3);
                 test.equal(files[0].data, 'contents1\n');
                 test.equal(files[2].data, 'contents3\n');
-                fs.writeFile(tmpFile, 'contents4\n', function (err, res) {
-                    test.equal(err, null);
+                fs.writeFile(tmpFile, 'contents4\n', (err2, res) => {
+                    test.equal(err2, null);
                     // console.log('file touched, waiting for callback');
                     // console.log(res);
                 });
-                return;
             }
             if (callCount === 2) {
                 test.equal(files[3].data, 'contents4\n');
                 test.done();
             }
         }
-        var getDir = function () {
-            var opts = { type: 'binary', watchCb: getDir };
-            self.config.getDir('dir', opts, getDirDone);
-        };
+        function getDir () {
+            const opts2 = { type: 'binary', watchCb: getDir };
+            self.config.getDir('dir', opts2, getDirDone);
+        }
         getDir();
     }
 }
