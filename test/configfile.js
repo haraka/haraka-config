@@ -377,8 +377,21 @@ exports.bad_config = {
     setUp: _set_up,
     'bad.yaml returns empty' : function (test) {
         test.expect(1);
-        const res = this.cfreader.load_config('test/config/bad.yaml');
-        test.deepEqual(res, {});
+        test.deepEqual(
+            this.cfreader.load_config('test/config/bad.yaml'),
+            {}
+        );
+        test.done();
+    },
+}
+
+exports.overrides = {
+    setUp: _set_up,
+    'missing json loads yaml instead' : function (test) {
+        test.expect(1);
+        test.deepEqual(
+            this.cfreader.load_config('test/config/override.json'),
+            { has: { value: true } });
         test.done();
     },
 }
