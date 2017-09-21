@@ -317,8 +317,12 @@ cfreader.ensure_enoent_timer = function () {
 };
 
 cfreader.get_filetype_reader = function (type) {
-    if (/^(list|value|data)$/.test(type)) {
-        return require('./readers/flat');
+    switch (type) {
+        case 'list':
+        case 'value':
+        case 'data':
+        case '':
+            return require('./readers/flat');
     }
     return require('./readers/' + type);
 };
@@ -389,15 +393,14 @@ cfreader.process_file_overrides = function (name, options, result) {
         }
     }
 
-    // Allow JSON files to create or overwrite other
-    // configuration file data by prefixing the
-    // outer variable name with ! e.g. !smtp.ini
+    // Allow JSON files to create or overwrite other config file data
+    // by prefixing the outer variable name with ! e.g. !smtp.ini
     const keys = Object.keys(result);
     for (let j=0; j<keys.length; j++) {
         if (keys[j].substr(0,1) !== '!') continue;
         const fn = keys[j].substr(1);
         // Overwrite the config cache for this filename
-        console.log('Overriding file ' + fn + ' with config from ' + name);
+        console.log(`Overriding file ${fn} with config from ${name}`);
         cfreader._config_cache[path.join(cp, fn)] = result[keys[j]];
     }
 };
