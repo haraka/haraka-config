@@ -21,6 +21,7 @@ function clearRequireCache () {
 function setUp (done) {
     process.env.NODE_ENV = 'test'
     process.env.HARAKA = '';
+    process.env.WITHOUT_CONFIG_CACHE = '1';
     clearRequireCache();
     this.config = require('../config');
     done();
@@ -218,6 +219,7 @@ exports.get = {
         _test_get(test, 'test', null, null, null, null);
     },
     'test (non-existing, cached)' : function (test) {
+        process.env.WITHOUT_CONFIG_CACHE= '';
         test.expect(1);
         const cfg = this.config.get('test', null, null);
         test.deepEqual(cfg, null);
@@ -238,7 +240,31 @@ exports.get = {
                 intlist: [ '123', '456', '789' ],
             },
             'foo.com': { is_bool: 'true' },
-            'bar.com': { is_bool: 'false' }
+            'bar.com': { is_bool: 'false' },
+            has_nums: { integer: 454, float: 10.5 },
+        });
+    },
+
+    'test.ini, opts' : function (test) {
+        _test_get(test, 'test.ini', 'ini', null, {
+            booleans: [
+                '*.bool_true',
+                '*.bool_false',
+            ]
+        }, {
+            main: { bool_true: true, bool_false: false, str_true: 'true', str_false: 'false' },
+            sect1: { bool_true: true, bool_false: false, str_true: 'true', str_false: 'false' },
+            whitespace: { str_no_trail: 'true', str_trail: 'true' },
+            funnychars: { 'results.auth/auth_base.fail': 'fun' },
+            empty_values: { first: undefined, second: undefined },
+            has_ipv6: { '2605:ae00:329::2': undefined },
+            array_test: {
+                hostlist: [ 'first_host', 'second_host', 'third_host' ],
+                intlist: [ '123', '456', '789' ],
+            },
+            'foo.com': { is_bool: 'true' },
+            'bar.com': { is_bool: 'false' },
+            has_nums: { integer: 454, float: 10.5 },
         });
     },
 
@@ -425,6 +451,7 @@ exports.jsonOverrides = {
     },
     'with smtpgreeting override': function (test) {
         test.expect(1);
+        process.env.WITHOUT_CONFIG_CACHE='';
         const main = this.config.get('main.json');
         console.log(main);
         test.deepEqual(
