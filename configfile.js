@@ -35,7 +35,7 @@ let config_dir_candidates = [
     __dirname,                         // npm packaged plugins
 ];
 
-function get_path_to_config_dir () {
+cfreader.get_path_to_config_dir = function () {
     if (process.env.HARAKA) {
         // console.log('process.env.HARAKA: ' + process.env.HARAKA);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
@@ -49,7 +49,7 @@ function get_path_to_config_dir () {
     }
 
     // these work when this is loaded with require('haraka-config')
-    if (/node_modules\/haraka-config$/.test(__dirname)) {
+    if (/node_modules[\\/]haraka-config$/.test(__dirname)) {
         config_dir_candidates = [
             path.join(__dirname, '..', '..', 'config'),  // haraka/Haraka/*
             path.join(__dirname, '..', '..'),            // npm packaged modules
@@ -70,7 +70,7 @@ function get_path_to_config_dir () {
         }
     }
 }
-get_path_to_config_dir();
+exports.get_path_to_config_dir();
 // console.log('cfreader.config_path: ' + cfreader.config_path);
 
 cfreader.on_watch_event = function (name, type, options, cb) {
@@ -164,26 +164,22 @@ cfreader.watch_file = function (name, type, cb, options) {
 };
 
 cfreader.get_cache_key = function (name, options) {
-    let result;
 
     // Ignore options etc. if this is an overriden value
-    if (cfreader._overrides[name]) {
-        result = name;
-    }
-    else if (options) {
+    if (cfreader._overrides[name]) return name;
+
+    if (options) {
         // this ordering of objects isn't guaranteed to be consistent, but I've
         // heard that it typically is.
-        result = name + JSON.stringify(options);
-    }
-    else if (cfreader._read_args[name] && cfreader._read_args[name].options) {
-        result = name + JSON.stringify(cfreader._read_args[name].options);
-    }
-    else {
-        result = name;
+        return name + JSON.stringify(options);
     }
 
-    return result;
-};
+    if (cfreader._read_args[name] && cfreader._read_args[name].options) {
+        return name + JSON.stringify(cfreader._read_args[name].options);
+    }
+
+    return name;
+}
 
 cfreader.read_config = function (name, type, cb, options) {
     // Store arguments used so we can:

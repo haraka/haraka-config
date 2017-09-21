@@ -1,6 +1,6 @@
 'use strict';
 
-process.env.NODE_ENV === 'test';
+// process.env.NODE_ENV === 'test';
 
 const _set_up = function (done) {
     this.cfreader = require('../configfile');
@@ -392,6 +392,34 @@ exports.overrides = {
         test.deepEqual(
             this.cfreader.load_config('test/config/override.json'),
             { has: { value: true } });
+        test.done();
+    },
+}
+
+exports.get_path_to_config_dir = {
+    setUp: _set_up,
+    'Haraka runtime (env.HARAKA=*)' : function (test) {
+        test.expect(1);
+        process.env.HARAKA = '/etc/';
+        this.cfreader.get_path_to_config_dir();
+        test.ok(/etc.config$/.test(this.cfreader.config_path), this.cfreader.config_path);
+        delete process.env.HARAKA;
+        test.done();
+    },
+    'env.NODE_ENV=test' : function (test) {
+        test.expect(1);
+        process.env.NODE_ENV === 'test';
+        this.cfreader.get_path_to_config_dir();
+        test.ok(/haraka-config.test.config$/.test(this.cfreader.config_path), this.cfreader.config_path);
+        delete process.env.NODE_ENV;
+        test.done();
+    },
+    'no $ENV defaults to ./config (if present) or ./' : function (test) {
+        test.expect(1);
+        delete process.env.HARAKA;
+        delete process.env.NODE_ENV;
+        this.cfreader.get_path_to_config_dir();
+        test.ok(/haraka-config$/.test(this.cfreader.config_path), this.cfreader.config_path);
         test.done();
     },
 }

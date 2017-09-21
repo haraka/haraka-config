@@ -375,6 +375,12 @@ exports.getDir = {
         })
     },
     'reloads when file in dir is touched' : function (test) {
+        if (/darwin/.test(process.platform)) {
+            // due to differences in fs.watch, this test is not reliable on
+            // Mac OS X
+            test.done();
+            return;
+        }
         test.expect(6);
         const self = this;
         let callCount = 0;
