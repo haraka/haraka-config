@@ -4,6 +4,8 @@
 - additional test for 'missing json loads yaml'
 - modify get_path_to_config_dir regex to also match windows paths
 - add tests for get_path_to_config_dir
+- configs w/o .ext or declared type default to flat
+- add test for json/yaml !filename overloads
 
 ## 1.0.14 - 2017-09-19
 
