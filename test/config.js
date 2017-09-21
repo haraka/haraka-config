@@ -1,7 +1,5 @@
 'use strict';
 
-process.env.NODE_ENV = 'test'
-
 const fs   = require('fs');
 const path = require('path');
 
@@ -21,6 +19,7 @@ function clearRequireCache () {
 }
 
 function setUp (done) {
+    process.env.NODE_ENV = 'test'
     process.env.HARAKA = '';
     clearRequireCache();
     this.config = require('../config');
@@ -375,6 +374,12 @@ exports.getDir = {
         })
     },
     'reloads when file in dir is touched' : function (test) {
+        if (/darwin/.test(process.platform)) {
+            // due to differences in fs.watch, this test is not reliable on
+            // Mac OS X
+            test.done();
+            return;
+        }
         test.expect(6);
         const self = this;
         let callCount = 0;
@@ -404,5 +409,28 @@ exports.getDir = {
             self.config.getDir('dir', opts2, getDirDone);
         }
         getDir();
+    }
+}
+
+exports.jsonOverrides = {
+    'setUp' : setUp,
+    'no override for smtpgreeting': function (test) {
+        test.expect(1);
+        // console.log(this.config);
+        test.deepEqual(
+            this.config.get('smtpgreeting', 'list'),
+            []
+        );
+        test.done();
+    },
+    'with smtpgreeting override': function (test) {
+        test.expect(1);
+        const main = this.config.get('main.json');
+        console.log(main);
+        test.deepEqual(
+            this.config.get('smtpgreeting', 'list'),
+            [ 'this is line one', 'this is line two' ]
+        );
+        test.done();
     }
 }

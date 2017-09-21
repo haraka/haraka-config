@@ -35,7 +35,7 @@ let config_dir_candidates = [
     __dirname,                         // npm packaged plugins
 ];
 
-function get_path_to_config_dir () {
+cfreader.get_path_to_config_dir = function () {
     if (process.env.HARAKA) {
         // console.log('process.env.HARAKA: ' + process.env.HARAKA);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
@@ -49,7 +49,7 @@ function get_path_to_config_dir () {
     }
 
     // these work when this is loaded with require('haraka-config')
-    if (/node_modules\/haraka-config$/.test(__dirname)) {
+    if (/node_modules[\\/]haraka-config$/.test(__dirname)) {
         config_dir_candidates = [
             path.join(__dirname, '..', '..', 'config'),  // haraka/Haraka/*
             path.join(__dirname, '..', '..'),            // npm packaged modules
@@ -70,7 +70,7 @@ function get_path_to_config_dir () {
         }
     }
 }
-get_path_to_config_dir();
+exports.get_path_to_config_dir();
 // console.log('cfreader.config_path: ' + cfreader.config_path);
 
 cfreader.on_watch_event = function (name, type, options, cb) {
@@ -164,26 +164,22 @@ cfreader.watch_file = function (name, type, cb, options) {
 };
 
 cfreader.get_cache_key = function (name, options) {
-    let result;
 
     // Ignore options etc. if this is an overriden value
-    if (cfreader._overrides[name]) {
-        result = name;
-    }
-    else if (options) {
+    if (cfreader._overrides[name]) return name;
+
+    if (options) {
         // this ordering of objects isn't guaranteed to be consistent, but I've
         // heard that it typically is.
-        result = name + JSON.stringify(options);
-    }
-    else if (cfreader._read_args[name] && cfreader._read_args[name].options) {
-        result = name + JSON.stringify(cfreader._read_args[name].options);
-    }
-    else {
-        result = name;
+        return name + JSON.stringify(options);
     }
 
-    return result;
-};
+    if (cfreader._read_args[name] && cfreader._read_args[name].options) {
+        return name + JSON.stringify(cfreader._read_args[name].options);
+    }
+
+    return name;
+}
 
 cfreader.read_config = function (name, type, cb, options) {
     // Store arguments used so we can:
@@ -321,8 +317,12 @@ cfreader.ensure_enoent_timer = function () {
 };
 
 cfreader.get_filetype_reader = function (type) {
-    if (/^(list|value|data)$/.test(type)) {
-        return require('./readers/flat');
+    switch (type) {
+        case 'list':
+        case 'value':
+        case 'data':
+        case '':
+            return require('./readers/flat');
     }
     return require('./readers/' + type);
 };
@@ -393,15 +393,14 @@ cfreader.process_file_overrides = function (name, options, result) {
         }
     }
 
-    // Allow JSON files to create or overwrite other
-    // configuration file data by prefixing the
-    // outer variable name with ! e.g. !smtp.ini
+    // Allow JSON files to create or overwrite other config file data
+    // by prefixing the outer variable name with ! e.g. !smtp.ini
     const keys = Object.keys(result);
     for (let j=0; j<keys.length; j++) {
         if (keys[j].substr(0,1) !== '!') continue;
         const fn = keys[j].substr(1);
         // Overwrite the config cache for this filename
-        console.log('Overriding file ' + fn + ' with config from ' + name);
+        console.log(`Overriding file ${fn} with config from ${name}`);
         cfreader._config_cache[path.join(cp, fn)] = result[keys[j]];
     }
 };
