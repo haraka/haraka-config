@@ -1,8 +1,8 @@
 'use strict';
 
-var fs = require('fs');
+const fs = require('fs');
 
-exports.load = function(name) {
+exports.load = function (name) {
     return JSON.parse(fs.readFileSync(name));
 };
 

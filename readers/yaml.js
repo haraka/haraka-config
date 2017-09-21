@@ -1,9 +1,9 @@
 'use strict';
 
-var fs   = require('fs');
-var yaml = require('js-yaml');
+const fs   = require('fs');
+const yaml = require('js-yaml');
 
-exports.load = function(name) {
+exports.load = function (name) {
     return yaml.safeLoad(fs.readFileSync(name, 'utf8'));
 };
 

@@ -1,27 +1,26 @@
 'use strict';
 
-var fs = require('fs');
+const fs = require('fs');
 
 exports.load = function (name, type, options, regex) {
-    var result = [];
+    let result = [];
 
-    var data = fs.readFileSync(name, 'UTF-8');
+    let data = fs.readFileSync(name, 'UTF-8');
     if (type === 'data') {
         while (data.length > 0) {
-            var match = data.match(/^([^\r\n]*)\r?\n?/);
+            const match = data.match(/^([^\r\n]*)\r?\n?/);
             result.push(match[1]);
             data = data.slice(match[0].length);
         }
         return result;
     }
 
-    data.split(/\r\n|\r|\n/).forEach( function(line) {
-        var line_data;
+    data.split(/\r\n|\r|\n/).forEach( function (line) {
         if (regex.comment.test(line)) { return; }
         if (regex.blank.test(line))   { return; }
 
-        line_data = regex.line.exec(line);
-        if (!line_data) { return; }
+        const line_data = regex.line.exec(line);
+        if (!line_data) return;
 
         result.push(line_data[1].trim());
     });
@@ -29,13 +28,13 @@ exports.load = function (name, type, options, regex) {
     if (result.length && type !== 'list' && type !== 'data') {
         result = result[0];
         if (options && in_array(result, options.booleans)) {
-            result = regex.is_truth.test(result);
+            return regex.is_truth.test(result);
         }
-        else if (regex.is_integer.test(result)) {
-            result = parseInt(result, 10);
+        if (regex.is_integer.test(result)) {
+            return parseInt(result, 10);
         }
-        else if (regex.is_float.test(result)) {
-            result = parseFloat(result);
+        if (regex.is_float.test(result)) {
+            return parseFloat(result);
         }
         return result;
     }
