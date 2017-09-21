@@ -1,4 +1,10 @@
 
+## 1.0.15 - 2017-09-21
+
+- additional test for 'missing json loads yaml'
+- modify get_path_to_config_dir regex to also match windows paths
+- add tests for get_path_to_config_dir
+
 ## 1.0.14 - 2017-09-19
 
 - add __dirname/../../config to config_dir_candidates for haraka/Haraka/tests/*
