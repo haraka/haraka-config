@@ -1,15 +1,16 @@
 'use strict';
 
-// process.env.NODE_ENV === 'test';
+// const path = require('path');
 
-const _set_up = function (done) {
+function _setUp (done) {
+    process.env.NODE_ENV === 'test';
     this.cfreader = require('../configfile');
     this.opts = { booleans: ['main.bool_true','main.bool_false'] };
     done();
-};
+}
 
 exports.load_config = {
-    setUp: _set_up,
+    setUp: _setUp,
     'non-exist.ini empty' : function (test) {
         test.expect(1);
         test.deepEqual(
@@ -158,7 +159,7 @@ exports.load_config = {
 };
 
 exports.get_filetype_reader  = {
-    setUp: _set_up,
+    setUp: _setUp,
     'binary': function (test) {
         test.expect(2);
         const reader = this.cfreader.get_filetype_reader('binary');
@@ -218,7 +219,7 @@ exports.get_filetype_reader  = {
 };
 
 exports.non_existing = {
-    setUp: _set_up,
+    setUp: _setUp,
 
     'empty object for JSON files': function (test) {
         test.expect(1);
@@ -280,7 +281,7 @@ exports.non_existing = {
 };
 
 exports.get_cache_key = {
-    setUp: _set_up,
+    setUp: _setUp,
     'no options is the name': function (test) {
         test.expect(1);
         test.equal(this.cfreader.get_cache_key('test'),
@@ -303,7 +304,7 @@ exports.get_cache_key = {
 };
 
 exports.regex = {
-    setUp: _set_up,
+    setUp: _setUp,
     'section': function (test) {
         test.expect(4);
         test.equal(this.cfreader.regex.section.test('[foo]'), true);
@@ -374,7 +375,7 @@ exports.regex = {
 }
 
 exports.bad_config = {
-    setUp: _set_up,
+    setUp: _setUp,
     'bad.yaml returns empty' : function (test) {
         test.expect(1);
         test.deepEqual(
@@ -386,7 +387,7 @@ exports.bad_config = {
 }
 
 exports.overrides = {
-    setUp: _set_up,
+    setUp: _setUp,
     'missing json loads yaml instead' : function (test) {
         test.expect(1);
         test.deepEqual(
@@ -397,7 +398,7 @@ exports.overrides = {
 }
 
 exports.get_path_to_config_dir = {
-    setUp: _set_up,
+    setUp: _setUp,
     'Haraka runtime (env.HARAKA=*)' : function (test) {
         test.expect(1);
         process.env.HARAKA = '/etc/';
@@ -406,7 +407,7 @@ exports.get_path_to_config_dir = {
         delete process.env.HARAKA;
         test.done();
     },
-    'env.NODE_ENV=test' : function (test) {
+    'NODE_ENV=test' : function (test) {
         test.expect(1);
         process.env.NODE_ENV === 'test';
         this.cfreader.get_path_to_config_dir();
