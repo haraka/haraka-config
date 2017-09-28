@@ -337,18 +337,18 @@ cfreader.load_config = function (name, type, options) {
     let cfrType = cfreader.get_filetype_reader(type);
 
     if (!fs.existsSync(name)) {
-
-        if (!/\.json$/.test(name)) {
+        if (!/\.h?json$/.test(name)) {
             return cfrType.empty(options, type);
         }
 
-        const yaml_name = name.replace(/\.json$/, '.yaml');
+        const yaml_name = name.replace(/\.h?json$/, '.yaml');
         if (!fs.existsSync(yaml_name)) {
             return cfrType.empty(options, type);
         }
 
         name = yaml_name;
         type = 'yaml';
+
         cfrType = cfreader.get_filetype_reader(type);
     }
 
@@ -358,6 +358,7 @@ cfreader.load_config = function (name, type, options) {
             case 'ini':
                 result = cfrType.load(name, options, regex);
                 break;
+            case 'hjson':
             case 'json':
             case 'yaml':
                 result = cfrType.load(name);

@@ -1,0 +1,11 @@
+{
+	# specify smtp greeting (because comments are helpful!)
+    "!smtpgreeting":
+    [
+		# yes, commas are optional!
+    	"this is line one for hjson"
+    	"this is line two for hjson"
+    ]
+	// prefer c-style comments?
+	/* feeling old fashioned? */
+}

@@ -174,6 +174,13 @@ exports.get_filetype_reader  = {
         test.equal(typeof reader.empty, 'function');
         test.done();
     },
+    'hjson': function (test) {
+        test.expect(2);
+        const reader = this.cfreader.get_filetype_reader('hjson');
+        test.equal(typeof reader.load, 'function');
+        test.equal(typeof reader.empty, 'function');
+        test.done();
+    },
     'json': function (test) {
         test.expect(2);
         const reader = this.cfreader.get_filetype_reader('json');
@@ -221,6 +228,14 @@ exports.get_filetype_reader  = {
 exports.non_existing = {
     setUp: _setUp,
 
+    'empty object for HJSON files': function (test) {
+        test.expect(1);
+        const result = this.cfreader.load_config(
+            'test/config/non-existent.hjson'
+        );
+        test.deepEqual(result, {});
+        test.done();
+    },
     'empty object for JSON files': function (test) {
         test.expect(1);
         const result = this.cfreader.load_config(
@@ -388,6 +403,13 @@ exports.bad_config = {
 
 exports.overrides = {
     setUp: _setUp,
+    'missing hjson loads yaml instead' : function (test) {
+        test.expect(1);
+        test.deepEqual(
+            this.cfreader.load_config('test/config/override2.hjson'),
+            { hasDifferent: { value: false } });
+        test.done();
+    },
     'missing json loads yaml instead' : function (test) {
         test.expect(1);
         test.deepEqual(
