@@ -1,10 +1,10 @@
 'use strict';
 
 const fs = require('fs');
-const Hjson = require('hjson');
+const hjson = require('hjson');
 
 exports.load = function (name) {
-    return Hjson.parse(fs.readFileSync(name, "utf8"));
+    return hjson.parse(fs.readFileSync(name, "utf8"));
 };
 
 exports.empty = function () {
