@@ -54,8 +54,12 @@ Config.prototype.getDir = function (name, opts, done) {
 };
 
 function merge_config (defaults, overrides, type) {
-    if (type === 'ini' || type === 'hjson' || type === 'json' || type === 'yaml') {
-        return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides);
+    switch (type) {
+        case 'ini':
+        case 'hjson':
+        case 'json':
+        case 'yaml':
+            return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides);
     }
 
     if (Array.isArray(overrides) && Array.isArray(defaults) &&
