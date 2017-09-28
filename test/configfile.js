@@ -403,11 +403,11 @@ exports.bad_config = {
 
 exports.overrides = {
     setUp: _setUp,
-    'missing hjson loads json instead' : function (test) {
+    'missing hjson loads yaml instead' : function (test) {
         test.expect(1);
         test.deepEqual(
             this.cfreader.load_config('test/config/override2.hjson'),
-            { has: { value: true } });
+            { hasDifferent: { value: false } });
         test.done();
     },
     'missing json loads yaml instead' : function (test) {

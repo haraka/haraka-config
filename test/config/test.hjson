@@ -1,17 +1,19 @@
 {
 	// sign matt (because comments are helpful!)
-	"matt": "waz here",
+	"matt": "waz here and also made comments",
 
 	// fill in this array
-	"array": [
-		"has an element"
+	"differentArray": [
+		"has element #1",
+		'has element #2'
 	]
 	# best of all
 	# yes, commas are optional!
 
 	/* feeling old fashioned? */
-	"objecty": {
+	"object": {
 		// prefer c-style comments?
-		"has a property": with a value
+		"has a property one": 'with a value A',
+        'has a property two': with a value B
 	}
 }

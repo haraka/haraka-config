@@ -183,9 +183,12 @@ exports.arrange_args = {
 };
 
 const hjsonRes = {
-    matt: 'waz here',
-    array: [ 'has an element' ],
-    objecty: { 'has a property': 'with a value' }
+    matt: 'waz here and also made comments',
+    differentArray: [ 'has element #1', 'has element #2' ],
+    object: {
+        'has a property one': 'with a value A',
+        'has a property two': 'with a value B'
+    }
 };
 
 const jsonRes = {
@@ -337,8 +340,8 @@ exports.get = {
         _test_get(test, 'test.yaml', 'yaml', null, null, yamlRes);
     },
     // config.get('missing2.hjson');
-    'missing2.json, asked for hjson' : function (test) {
-        _test_get(test, 'missing2.hjson', 'hjson', null, null, {"matt": "waz here"});
+    'missing2.yaml, asked for hjson' : function (test) {
+        _test_get(test, 'missing2.hjson', 'hjson', null, null, {"matt": "waz here - hjson type"});
     },
     // config.get('missing.json');
     'missing.yaml, asked for json' : function (test) {
@@ -483,7 +486,7 @@ exports.hjsonOverrides = {
         console.log(main);
         test.deepEqual(
             this.config.get('smtpgreeting', 'list'),
-            [ 'this is line one', 'this is line two' ]
+            [ 'this is line one for hjson', 'this is line two for hjson' ]
         );
         test.done();
     }

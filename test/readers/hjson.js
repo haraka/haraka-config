@@ -18,12 +18,13 @@ exports.load = {
         test.done();
     },
     'loads the test HJSON file': function (test) {
-        test.expect(3);
+        test.expect(4);
         const result = this.hjson.load('test/config/test.hjson');
         // console.log(result);
-        test.equal(result.matt, 'waz here');
-        test.ok(result.array.length);
-        test.ok(result.objecty['has a property']);
+        test.equal(result.matt, 'waz here and also made comments');
+        test.ok(result.differentArray.length);
+        test.ok(result.object['has a property one']);
+        test.ok(result.object['has a property two']);
         test.done();
     },
 };
