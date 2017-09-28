@@ -157,6 +157,14 @@ exports.arrange_args = {
         test.done();
     },
     // config.get('name', type, cb, options);
+    'name, hjson type, callback, options' : function (test) {
+        test.expect(1);
+        test.deepEqual(
+            this.config.arrange_args(['test.ini','hjson',cb, opts]),
+            ['test.ini', 'hjson', cb, opts]);
+        test.done();
+    },
+    // config.get('name', type, cb, options);
     'name, json type, callback, options' : function (test) {
         test.expect(1);
         test.deepEqual(
@@ -172,6 +180,12 @@ exports.arrange_args = {
             ['test.ini', 'data', cb, opts]);
         test.done();
     },
+};
+
+const hjsonRes = {
+    matt: 'waz here',
+    array: [ 'has an element' ],
+    objecty: { 'has a property': 'with a value' }
 };
 
 const jsonRes = {
@@ -296,6 +310,15 @@ exports.get = {
             ['line1', 'line2','line3', '', 'line5'] );
     },
 
+    // config.get('test.hjson');
+    'test.hjson, type=' : function (test) {
+        _test_get(test, 'test.hjson', null, null, null, hjsonRes);
+    },
+    // config.get('test.hjson', 'hjson');
+    'test.hjson, type=hjson' : function (test) {
+        _test_get(test, 'test.hjson', 'hjson', null, null, hjsonRes);
+    },
+
     // config.get('test.json');
     'test.json, type=' : function (test) {
         _test_get(test, 'test.json', null, null, null, jsonRes);
@@ -312,6 +335,10 @@ exports.get = {
     // config.get('test.yaml', 'yaml');
     'test.yaml, type=yaml' : function (test) {
         _test_get(test, 'test.yaml', 'yaml', null, null, yamlRes);
+    },
+    // config.get('missing2.hjson');
+    'missing2.json, asked for hjson' : function (test) {
+        _test_get(test, 'missing2.hjson', 'hjson', null, null, {"matt": "waz here"});
     },
     // config.get('missing.json');
     'missing.yaml, asked for json' : function (test) {
@@ -435,6 +462,30 @@ exports.getDir = {
             self.config.getDir('dir', opts2, getDirDone);
         }
         getDir();
+    }
+}
+
+exports.hjsonOverrides = {
+    'setUp' : setUp,
+    'no override for smtpgreeting': function (test) {
+        test.expect(1);
+        // console.log(this.config);
+        test.deepEqual(
+            this.config.get('smtpgreeting', 'list'),
+            []
+        );
+        test.done();
+    },
+    'with smtpgreeting override': function (test) {
+        test.expect(1);
+        process.env.WITHOUT_CONFIG_CACHE='';
+        const main = this.config.get('main.hjson');
+        console.log(main);
+        test.deepEqual(
+            this.config.get('smtpgreeting', 'list'),
+            [ 'this is line one', 'this is line two' ]
+        );
+        test.done();
     }
 }
 

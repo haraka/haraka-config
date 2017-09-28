@@ -54,7 +54,7 @@ Config.prototype.getDir = function (name, opts, done) {
 };
 
 function merge_config (defaults, overrides, type) {
-    if (type === 'ini' || type === 'json' || type === 'yaml') {
+    if (type === 'ini' || type === 'hjson' || type === 'json' || type === 'yaml') {
         return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides);
     }
 
@@ -113,7 +113,7 @@ Config.prototype.arrange_args = function (args) {
                 options = args[i];
                 break;
             case 'string':
-                if (/^(ini|value|list|data|json|yaml|binary)$/.test(args[i])) {
+                if (/^(ini|value|list|data|h?json|yaml|binary)$/.test(args[i])) {
                     fs_type = args[i];
                     break;
                 }
@@ -125,7 +125,8 @@ Config.prototype.arrange_args = function (args) {
     }
 
     if (!fs_type) {
-        if (/\.json$/.test(fs_name))      fs_type = 'json';
+        if (/\.hjson$/.test(fs_name))     fs_type = 'hjson';
+        else if (/\.json$/.test(fs_name)) fs_type = 'json';
         else if (/\.yaml$/.test(fs_name)) fs_type = 'yaml';
         else if (/\.ini$/.test(fs_name))  fs_type = 'ini';
         else                              fs_type = 'value';

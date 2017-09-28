@@ -1,0 +1,17 @@
+{
+	// sign matt (because comments are helpful!)
+	"matt": "waz here",
+
+	// fill in this array
+	"array": [
+		"has an element"
+	]
+	# best of all
+	# yes, commas are optional!
+
+	/* feeling old fashioned? */
+	"objecty": {
+		// prefer c-style comments?
+		"has a property": with a value
+	}
+}

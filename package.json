@@ -16,7 +16,9 @@
   "dependencies": {
     "js-yaml": "^3.5.3"
   },
-  "optionalDependencies": {},
+  "optionalDependencies": {
+    "hjson": "^3.1.0"
+  },
   "devDependencies": {
     "eslint": "*",
     "eslint-plugin-haraka": "*",
