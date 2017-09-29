@@ -129,11 +129,20 @@ Config.prototype.arrange_args = function (args) {
     }
 
     if (!fs_type) {
-        if (/\.hjson$/.test(fs_name))     fs_type = 'hjson';
-        else if (/\.json$/.test(fs_name)) fs_type = 'json';
-        else if (/\.yaml$/.test(fs_name)) fs_type = 'yaml';
-        else if (/\.ini$/.test(fs_name))  fs_type = 'ini';
-        else                              fs_type = 'value';
+        const fs_ext = path.extname(fs_name).substring(1);
+
+        switch (fs_ext) {
+            case 'hjson':
+            case 'json':
+            case 'yaml':
+            case 'ini':
+                fs_type = fs_ext;
+                break;
+
+            default:
+                fs_type = 'value';
+                break;
+        }
     }
 
     return [fs_name, fs_type, cb, options];
