@@ -276,7 +276,7 @@ Main features:
 
 Example syntax
 
-```json
+```
 {
     # specify rate in requests/second (because comments are helpful!)
     rate: 1000
