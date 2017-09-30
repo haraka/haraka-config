@@ -276,7 +276,7 @@ Main features:
 
 Example syntax
 
-```
+```js
 {
     # specify rate in requests/second (because comments are helpful!)
     rate: 1000
@@ -284,7 +284,7 @@ Example syntax
     // prefer c-style comments?
     /* feeling old fashioned? */
 
-    # did you notice that rate doesn't need quotes?
+    # did you notice that rate does not need quotes?
     hey: look ma, no quotes for strings either!
 
     # best of all
