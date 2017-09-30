@@ -121,11 +121,10 @@ Config.prototype.arrange_args = function (args) {
                     fs_type = args[i];
                     break;
                 }
-                console.log('unknown string:' + args[i]);
+                console.log(`unknown string: ${args[i]}`);
                 break;
         }
-        // console.log('unknown arg:' + args[i] + ', typeof: ' +
-        //      typeof args[i]);
+        // console.log(`unknown arg: ${args[i]}, typeof: ${typeof args[i]}`);
     }
 
     if (!fs_type) {
