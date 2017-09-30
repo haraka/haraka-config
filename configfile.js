@@ -37,7 +37,7 @@ let config_dir_candidates = [
 
 cfreader.get_path_to_config_dir = function () {
     if (process.env.HARAKA) {
-        // console.log('process.env.HARAKA: ' + process.env.HARAKA);
+        // console.log(`process.env.HARAKA: ${process.env.HARAKA}`);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
         return;
     }
@@ -71,7 +71,7 @@ cfreader.get_path_to_config_dir = function () {
     }
 }
 exports.get_path_to_config_dir();
-// console.log('cfreader.config_path: ' + cfreader.config_path);
+// console.log(`cfreader.config_path: ${cfreader.config_path}`);
 
 cfreader.on_watch_event = function (name, type, options, cb) {
     return function (fse, filename) {
@@ -79,7 +79,7 @@ cfreader.on_watch_event = function (name, type, options, cb) {
             clearTimeout(cfreader._sedation_timers[name]);
         }
         cfreader._sedation_timers[name] = setTimeout(function () {
-            console.log('Reloading file: ' + name);
+            console.log(`Reloading file: ${name}`);
             cfreader.load_config(name, type, options);
             delete cfreader._sedation_timers[name];
             if (typeof cb === 'function') cb();
@@ -101,7 +101,7 @@ cfreader.on_watch_event = function (name, type, options, cb) {
                 cfreader.ensure_enoent_timer();
             }
             else {
-                console.error('Error watching file: ' + name + ' : ' + e);
+                console.error(`Error watching file: ${name} : ${e}`);
             }
         }
     };
@@ -123,7 +123,7 @@ cfreader.watch_dir = function () {
             clearTimeout(cfreader._sedation_timers[filename]);
         }
         cfreader._sedation_timers[filename] = setTimeout(function () {
-            console.log('Reloading file: ' + full_path);
+            console.log(`Reloading file: ${full_path}`);
             cfreader.load_config(full_path, args.type, args.options);
             delete cfreader._sedation_timers[filename];
             if (typeof args.cb === 'function') args.cb();
@@ -134,7 +134,7 @@ cfreader.watch_dir = function () {
         cfreader._watchers[cp] = fs.watch(cp, { persistent: false }, watcher);
     }
     catch (e) {
-        console.error('Error watching directory ' + cp + '(' + e + ')');
+        console.error(`Error watching directory ${cp}(${e})`);
     }
     return;
 };
@@ -153,7 +153,7 @@ cfreader.watch_file = function (name, type, cb, options) {
     }
     catch (e) {
         if (e.code !== 'ENOENT') { // ignore error when ENOENT
-            console.error('Error watching config file: ' + name + ' : ' + e);
+            console.error(`Error watching config file: ${name} : ${e}`);
         }
         else {
             cfreader._enoent_files[name] = true;
@@ -196,9 +196,9 @@ cfreader.read_config = function (name, type, cb, options) {
     // Check cache first
     if (!process.env.WITHOUT_CONFIG_CACHE) {
         const cache_key = cfreader.get_cache_key(name, options);
-        // console.log('\tcache_key: ' + cache_key);
+        // console.log(`\tcache_key: ${cache_key}`);
         if (cfreader._config_cache[cache_key] !== undefined) {
-            // console.log('\t' + name + ' is cached');
+            // console.log(`\t${name} is cached`);
             return cfreader._config_cache[cache_key];
         }
     }
@@ -246,7 +246,7 @@ function fsWatchDir (dirPath) {
     if (cfreader._watchers[dirPath]) return;
 
     cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false }, function (fse, filename) {
-        // console.log('event: ' + fse + ', ' + filename);
+        // console.log(`event: ${fse}, ${filename}`);
         if (!filename) return;
         const full_path = path.join(dirPath, filename);
         const args = cfreader._read_args[dirPath];
@@ -271,7 +271,7 @@ cfreader.read_dir = function (name, opts, done) {
             return fsReadDir(name);
         })
         .then((fileList) => {
-            const reader = require('./readers/' + type);
+            const reader = require(`./readers/${type}`);
             const promises = [];
             fileList.forEach((file) => {
                 promises.push(reader.loadPromise(path.resolve(name, file)))
@@ -324,7 +324,7 @@ cfreader.get_filetype_reader = function (type) {
         case '':
             return require('./readers/flat');
     }
-    return require('./readers/' + type);
+    return require(`./readers/${type}`);
 };
 
 cfreader.load_config = function (name, type, options) {
