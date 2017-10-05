@@ -17,6 +17,7 @@ Haraka's config loader can load several types of configuration files.
 * 'value' - load a flat file containing a single value (default)
 * 'ini'   - load an ini file
 * 'json'  - load a json file
+* 'hjson' - load a hjson file
 * 'yaml'  - load a yaml file
 * 'list'  - load a flat file containing a list of values
 * 'data'  - load a flat file containing a list of values, keeping comments and whitespace.
@@ -241,11 +242,11 @@ JSON Files
 
 These are as you would expect, and returns an object as given in the file.
 
-If a requested .json file does not exist then the same file will be checked
+If a requested .json or .hjson file does not exist then the same file will be checked
 for with a .yaml extension and that will be loaded instead.   This is done
 because YAML files are far easier for a human to write.
 
-You can use JSON or YAML files to override any other file by prefixing the
+You can use JSON, HJSON or YAML files to override any other file by prefixing the
 outer variable name with a `!` e.g.
 
 ```js
@@ -259,6 +260,43 @@ it.
 
 NOTE: You must ensure that the data type (e.g. Object, Array or String) for
 the replaced value is correct.  This cannot be done automatically.
+
+Hjson Files
+----------
+
+Hjson is a syntax extension to JSON. It is intended to be used like a user interface for humans, to read and edit before passing the JSON data to the machine. That means you can use it to parse JSON files but it is not intended as a replacement.
+
+You can check [Hjson's homepage](https://hjson.org) to get familiar with it and you can [try out its syntax](https://hjson.org/try.html).
+
+Main features:
+- Comments
+- Optional quotes
+- Optional commas
+- Heredoc
+
+Example syntax
+
+```js
+{
+    # specify rate in requests/second (because comments are helpful!)
+    rate: 1000
+
+    // prefer c-style comments?
+    /* feeling old fashioned? */
+
+    # did you notice that rate does not need quotes?
+    hey: look ma, no quotes for strings either!
+
+    # best of all
+    notice: []
+    anything: ?
+
+    # yes, commas are optional!
+}
+```
+
+NOTE: Hjson can be also replaced by YAML configuration file. You can find more on this issue under JSON section.
+
 
 YAML Files
 ----------
