@@ -5,8 +5,8 @@ const hjson = require('hjson');
 
 exports.load = function (name) {
     return hjson.parse(fs.readFileSync(name, "utf8"));
-};
+}
 
 exports.empty = function () {
     return {};
-};
+}

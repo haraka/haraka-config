@@ -1,9 +1,9 @@
 'use strict';
 
-const _set_up = function (done) {
+function _set_up (done) {
     this.json = require('../../readers/json');
     done();
-};
+}
 
 exports.load = {
     setUp : _set_up,
@@ -26,4 +26,4 @@ exports.load = {
         test.ok(result.objecty['has a property']);
         test.done();
     },
-};
+}

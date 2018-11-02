@@ -4,7 +4,7 @@ const fs = require('fs');
 
 exports.load = function (name) {
     return fs.readFileSync(name);
-};
+}
 
 exports.loadPromise = function (name) {
     return new Promise(function (resolve, reject) {
@@ -13,8 +13,8 @@ exports.loadPromise = function (name) {
             resolve({ path: name, data: content });
         });
     });
-};
+}
 
 exports.empty = function () {
     return null;
-};
+}

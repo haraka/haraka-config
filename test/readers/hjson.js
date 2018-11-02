@@ -1,9 +1,9 @@
 'use strict';
 
-const _set_up = function (done) {
+function _set_up (done) {
     this.hjson = require('../../readers/hjson');
     done();
-};
+}
 
 exports.load = {
     setUp : _set_up,
@@ -27,4 +27,4 @@ exports.load = {
         test.ok(result.object['has a property two']);
         test.done();
     },
-};
+}
