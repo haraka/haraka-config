@@ -1,4 +1,9 @@
 
+## 1.0.16 - 2018-11-02
+
+- remove trailing ; from function declarations
+- add config.getInt(filename, default_value)
+
 ## 1.0.15 - 2017-09-21
 
 - additional test for 'missing json loads yaml'

@@ -47,11 +47,20 @@ Config.prototype.get = function (name, type, cb, options) {
     }
 
     return results;
-};
+}
+
+Config.prototype.getInt = function (filename, default_value) {
+
+    const full_path = path.resolve(this.root_path, filename);
+    const r = parseInt(cfreader.read_config(full_path, 'value', null, null), 10);
+
+    if (!isNaN(r)) return r;
+    return parseInt(default_value, 10);
+}
 
 Config.prototype.getDir = function (name, opts, done) {
     cfreader.read_dir(path.resolve(this.root_path, name), opts, done);
-};
+}
 
 function merge_config (defaults, overrides, type) {
     switch (type) {
