@@ -406,14 +406,21 @@ exports.merged = {
 exports.getInt = {
     'setUp' : setUp,
     // config.get('name');
-    'test (non-existing)' : function (test) {
+    'empty filename is NaN' : function (test) {
+        test.expect(2);
+        const result = this.config.getInt();
+        test.equal(typeof result, 'number');
+        test.ok(isNaN(result));
+        test.done();
+    },
+    'empty/missing file contents is NaN' : function (test) {
         test.expect(2);
         const result = this.config.getInt('test-non-exist');
         test.equal(typeof result, 'number');
         test.ok(isNaN(result));
         test.done();
     },
-    'test non-existing with default' : function (test) {
+    'non-existing file returns default' : function (test) {
         _test_int(test, 'test-non-exist', 5, 5);
     },
     'test.int equals 6' : function (test) {

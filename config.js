@@ -51,6 +51,8 @@ Config.prototype.get = function (name, type, cb, options) {
 
 Config.prototype.getInt = function (filename, default_value) {
 
+    if (!filename) return NaN;
+
     const full_path = path.resolve(this.root_path, filename);
     const r = parseInt(cfreader.read_config(full_path, 'value', null, null), 10);
 
