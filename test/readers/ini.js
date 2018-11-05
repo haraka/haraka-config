@@ -2,13 +2,13 @@
 
 const regex = require('../../configfile').regex;
 
-const _set_up = function (done) {
+function _set_up (done) {
     this.ini = require('../../readers/ini');
     this.opts = {
         booleans: [ 'main.bool_true', 'main.bool_false' ]
     };
     done();
-};
+}
 
 exports.load = {
     setUp: _set_up,
@@ -152,7 +152,7 @@ exports.empty = {
         );
         test.done();
     },
-};
+}
 
 exports.invalid = {
     setUp: _set_up,

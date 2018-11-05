@@ -41,7 +41,7 @@ exports.config = {
         test.equal(c.overrides_path, path.join('bar','config'));
         test.done();
     },
-};
+}
 
 exports.config_path = {
     'config_path process.env.HARAKA': function (test) {
@@ -64,7 +64,7 @@ exports.config_path = {
         process.env.NODE_ENV = 'test';
         test.done();
     },
-};
+}
 
 exports.arrange_args = {
     'setUp' : setUp,
@@ -180,7 +180,7 @@ exports.arrange_args = {
             ['test.ini', 'data', cb, opts]);
         test.done();
     },
-};
+}
 
 const hjsonRes = {
     matt: 'waz here and also made comments',
@@ -189,13 +189,13 @@ const hjsonRes = {
         'has a property one': 'with a value A',
         'has a property two': 'with a value B'
     }
-};
+}
 
 const jsonRes = {
     matt: 'waz here',
     array: [ 'has an element' ],
     objecty: { 'has a property': 'with a value' }
-};
+}
 
 const yamlRes = {
     main: {
@@ -219,13 +219,24 @@ const yamlRes = {
     objecty: {
         'has a property': 'with a value'
     }
-};
+}
 
 function _test_get (test, name, type, callback, options, expected) {
     test.expect(1);
     const config = require('../config');
     const cfg = config.get(name, type, callback, options);
     test.deepEqual(cfg, expected);
+    test.done();
+}
+
+function _test_int (test, name, default_value, expected) {
+    test.expect(2);
+    const config = require('../config');
+    const result = config.getInt(name, default_value);
+    if (result) {
+        test.equal(typeof result, 'number');
+    }
+    test.deepEqual(result, expected);
     test.done();
 }
 
@@ -356,7 +367,7 @@ exports.get = {
         test.ok(Buffer.isBuffer(res));
         test.done();
     },
-};
+}
 
 exports.merged = {
     'setUp' : setUp,
@@ -389,6 +400,34 @@ exports.merged = {
         );
         test.equal(lc.get('test.flat'), 'flatoverrode');
         test.done();
+    },
+}
+
+exports.getInt = {
+    'setUp' : setUp,
+    // config.get('name');
+    'empty filename is NaN' : function (test) {
+        test.expect(2);
+        const result = this.config.getInt();
+        test.equal(typeof result, 'number');
+        test.ok(isNaN(result));
+        test.done();
+    },
+    'empty/missing file contents is NaN' : function (test) {
+        test.expect(2);
+        const result = this.config.getInt('test-non-exist');
+        test.equal(typeof result, 'number');
+        test.ok(isNaN(result));
+        test.done();
+    },
+    'non-existing file returns default' : function (test) {
+        _test_int(test, 'test-non-exist', 5, 5);
+    },
+    'test.int equals 6' : function (test) {
+        _test_int(test, 'test.int', undefined, 6);
+    },
+    'test.int equals 6 (with default 7)' : function (test) {
+        _test_int(test, 'test.int', 7, 6);
     },
 }
 

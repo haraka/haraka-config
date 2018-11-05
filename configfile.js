@@ -105,7 +105,7 @@ cfreader.on_watch_event = function (name, type, options, cb) {
             }
         }
     };
-};
+}
 
 cfreader.watch_dir = function () {
     // NOTE: Has OS platform limitations:
@@ -137,7 +137,7 @@ cfreader.watch_dir = function () {
         console.error(`Error watching directory ${cp}(${e})`);
     }
     return;
-};
+}
 
 cfreader.watch_file = function (name, type, cb, options) {
     // This works on all OS's, but watch_dir() above is preferred for Linux and
@@ -161,7 +161,7 @@ cfreader.watch_file = function (name, type, cb, options) {
         }
     }
     return;
-};
+}
 
 cfreader.get_cache_key = function (name, options) {
 
@@ -221,7 +221,7 @@ cfreader.read_config = function (name, type, cb, options) {
     }
 
     return result;
-};
+}
 
 function isDirectory (filepath) {
     return new Promise(function (resolve, reject) {
@@ -287,7 +287,7 @@ cfreader.read_dir = function (name, opts, done) {
         })
 
     if (opts.watchCb) fsWatchDir(name);
-};
+}
 
 cfreader.ensure_enoent_timer = function () {
     if (cfreader._enoent_timer) return;
@@ -314,7 +314,7 @@ cfreader.ensure_enoent_timer = function () {
         }
     }, 60 * 1000);
     cfreader._enoent_timer.unref(); // This shouldn't block exit
-};
+}
 
 cfreader.get_filetype_reader = function (type) {
     switch (type) {
@@ -325,7 +325,7 @@ cfreader.get_filetype_reader = function (type) {
             return require('./readers/flat');
     }
     return require(`./readers/${type}`);
-};
+}
 
 cfreader.load_config = function (name, type, options) {
     let result;
@@ -378,7 +378,7 @@ cfreader.load_config = function (name, type, options) {
         return cfrType.empty(options, type);
     }
     return result;
-};
+}
 
 cfreader.process_file_overrides = function (name, options, result) {
     // We might be re-loading this file:
@@ -404,4 +404,4 @@ cfreader.process_file_overrides = function (name, options, result) {
         console.log(`Overriding file ${fn} with config from ${name}`);
         cfreader._config_cache[path.join(cp, fn)] = result[keys[j]];
     }
-};
+}

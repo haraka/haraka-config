@@ -52,7 +52,7 @@ exports.load = function (name, type, options, regex) {
     }
 
     return result;
-};
+}
 
 exports.empty = function (options, type) {
     if (type) {
@@ -60,7 +60,7 @@ exports.empty = function (options, type) {
         if (type === 'value') { return null; }
     }
     return [];
-};
+}
 
 function in_array (item, array) {
     if (!array) return false;

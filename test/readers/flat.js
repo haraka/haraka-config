@@ -2,10 +2,10 @@
 
 const regex = require('../../configfile').regex;
 
-const _set_up = function (done) {
+function _set_up (done) {
     this.flat = require('../../readers/flat');
     done();
-};
+}
 
 exports.load = {
     setUp: _set_up,
@@ -40,4 +40,4 @@ exports.load = {
         test.ok(result);
         test.done();
     },
-};
+}

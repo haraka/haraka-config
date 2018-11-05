@@ -81,12 +81,12 @@ exports.load = function (name, options, regex) {
         });
 
     return result;
-};
+}
 
 exports.empty = function (options) {
     this.bool_matches = [];
     return this.init_booleans(options, { main: {} });
-};
+}
 
 exports.init_booleans = function (options, result) {
     if (!options) return result;
@@ -119,9 +119,9 @@ exports.init_booleans = function (options, result) {
     }
 
     return result;
-};
+}
 
 exports.logger = function (msg, level) {
     // if (!level) level = 'logwarn';
     console.log(msg);
-};
+}
