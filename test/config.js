@@ -3,7 +3,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-function cb () { return false; };
+function cb () { return false; }
 const opts = { booleans: ['arg1'] };
 
 function clearRequireCache () {
