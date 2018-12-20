@@ -368,14 +368,15 @@ exports.get = {
     },
 
     'fully qualified path: /etc/services' : function (test) {
+        test.expect(1);
+        let res;
         if (/^win/.test(process.platform)) {
-            test.expect(0);
+            res = this.config.get('c:\\windows\\win.ini', 'list');
         }
         else {
-            test.expect(1);
-            const res = this.config.get('/etc/services', 'list');
-            test.ok(res.length);
+            res = this.config.get('/etc/services', 'list');
         }
+        test.ok(res.length);
         test.done();
     }
 }
