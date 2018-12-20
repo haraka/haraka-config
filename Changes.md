@@ -1,3 +1,7 @@
+## 1.0.17 - 2018-12-19
+
+- refactor ./config.js as an es6 class
+- update README syntax and improve formatting
 
 ## 1.0.16 - 2018-11-02
 

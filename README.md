@@ -27,16 +27,19 @@ See the [File Formats](#file_formats) section below for a more detailed
 explanation of each of the formats.
 
 # Usage
+
 ```js
-    // From within a plugin:
-    var cfg = this.config.get(name, [type], [callback], [options]);
+// From within a plugin:
+const cfg = this.config.get(name, [type], [callback], [options]);
 ```
 This will load the file config/rambling.paths in the Haraka directory.
 
 `name` is not a full path, but a filename in the config/ directory. For example:
+
 ```js
-    var cfg = this.config.get('rambling.paths', 'list');
+const cfg = this.config.get('rambling.paths', 'list');
 ```
+
 `type` can be any of the types listed above.
 
 If the file name has an `.ini`, `.json` or `.yaml` suffix,
@@ -49,19 +52,19 @@ variables within your plugin. Example:
 
 ```js
 exports.register = function () {
-    var plugin = this;
-    plugin.loginfo('register function called');
-    plugin.load_my_plugin_ini();
+    const plugin = this
+    plugin.loginfo('register called')
+    plugin.load_my_plugin_ini()
 }
 
 exports.load_my_plugin_ini = function () {
-    var plugin = this;
+    const plugin = this
     plugin.cfg = plugin.config.get('my_plugin.ini', function onCfgChange () {
         // This closure is run a few seconds after my_plugin.ini changes
         // Re-run the outer function again
-        plugin.load_my_plugin_ini();
-    });
-    plugin.loginfo('cfg=' + JSON.stringify(plugin.cfg));
+        plugin.load_my_plugin_ini()
+    })
+    plugin.loginfo(`cfg=${JSON.stringify(plugin.cfg)}`)
 }
 
 exports.hook_connect = function (next, connection) {
@@ -152,17 +155,17 @@ Entries are a simple format of key=value pairs, with optional [sections].
 
 Here is a typical example:
 ```ini
-    first_name=Matt
-    last_name=Sergeant
+first_name=Matt
+last_name=Sergeant
 
-    [job]
-    title=Senior Principal Software Engineer
-    role=Architect
+[job]
+title=Senior Principal Software Engineer
+role=Architect
 
-    [projects]
-    haraka
-    qpsmtpd
-    spamassassin
+[projects]
+haraka
+qpsmtpd
+spamassassin
 ```
 That produces the following Javascript object:
 
@@ -195,36 +198,42 @@ backslash "\" character.
 
 The `options` object allows you to specify which keys are boolean:
 ```js
-    { booleans: ['reject','some_true_value'] }
+{ booleans: ['reject','some_true_value'] }
 ```
 On the options declarations, key names are formatted as section.key.
 If the key name does not specify a section, it is presumed to be [main].
 
-This ensures these values are converted to true Javascript booleans when parsed,
-and supports the following options for boolean values:
+This ensures these values are converted to true Javascript booleans when parsed, and supports the following options for boolean values:
+
 ```
-    true, yes, ok, enabled, on, 1
+true, yes, ok, enabled, on, 1
 ```
+
 Anything else is treated as false.
 
 To default a boolean as true (when the key is undefined or the config file is
 missing), prefix the key with +:
+
 ```js
-    { booleans: [ '+reject' ] }
+{ booleans: [ '+reject' ] }
 ```
 For completeness the inverse is also allowed:
+
 ```js
-    { booleans: [ '-reject' ] }
+{ booleans: [ '-reject' ] }
 ```
 Lists are supported using this syntax:
+
 ```ini
-    hosts[] = first_host
-    hosts[] = second_host
-    hosts[] = third_host
+hosts[] = first_host
+hosts[] = second_host
+hosts[] = third_host
 ```
+
 which produces this javascript array:
+
 ```js
-    ['first_host', 'second_host', 'third_host']
+['first_host', 'second_host', 'third_host']
 ```
 
 Flat Files
@@ -246,8 +255,7 @@ If a requested .json or .hjson file does not exist then the same file will be ch
 for with a .yaml extension and that will be loaded instead.   This is done
 because YAML files are far easier for a human to write.
 
-You can use JSON, HJSON or YAML files to override any other file by prefixing the
-outer variable name with a `!` e.g.
+You can use JSON, HJSON or YAML files to override any other file by prefixing the outer variable name with a `!` e.g.
 
 ```js
 {
@@ -276,7 +284,7 @@ Main features:
 
 Example syntax
 
-```js
+```hjson
 {
     # specify rate in requests/second (because comments are helpful!)
     rate: 1000
