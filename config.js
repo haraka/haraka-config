@@ -22,7 +22,13 @@ class Config {
         const a = this.arrange_args([name, type, cb, options]);
         if (!a[1]) a[1] = 'value';
 
-        const full_path = path.resolve(this.root_path, a[0]);
+        let full_path;
+        if (/^\//.test(name)) {  // starts with a / (fully qualified)
+            full_path = name;
+        }
+        else {
+            full_path = path.resolve(this.root_path, a[0]);
+        }
 
         let results = cfreader.read_config(full_path, a[1], a[2], a[3]);
 

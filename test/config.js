@@ -359,7 +359,6 @@ exports.get = {
         _test_get(test, 'missing.json', 'json', null, null, {"matt": "waz here"});
     },
 
-    // config.get('test.bin', 'binary');
     'test.bin, type=binary' : function (test) {
         test.expect(2);
         const res = this.config.get('test.binary', 'binary');
@@ -367,6 +366,13 @@ exports.get = {
         test.ok(Buffer.isBuffer(res));
         test.done();
     },
+
+    'fully qualified path: /etc/services' : function (test) {
+        test.expect(1);
+        const res = this.config.get('/etc/services', 'list');
+        test.ok(res.length);
+        test.done();
+    }
 }
 
 exports.merged = {
