@@ -322,7 +322,7 @@ cfreader.get_filetype_reader = function (type) {
         case 'value':
         case 'data':
         case '':
-            return require(path.resolve('readers', 'flat'));
+             return require(path.resolve(__dirname, 'readers', 'flat'));
     }
     return require(path.resolve('readers', type));
 }
