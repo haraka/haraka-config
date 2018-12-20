@@ -368,9 +368,14 @@ exports.get = {
     },
 
     'fully qualified path: /etc/services' : function (test) {
-        test.expect(1);
-        const res = this.config.get('/etc/services', 'list');
-        test.ok(res.length);
+        if (/^win/.test(process.platform)) {
+            test.expect(0);
+        }
+        else {
+            test.expect(1);
+            const res = this.config.get('/etc/services', 'list');
+            test.ok(res.length);
+        }
         test.done();
     }
 }
