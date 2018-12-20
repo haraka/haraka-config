@@ -245,7 +245,7 @@ function fsWatchDir (dirPath) {
 
     if (cfreader._watchers[dirPath]) return;
 
-    cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false }, function (fse, filename) {
+    cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false, recursive: true }, function (fse, filename) {
         // console.log(`event: ${fse}, ${filename}`);
         if (!filename) return;
         const full_path = path.join(dirPath, filename);
@@ -271,7 +271,7 @@ cfreader.read_dir = function (name, opts, done) {
             return fsReadDir(name);
         })
         .then((fileList) => {
-            const reader = require(`./readers/${type}`);
+            const reader = require(path.resolve(__dirname, 'readers', type));
             const promises = [];
             fileList.forEach((file) => {
                 promises.push(reader.loadPromise(path.resolve(name, file)))
@@ -322,9 +322,9 @@ cfreader.get_filetype_reader = function (type) {
         case 'value':
         case 'data':
         case '':
-            return require('./readers/flat');
+            return require(path.resolve(__dirname, 'readers', 'flat'));
     }
-    return require(`./readers/${type}`);
+    return require(path.resolve(__dirname, 'readers', type));
 }
 
 cfreader.load_config = function (name, type, options) {
