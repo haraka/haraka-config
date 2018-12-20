@@ -271,7 +271,7 @@ cfreader.read_dir = function (name, opts, done) {
             return fsReadDir(name);
         })
         .then((fileList) => {
-            const reader = require(path.resolve('readers', type));
+             const reader = require(path.resolve(__dirname, 'readers', type));
             const promises = [];
             fileList.forEach((file) => {
                 promises.push(reader.loadPromise(path.resolve(name, file)))
