@@ -245,7 +245,7 @@ function fsWatchDir (dirPath) {
 
     if (cfreader._watchers[dirPath]) return;
 
-    cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false }, function (fse, filename) {
+    cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false, recursive: true }, function (fse, filename) {
         // console.log(`event: ${fse}, ${filename}`);
         if (!filename) return;
         const full_path = path.join(dirPath, filename);
