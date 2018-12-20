@@ -3,7 +3,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const cb = function () { return false; };
+function cb () { return false; };
 const opts = { booleans: ['arg1'] };
 
 function clearRequireCache () {
@@ -451,7 +451,7 @@ exports.getDir = {
     },
     'loads all files in dir' : function (test) {
         test.expect(4);
-        this.config.getDir('dir', { type: 'binary' }, function (err, files) {
+        this.config.getDir('dir', { type: 'binary' }, (err, files) => {
             // console.log(files);
             test.equal(err, null);
             test.equal(files.length, 3);
@@ -462,7 +462,7 @@ exports.getDir = {
     },
     'errs on invalid dir' : function (test) {
         test.expect(1);
-        this.config.getDir('dirInvalid', { type: 'binary' }, function (err, files) {
+        this.config.getDir('dirInvalid', { type: 'binary' }, (err, files) => {
             // console.log(arguments);
             test.equal(err.code, 'ENOENT');
             test.done();
@@ -470,8 +470,7 @@ exports.getDir = {
     },
     'reloads when file in dir is touched' : function (test) {
         if (/darwin/.test(process.platform)) {
-            // due to differences in fs.watch, this test is not reliable on
-            // Mac OS X
+            // due to differences in fs.watch, this test is not reliable on Mac OS X
             test.done();
             return;
         }
