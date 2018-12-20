@@ -2,6 +2,7 @@
 
 - refactor ./config.js as an es6 class
 - update README syntax and improve formatting
+- use path.resolve instead of ./dir/file (2x)
 
 ## 1.0.16 - 2018-11-02
 

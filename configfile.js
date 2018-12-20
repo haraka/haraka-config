@@ -271,7 +271,7 @@ cfreader.read_dir = function (name, opts, done) {
             return fsReadDir(name);
         })
         .then((fileList) => {
-            const reader = require(`./readers/${type}`);
+            const reader = require(path.resolve('readers', type));
             const promises = [];
             fileList.forEach((file) => {
                 promises.push(reader.loadPromise(path.resolve(name, file)))
@@ -322,9 +322,9 @@ cfreader.get_filetype_reader = function (type) {
         case 'value':
         case 'data':
         case '':
-            return require('./readers/flat');
+            return require(path.resolve('readers', 'flat'));
     }
-    return require(`./readers/${type}`);
+    return require(path.resolve('readers', type));
 }
 
 cfreader.load_config = function (name, type, options) {
