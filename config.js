@@ -82,7 +82,7 @@ class Config {
                     options = args[i];
                     break;
                 case 'string':
-                    if (/^(ini|value|list|data|h?json|yaml|binary)$/.test(args[i])) {
+                    if (/^(ini|value|list|data|h?json|js|yaml|binary)$/.test(args[i])) {
                         fs_type = args[i];
                         break;
                     }
@@ -99,6 +99,7 @@ class Config {
                 case 'hjson':
                 case 'json':
                 case 'yaml':
+                case 'js':
                 case 'ini':
                     fs_type = fs_ext;
                     break;
@@ -128,6 +129,7 @@ function merge_config (defaults, overrides, type) {
         case 'ini':
         case 'hjson':
         case 'json':
+        case 'js':
         case 'yaml':
             return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides);
     }
