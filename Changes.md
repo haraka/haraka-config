@@ -1,3 +1,7 @@
+## 1.0.18
+
+- add support for loading `.js` configurations
+
 ## 1.0.17 - 2018-12-19
 
 - refactor ./config.js as an es6 class
