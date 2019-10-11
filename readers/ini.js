@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 
-exports.load = function (name, options, regex) {
+exports.load = (name, options, regex) => {
     let result       = { main: {} };
     let current_sect = result.main;
     let current_sect_name = 'main';
@@ -20,7 +20,7 @@ exports.load = function (name, options, regex) {
 
     fs.readFileSync(name, 'UTF-8')
         .split(/\r\n|\r|\n/)
-        .forEach(function (line) {
+        .forEach( (line) => {
             if (regex.comment.test(line)) return;
             if (regex.blank.test(line)  ) return;
 
@@ -37,13 +37,12 @@ exports.load = function (name, options, regex) {
                 return;
             }
 
-            line = pre + line;
+            line = `${pre}${line}`;
             pre = '';
 
             match = regex.param.exec(line);
             if (!match) {
-                exports.logger(
-                    `Invalid line in config file '${name}': ${line}`);
+                exports.logger(`Invalid line in config file '${name}': ${line}`);
                 return;
             }
 
@@ -66,8 +65,7 @@ exports.load = function (name, options, regex) {
                 exports.bool_matches.indexOf(`*.${match[1]}`) !== -1
             )) {
                 current_sect[match[1]] = regex.is_truth.test(match[2]);
-            // var msg = `Using boolean ${current_sect[match[1]]} for ${current_sect_name}.${match[1]}=${match[2]}`;
-            // exports.logger(msg, 'logdebug');
+                // exports.logger(`Using boolean ${current_sect[match[1]]} for ${current_sect_name}.${match[1]}=${match[2]}`, 'logdebug');
             }
             else if (regex.is_integer.test(match[2])) {
                 setter(match[1], parseInt(match[2], 10));
@@ -83,12 +81,12 @@ exports.load = function (name, options, regex) {
     return result;
 }
 
-exports.empty = function (options) {
+exports.empty = (options) => {
     this.bool_matches = [];
     return this.init_booleans(options, { main: {} });
 }
 
-exports.init_booleans = function (options, result) {
+exports.init_booleans = (options, result) => {
     if (!options) return result;
     if (!Array.isArray(options.booleans)) return result;
 
@@ -100,9 +98,7 @@ exports.init_booleans = function (options, result) {
         let section = m[1] || 'main';
         let key     = m[2];
 
-        const bool_default = section[0] === '+' ? true
-            :     key[0] === '+' ? true
-                : false;
+        const bool_default = section[0] === '+' ? true : key[0] === '+' ? true : false;
 
         if (section.match(/^(-|\+)/)) section = section.substr(1);
         if (    key.match(/^(-|\+)/)) key     =     key.substr(1);
@@ -121,7 +117,7 @@ exports.init_booleans = function (options, result) {
     return result;
 }
 
-exports.logger = function (msg, level) {
+exports.logger = (msg, level) => {
     // if (!level) level = 'logwarn';
     console.log(msg);
 }

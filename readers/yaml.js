@@ -3,10 +3,10 @@
 const fs   = require('fs');
 const yaml = require('js-yaml');
 
-exports.load = function (name) {
+exports.load = (name) => {
     return yaml.safeLoad(fs.readFileSync(name, 'utf8'));
 }
 
-exports.empty = function () {
+exports.empty = () => {
     return {};
 }

@@ -2,10 +2,10 @@
 
 const fs = require('fs');
 
-exports.load = function (name) {
+exports.load = (name) => {
     return JSON.parse(fs.readFileSync(name));
 }
 
-exports.empty = function () {
+exports.empty = () => {
     return {};
 }

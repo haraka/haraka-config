@@ -2,19 +2,19 @@
 
 const fs = require('fs');
 
-exports.load = function (name) {
+exports.load = (name) => {
     return fs.readFileSync(name);
 }
 
-exports.loadPromise = function (name) {
+exports.loadPromise = (name) => {
     return new Promise(function (resolve, reject) {
-        fs.readFile(name, function (err, content) {
+        fs.readFile(name, (err, content) => {
             if (err) return reject(err);
             resolve({ path: name, data: content });
         });
     });
 }
 
-exports.empty = function () {
+exports.empty = () => {
     return null;
 }

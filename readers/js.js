@@ -1,9 +1,9 @@
 'use strict';
 
-exports.load = function (name) {
+exports.load = (name) => {
     return require(name);
 }
 
-exports.empty = function () {
+exports.empty = () => {
     return {};
 }
