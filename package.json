@@ -1,5 +1,5 @@
 {
-  "author": "Haraka Team <harakamail@gmail.com>",
+  "author": "Haraka Team <haraka.mail@gmail.com>",
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",

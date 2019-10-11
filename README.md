@@ -1,8 +1,3 @@
-[![Build Status][ci-img]][ci-url]
-[![Coverage Status][cov-img]][cov-url]
-[![Code Climate][clim-img]][clim-url]
-[![Windows Build status][apv-img]][apv-url]
-[![Greenkeeper badge][gk-img]][gk-url]
 
 # haraka-config
 
@@ -334,14 +329,3 @@ in a plugins register() function are read *before* Haraka drops privileges.
 Be sure that Haraka's user/group has permission to read these files else
 Haraka will be unable to update them after changes.
 
-
-[ci-img]: https://travis-ci.org/haraka/haraka-config.svg?branch=master
-[ci-url]: https://travis-ci.org/haraka/haraka-config
-[cov-img]: https://codecov.io/github/haraka/haraka-config/coverage.svg
-[cov-url]: https://codecov.io/github/haraka/haraka-config?branch=master
-[clim-img]: https://codeclimate.com/github/haraka/haraka-config/badges/gpa.svg
-[clim-url]: https://codeclimate.com/github/haraka/haraka-config
-[apv-img]: https://ci.appveyor.com/api/projects/status/9qh720gq77e2h5x4?svg=true
-[apv-url]: https://ci.appveyor.com/project/msimerson/haraka-config
-[gk-img]: https://badges.greenkeeper.io/haraka/haraka-config.svg
-[gk-url]: https://greenkeeper.io/
