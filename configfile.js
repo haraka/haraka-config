@@ -35,7 +35,7 @@ let config_dir_candidates = [
     __dirname,                         // npm packaged plugins
 ];
 
-cfreader.get_path_to_config_dir = function () {
+cfreader.get_path_to_config_dir = () => {
     if (process.env.HARAKA) {
         // console.log(`process.env.HARAKA: ${process.env.HARAKA}`);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
@@ -73,12 +73,12 @@ cfreader.get_path_to_config_dir = function () {
 exports.get_path_to_config_dir();
 // console.log(`cfreader.config_path: ${cfreader.config_path}`);
 
-cfreader.on_watch_event = function (name, type, options, cb) {
+cfreader.on_watch_event = (name, type, options, cb) => {
     return function (fse, filename) {
         if (cfreader._sedation_timers[name]) {
             clearTimeout(cfreader._sedation_timers[name]);
         }
-        cfreader._sedation_timers[name] = setTimeout(function () {
+        cfreader._sedation_timers[name] = setTimeout(() => {
             console.log(`Reloading file: ${name}`);
             cfreader.load_config(name, type, options);
             delete cfreader._sedation_timers[name];
@@ -107,13 +107,13 @@ cfreader.on_watch_event = function (name, type, options, cb) {
     };
 }
 
-cfreader.watch_dir = function () {
+cfreader.watch_dir = () => {
     // NOTE: Has OS platform limitations:
     // https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener
     const cp = cfreader.config_path;
     if (cfreader._watchers[cp]) return;
 
-    const watcher = function (fse, filename) {
+    function watcher (fse, filename) {
         if (!filename) return;
         const full_path = path.join(cp, filename);
         if (!cfreader._read_args[full_path]) return;
@@ -122,14 +122,14 @@ cfreader.watch_dir = function () {
         if (cfreader._sedation_timers[filename]) {
             clearTimeout(cfreader._sedation_timers[filename]);
         }
-        cfreader._sedation_timers[filename] = setTimeout(function () {
+        cfreader._sedation_timers[filename] = setTimeout(() => {
             console.log(`Reloading file: ${full_path}`);
             cfreader.load_config(full_path, args.type, args.options);
             delete cfreader._sedation_timers[filename];
             if (typeof args.cb === 'function') args.cb();
         }, 5 * 1000);
 
-    };
+    }
     try {
         cfreader._watchers[cp] = fs.watch(cp, { persistent: false }, watcher);
     }
@@ -139,7 +139,7 @@ cfreader.watch_dir = function () {
     return;
 }
 
-cfreader.watch_file = function (name, type, cb, options) {
+cfreader.watch_file = (name, type, cb, options) => {
     // This works on all OS's, but watch_dir() above is preferred for Linux and
     // Windows as it is far more efficient.
     // NOTE: we need a fs.watch per file. It's impossible to watch non-existent
@@ -163,7 +163,7 @@ cfreader.watch_file = function (name, type, cb, options) {
     return;
 }
 
-cfreader.get_cache_key = function (name, options) {
+cfreader.get_cache_key = (name, options) => {
 
     // Ignore options etc. if this is an overriden value
     if (cfreader._overrides[name]) return name;
@@ -181,16 +181,16 @@ cfreader.get_cache_key = function (name, options) {
     return name;
 }
 
-cfreader.read_config = function (name, type, cb, options) {
+cfreader.read_config = (name, type, cb, options) => {
     // Store arguments used so we can:
     // 1. re-use them by filename later
     // 2. to know which files we've read, so we can ignore
     //    other files written to the same directory.
 
     cfreader._read_args[name] = {
-        type: type,
-        cb: cb,
-        options: options
+        type,
+        cb,
+        options
     };
 
     // Check cache first
@@ -225,7 +225,7 @@ cfreader.read_config = function (name, type, cb, options) {
 
 function isDirectory (filepath) {
     return new Promise(function (resolve, reject) {
-        fs.stat(filepath, function (err, stat) {
+        fs.stat(filepath, (err, stat) => {
             if (err) return reject(err);
             resolve(stat.isDirectory());
         })
@@ -234,7 +234,7 @@ function isDirectory (filepath) {
 
 function fsReadDir (filepath) {
     return new Promise(function (resolve, reject) {
-        fs.readdir(filepath, function (err, fileList) {
+        fs.readdir(filepath, (err, fileList) => {
             if (err) return reject(err);
             resolve(fileList);
         })
@@ -245,7 +245,7 @@ function fsWatchDir (dirPath) {
 
     if (cfreader._watchers[dirPath]) return;
 
-    cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false, recursive: true }, function (fse, filename) {
+    cfreader._watchers[dirPath] = fs.watch(dirPath, { persistent: false, recursive: true }, (fse, filename) => {
         // console.log(`event: ${fse}, ${filename}`);
         if (!filename) return;
         const full_path = path.join(dirPath, filename);
@@ -254,16 +254,16 @@ function fsWatchDir (dirPath) {
         if (cfreader._sedation_timers[full_path]) {
             clearTimeout(cfreader._sedation_timers[full_path]);
         }
-        cfreader._sedation_timers[full_path] = setTimeout(function () {
+        cfreader._sedation_timers[full_path] = setTimeout(() => {
             delete cfreader._sedation_timers[full_path];
             args.opts.watchCb();
         }, 2 * 1000);
     });
 }
 
-cfreader.read_dir = function (name, opts, done) {
+cfreader.read_dir = (name, opts, done) => {
 
-    cfreader._read_args[name] = { opts: opts }
+    cfreader._read_args[name] = { opts }
     const type = opts.type || 'binary';
 
     isDirectory(name)
@@ -289,22 +289,21 @@ cfreader.read_dir = function (name, opts, done) {
     if (opts.watchCb) fsWatchDir(name);
 }
 
-cfreader.ensure_enoent_timer = function () {
+cfreader.ensure_enoent_timer = () => {
     if (cfreader._enoent_timer) return;
     // Create timer
-    cfreader._enoent_timer = setInterval(function () {
+    cfreader._enoent_timer = setInterval(() => {
         const files = Object.keys(cfreader._enoent_files);
         for (let i=0; i<files.length; i++) {
             const fileOuter = files[i];
             /* BLOCK SCOPE */
             (function (file) {
-                fs.stat(file, function (err) {
+                fs.stat(file, (err) => {
                     if (err) return;
                     // File now exists
                     delete(cfreader._enoent_files[file]);
                     const args = cfreader._read_args[file];
-                    cfreader.load_config(
-                        file, args.type, args.options, args.cb);
+                    cfreader.load_config(file, args.type, args.options, args.cb);
                     cfreader._watchers[file] = fs.watch(
                         file, {persistent: false},
                         cfreader.on_watch_event(
@@ -316,7 +315,7 @@ cfreader.ensure_enoent_timer = function () {
     cfreader._enoent_timer.unref(); // This shouldn't block exit
 }
 
-cfreader.get_filetype_reader = function (type) {
+cfreader.get_filetype_reader = (type) => {
     switch (type) {
         case 'list':
         case 'value':
@@ -327,7 +326,7 @@ cfreader.get_filetype_reader = function (type) {
     return require(path.resolve(__dirname, 'readers', type));
 }
 
-cfreader.load_config = function (name, type, options) {
+cfreader.load_config = (name, type, options) => {
     let result;
 
     if (!type) {
@@ -342,9 +341,7 @@ cfreader.load_config = function (name, type, options) {
         }
 
         const yaml_name = name.replace(/\.h?json$/, '.yaml');
-        if (!fs.existsSync(yaml_name)) {
-            return cfrType.empty(options, type);
-        }
+        if (!fs.existsSync(yaml_name)) return cfrType.empty(options, type);
 
         name = yaml_name;
         type = 'yaml';
@@ -380,7 +377,7 @@ cfreader.load_config = function (name, type, options) {
     return result;
 }
 
-cfreader.process_file_overrides = function (name, options, result) {
+cfreader.process_file_overrides = (name, options, result) => {
     // We might be re-loading this file:
     //     * build a list of cached overrides
     //     * remove them and add them back

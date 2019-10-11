@@ -1,5 +1,5 @@
 {
-  "author": "Haraka Team <harakamail@gmail.com>",
+  "author": "Haraka Team <haraka.mail@gmail.com>",
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
@@ -14,24 +14,24 @@
     "node": ">= 6"
   },
   "dependencies": {
-    "js-yaml": "^3.5.3"
+    "js-yaml": "^3.13.1"
   },
   "optionalDependencies": {
-    "hjson": "^3.1.0"
+    "hjson": "^3.2.0"
   },
   "devDependencies": {
     "eslint": "*",
     "eslint-plugin-haraka": "*",
-    "nodeunit": "*"
+    "mocha": "*"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
     "url": "https://github.com/haraka/haraka-config/issues"
   },
   "scripts": {
-    "test": "./run_tests",
+    "test": "./node_modules/.bin/mocha test test/readers",
     "lint": "./node_modules/.bin/eslint *.js readers/*.js test/*.js test/*/*.js",
     "lintfix": "./node_modules/.bin/eslint --fix *.js readers/*.js test/*.js test/*/*.js",
-    "cover": "./node_modules/.bin/istanbul cov run_tests"
+    "cover": "./node_modules/.bin/nyc --reporter=lcov ./node_modules/.bin/mocha test test/readers"
   }
 }

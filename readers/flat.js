@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 
-exports.load = function (name, type, options, regex) {
+exports.load = (name, type, options, regex) => {
     let result = [];
 
     let data = fs.readFileSync(name, 'UTF-8');
@@ -15,15 +15,15 @@ exports.load = function (name, type, options, regex) {
         return result;
     }
 
-    data.split(/\r\n|\r|\n/).forEach( function (line) {
-        if (regex.comment.test(line)) { return; }
-        if (regex.blank.test(line))   { return; }
+    data.split(/\r\n|\r|\n/).forEach( (line) => {
+        if (regex.comment.test(line)) return;
+        if (regex.blank.test(line))   return;
 
         const line_data = regex.line.exec(line);
         if (!line_data) return;
 
         result.push(line_data[1].trim());
-    });
+    })
 
     if (result.length && type !== 'list' && type !== 'data') {
         result = result[0];
@@ -46,20 +46,20 @@ exports.load = function (name, type, options, regex) {
 
     // For value types with no result
     if (!(type && (type === 'list' || type === 'data'))) {
-        if (!(result && result.length)) {
-            return null;
-        }
+        if (!(result && result.length)) return null;
     }
 
     return result;
 }
 
 exports.empty = function (options, type) {
-    if (type) {
-        if (type === 'flat') { return null; }
-        if (type === 'value') { return null; }
+    switch (type) {
+        case 'flat':
+        case 'value':
+            return null;
+        default:
+            return [];
     }
-    return [];
 }
 
 function in_array (item, array) {

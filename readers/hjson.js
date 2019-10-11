@@ -3,10 +3,10 @@
 const fs = require('fs');
 const hjson = require('hjson');
 
-exports.load = function (name) {
+exports.load = (name) => {
     return hjson.parse(fs.readFileSync(name, "utf8"));
 }
 
-exports.empty = function () {
+exports.empty = () => {
     return {};
 }
