@@ -22,14 +22,14 @@
   "devDependencies": {
     "eslint": "*",
     "eslint-plugin-haraka": "*",
-    "nodeunit": "*"
+    "mocha": "*"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
     "url": "https://github.com/haraka/haraka-config/issues"
   },
   "scripts": {
-    "test": "./run_tests",
+    "test": "./node_modules/.bin/mocha test test/readers",
     "lint": "./node_modules/.bin/eslint *.js readers/*.js test/*.js test/*/*.js",
     "lintfix": "./node_modules/.bin/eslint --fix *.js readers/*.js test/*.js test/*/*.js",
     "cover": "./node_modules/.bin/istanbul cov run_tests"

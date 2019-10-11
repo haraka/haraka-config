@@ -15,6 +15,6 @@ test_script:
   # Output useful info for debugging.
   - node --version
   - npm --version
-  - node run_tests
+  - npm test
 
 build: off

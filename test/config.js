@@ -1,7 +1,7 @@
-'use strict';
 
-const fs   = require('fs');
-const path = require('path');
+const assert = require('assert')
+const fs     = require('fs');
+const path   = require('path');
 
 function cb () { return false; }
 const opts = { booleans: ['arg1'] };
@@ -18,7 +18,7 @@ function clearRequireCache () {
     ];
 }
 
-function setUp (done) {
+function testSetup (done) {
     process.env.NODE_ENV = 'test'
     process.env.HARAKA = '';
     process.env.WITHOUT_CONFIG_CACHE = '1';
@@ -27,160 +27,159 @@ function setUp (done) {
     done();
 }
 
-exports.config = {
-    'setUp' : setUp,
-    'new' : function (test) {
-        test.expect(1);
-        test.equal(path.resolve('test','config'), this.config.root_path);
-        test.done();
-    },
-    'module_config' : function (test) {
-        test.expect(2);
+describe('config', function () {
+
+    beforeEach(testSetup)
+
+    it('new', function (done) {
+        assert.equal(path.resolve('test','config'), this.config.root_path);
+        done();
+    })
+
+    it('module_config', function (done) {
         const c = this.config.module_config('foo', 'bar');
-        test.equal(c.root_path, path.join('foo','config'));
-        test.equal(c.overrides_path, path.join('bar','config'));
-        test.done();
-    },
-}
+        assert.equal(c.root_path, path.join('foo','config'));
+        assert.equal(c.overrides_path, path.join('bar','config'));
+        done();
+    })
 
-exports.config_path = {
-    'config_path process.env.HARAKA': function (test) {
-        test.expect(1);
-        process.env.HARAKA = '/tmp';
-        clearRequireCache();
-        const config = require('../config');
-        // console.log(config);
-        test.equal(config.root_path, path.join('/tmp','config'));
-        test.done();
-    },
-    'config_path process.env.NODE_ENV': function (test) {
-        test.expect(1);
-        process.env.HARAKA = '';
-        process.env.NODE_ENV = 'not-test';
-        clearRequireCache();
-        const config = require('../config');
-        // ./config doesn't exist so path will be resolved ./
-        test.ok(/haraka-config$/.test(config.root_path));
-        process.env.NODE_ENV = 'test';
-        test.done();
-    },
-}
+    describe('config_path', function () {
+        it('config_path process.env.HARAKA', function (done) {
+            process.env.HARAKA = '/tmp';
+            clearRequireCache();
+            const config = require('../config');
+            // console.log(config);
+            assert.equal(config.root_path, path.join('/tmp','config'));
+            done();
+        })
 
-exports.arrange_args = {
-    'setUp' : setUp,
-    // config.get('name');
-    'name' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini']),
-            ['test.ini', 'ini', undefined, undefined]);
-        test.done();
-    },
-    // config.get('name', type);
-    'name, type' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','ini']),
-            ['test.ini', 'ini', undefined, undefined]);
-        test.done();
-    },
-    // config.get('name', cb);
-    'name, callback' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini',cb]),
-            ['test.ini', 'ini', cb, undefined]);
-        test.done();
-    },
-    // config.get('name', cb, options);
-    'name, callback, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini',cb,opts]),
-            ['test.ini', 'ini', cb, opts]);
-        test.done();
-    },
-    // config.get('name', options);
-    'name, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini',opts]),
-            ['test.ini', 'ini', undefined, opts]);
-        test.done();
-    },
-    // config.get('name', type, cb);
-    'name, type, callback' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','ini',cb]),
-            ['test.ini', 'ini', cb, undefined]);
-        test.done();
-    },
-    // config.get('name', type, options);
-    'name, type, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','ini',opts]),
-            ['test.ini', 'ini', undefined, opts]);
-        test.done();
-    },
-    // config.get('name', type, cb, options);
-    'name, type, callback, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','ini',cb, opts]),
-            ['test.ini', 'ini', cb, opts]);
-        test.done();
-    },
-    // config.get('name', list, cb, options);
-    'name, list type, callback, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','list',cb, opts]),
-            ['test.ini', 'list', cb, opts]);
-        test.done();
-    },
-    // config.get('name', binary, cb, options);
-    'name, binary type, callback, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','binary',cb, opts]),
-            ['test.ini', 'binary', cb, opts]);
-        test.done();
-    },
-    // config.get('name', type, cb, options);
-    'name, value type, callback, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','value',cb, opts]),
-            ['test.ini', 'value', cb, opts]);
-        test.done();
-    },
-    // config.get('name', type, cb, options);
-    'name, hjson type, callback, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','hjson',cb, opts]),
-            ['test.ini', 'hjson', cb, opts]);
-        test.done();
-    },
-    // config.get('name', type, cb, options);
-    'name, json type, callback, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','json',cb, opts]),
-            ['test.ini', 'json', cb, opts]);
-        test.done();
-    },
-    // config.get('name', type, cb, options);
-    'name, data type, callback, options' : function (test) {
-        test.expect(1);
-        test.deepEqual(
-            this.config.arrange_args(['test.ini','data',cb, opts]),
-            ['test.ini', 'data', cb, opts]);
-        test.done();
-    },
-}
+        it('config_path process.env.NODE_ENV', function (done) {
+            process.env.HARAKA = '';
+            process.env.NODE_ENV = 'not-test';
+            clearRequireCache();
+            const config = require('../config');
+            // ./config doesn't exist so path will be resolved ./
+            assert.ok(/haraka-config$/.test(config.root_path));
+            process.env.NODE_ENV = 'test';
+            done();
+        })
+    })
+
+    describe('arrange_args', function () {
+        beforeEach(testSetup)
+
+        // config.get('name');
+        it('name', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini']),
+                ['test.ini', 'ini', undefined, undefined]);
+            done();
+        })
+        // config.get('name', type);
+        it('name, type', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','ini']),
+                ['test.ini', 'ini', undefined, undefined]);
+            done();
+        })
+
+        // config.get('name', cb);
+        it('name, callback', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini',cb]),
+                ['test.ini', 'ini', cb, undefined]);
+            done();
+        })
+
+        // config.get('name', cb, options);
+        it('name, callback, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini',cb,opts]),
+                ['test.ini', 'ini', cb, opts]);
+            done();
+        })
+
+        // config.get('name', options);
+        it('name, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini',opts]),
+                ['test.ini', 'ini', undefined, opts]);
+            done();
+        })
+
+        // config.get('name', type, cb);
+        it('name, type, callback', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','ini',cb]),
+                ['test.ini', 'ini', cb, undefined]);
+            done();
+        })
+
+        // config.get('name', type, options);
+        it('name, type, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','ini',opts]),
+                ['test.ini', 'ini', undefined, opts]);
+            done();
+        })
+
+        // config.get('name', type, cb, options);
+        it('name, type, callback, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','ini',cb, opts]),
+                ['test.ini', 'ini', cb, opts]);
+            done();
+        })
+
+        // config.get('name', list, cb, options);
+        it('name, list type, callback, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','list',cb, opts]),
+                ['test.ini', 'list', cb, opts]);
+            done();
+        })
+
+        // config.get('name', binary, cb, options);
+        it('name, binary type, callback, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','binary',cb, opts]),
+                ['test.ini', 'binary', cb, opts]);
+            done();
+        })
+
+        // config.get('name', type, cb, options);
+        it('name, value type, callback, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','value',cb, opts]),
+                ['test.ini', 'value', cb, opts]);
+            done();
+        })
+
+        // config.get('name', type, cb, options);
+        it('name, hjson type, callback, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','hjson',cb, opts]),
+                ['test.ini', 'hjson', cb, opts]);
+            done();
+        })
+
+        // config.get('name', type, cb, options);
+        it('name, json type, callback, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','json',cb, opts]),
+                ['test.ini', 'json', cb, opts]);
+            done();
+        })
+
+        // config.get('name', type, cb, options);
+        it('name, data type, callback, options', function (done) {
+            assert.deepEqual(
+                this.config.arrange_args(['test.ini','data',cb, opts]),
+                ['test.ini', 'data', cb, opts]);
+            done();
+        })
+    })
+})
 
 const hjsonRes = {
     matt: 'waz here and also made comments',
@@ -221,42 +220,41 @@ const yamlRes = {
     }
 }
 
-function _test_get (test, name, type, callback, options, expected) {
-    test.expect(1);
+function _test_get (done, name, type, callback, options, expected) {
     const config = require('../config');
     const cfg = config.get(name, type, callback, options);
-    test.deepEqual(cfg, expected);
-    test.done();
+    assert.deepEqual(cfg, expected);
+    done();
 }
 
-function _test_int (test, name, default_value, expected) {
-    test.expect(2);
+function _test_int (done, name, default_value, expected) {
     const config = require('../config');
     const result = config.getInt(name, default_value);
     if (result) {
-        test.equal(typeof result, 'number');
+        assert.equal(typeof result, 'number');
     }
-    test.deepEqual(result, expected);
-    test.done();
+    assert.deepEqual(result, expected);
+    done();
 }
 
-exports.get = {
-    'setUp' : setUp,
+describe('get', function () {
+    beforeEach(testSetup)
+
     // config.get('name');
-    'test (non-existing)' : function (test) {
-        _test_get(test, 'test', null, null, null, null);
-    },
-    'test (non-existing, cached)' : function (test) {
+    it('test (non-existing)', function (done) {
+        _test_get(done, 'test', null, null, null, null);
+    })
+
+    it('test (non-existing, cached)', function (done) {
         process.env.WITHOUT_CONFIG_CACHE= '';
-        test.expect(1);
         const cfg = this.config.get('test', null, null);
-        test.deepEqual(cfg, null);
-        test.done();
-    },
+        assert.deepEqual(cfg, null);
+        done();
+    })
 
     // config.get('test.ini');
-    'test.ini, no opts' : function (test) {
-        _test_get(test, 'test.ini', null, null, null, {
+    it('test.ini, no opts', function (done) {
+        _test_get(done, 'test.ini', null, null, null, {
             main: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             sect1: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             whitespace: { str_no_trail: 'true', str_trail: 'true' },
@@ -270,11 +268,11 @@ exports.get = {
             'foo.com': { is_bool: 'true' },
             'bar.com': { is_bool: 'false' },
             has_nums: { integer: 454, float: 10.5 },
-        });
-    },
+        })
+    })
 
-    'test.ini, opts' : function (test) {
-        _test_get(test, 'test.ini', 'ini', null, {
+    it('test.ini, opts', function (done) {
+        _test_get(done, 'test.ini', 'ini', null, {
             booleans: [
                 '*.bool_true',
                 '*.bool_false',
@@ -293,82 +291,84 @@ exports.get = {
             'foo.com': { is_bool: 'true' },
             'bar.com': { is_bool: 'false' },
             has_nums: { integer: 454, float: 10.5 },
-        });
-    },
+        })
+    })
 
     // config.get('test.txt');
-    'test.txt' : function (test) {
-        _test_get(test, 'test.txt', null, null, null, null);
-    },
+    it('test.txt', function (done) {
+        _test_get(done, 'test.txt', null, null, null, null);
+    })
 
     // config.get('test.flat');
-    'test.flat, type=' : function (test) {
-        _test_get(test, 'test.flat', null, null, null, 'line1');
-    },
+    it('test.flat, type=', function (done) {
+        _test_get(done, 'test.flat', null, null, null, 'line1');
+    })
 
     // NOTE: the test.flat file had to be duplicated for these tests, to avoid
     // the config cache from returning invalid results.
 
     // config.get('test.flat', 'value');
-    'test.flat, type=value' : function (test) {
-        _test_get(test, 'test.value', 'value', null, null, 'line1');
-    },
+    it('test.flat, type=value', function (done) {
+        _test_get(done, 'test.value', 'value', null, null, 'line1');
+    })
+
     // config.get('test.flat', 'list');
-    'test.flat, type=list' : function (test) {
-        _test_get(test, 'test.list', 'list', null, null,
+    it('test.flat, type=list', function (done) {
+        _test_get(done, 'test.list', 'list', null, null,
             ['line1', 'line2','line3', 'line5'] );
-    },
+    })
+
     // config.get('test.flat', 'data');
-    'test.flat, type=data' : function (test) {
-        _test_get(test, 'test.data', 'data', null, null,
+    it('test.flat, type=data', function (done) {
+        _test_get(done, 'test.data', 'data', null, null,
             ['line1', 'line2','line3', '', 'line5'] );
-    },
+    })
 
     // config.get('test.hjson');
-    'test.hjson, type=' : function (test) {
-        _test_get(test, 'test.hjson', null, null, null, hjsonRes);
-    },
+    it('test.hjson, type=', function (done) {
+        _test_get(done, 'test.hjson', null, null, null, hjsonRes);
+    })
+
     // config.get('test.hjson', 'hjson');
-    'test.hjson, type=hjson' : function (test) {
-        _test_get(test, 'test.hjson', 'hjson', null, null, hjsonRes);
-    },
+    it('test.hjson, type=hjson', function (done) {
+        _test_get(done, 'test.hjson', 'hjson', null, null, hjsonRes);
+    })
 
     // config.get('test.json');
-    'test.json, type=' : function (test) {
-        _test_get(test, 'test.json', null, null, null, jsonRes);
-    },
+    it('test.json, type=', function (done) {
+        _test_get(done, 'test.json', null, null, null, jsonRes);
+    })
+
     // config.get('test.json', 'json');
-    'test.json, type=json' : function (test) {
-        _test_get(test, 'test.json', 'json', null, null, jsonRes);
-    },
+    it('test.json, type=json', function (done) {
+        _test_get(done, 'test.json', 'json', null, null, jsonRes);
+    })
 
     // config.get('test.yaml');
-    'test.yaml, type=' : function (test) {
-        _test_get(test, 'test.yaml', null, null, null, yamlRes);
-    },
+    it('test.yaml, type=', function (done) {
+        _test_get(done, 'test.yaml', null, null, null, yamlRes);
+    })
     // config.get('test.yaml', 'yaml');
-    'test.yaml, type=yaml' : function (test) {
-        _test_get(test, 'test.yaml', 'yaml', null, null, yamlRes);
-    },
+    it('test.yaml, type=yaml', function (done) {
+        _test_get(done, 'test.yaml', 'yaml', null, null, yamlRes);
+    })
     // config.get('missing2.hjson');
-    'missing2.yaml, asked for hjson' : function (test) {
-        _test_get(test, 'missing2.hjson', 'hjson', null, null, {"matt": "waz here - hjson type"});
-    },
+    it('missing2.yaml, asked for hjson', function (done) {
+        _test_get(done, 'missing2.hjson', 'hjson', null, null, {"matt": "waz here - hjson type"});
+    })
     // config.get('missing.json');
-    'missing.yaml, asked for json' : function (test) {
-        _test_get(test, 'missing.json', 'json', null, null, {"matt": "waz here"});
-    },
+    it('missing.yaml, asked for json', function (done) {
+        _test_get(done, 'missing.json', 'json', null, null, {"matt": "waz here"});
+    })
 
-    'test.bin, type=binary' : function (test) {
-        test.expect(2);
+    it('test.bin, type=binary', function (done) {
         const res = this.config.get('test.binary', 'binary');
-        test.equal(res.length, 120);
-        test.ok(Buffer.isBuffer(res));
-        test.done();
-    },
+        assert.equal(res.length, 120);
+        assert.ok(Buffer.isBuffer(res));
+        done();
+    })
 
-    'fully qualified path: /etc/services' : function (test) {
-        test.expect(1);
+    it('fully qualified path: /etc/services', function (done) {
         let res;
         if (/^win/.test(process.platform)) {
             res = this.config.get('c:\\windows\\win.ini', 'list');
@@ -376,72 +376,75 @@ exports.get = {
         else {
             res = this.config.get('/etc/services', 'list');
         }
-        test.ok(res.length);
-        test.done();
-    }
-}
+        assert.ok(res.length);
+        done();
+    })
+})
 
-exports.merged = {
-    'setUp' : setUp,
-    'before_merge' : function (test) {
-        test.expect(1);
+describe('merged', function () {
+    beforeEach(testSetup)
+
+    it('before_merge', function (done) {
         const lc = this.config.module_config(
             path.join('test','default')
         );
-        test.deepEqual(lc.get('test.ini'),
+        assert.deepEqual(lc.get('test.ini'),
             { main: {}, defaults: { one: 'one', two: 'two' } }
         );
-        test.done();
-    },
-    'after_merge': function (test) {
-        test.expect(1);
+        done();
+    })
+
+    it('after_merge', function (done) {
         const lc = this.config.module_config(
             path.join('test','default'),
             path.join('test','override')
         );
-        test.deepEqual(lc.get('test.ini'),
+        assert.deepEqual(lc.get('test.ini'),
             { main: {}, defaults: { one: 'three', two: 'four' } }
         );
-        test.done();
-    },
-    'flat overridden' : function (test) {
-        test.expect(1);
+        done();
+    })
+
+    it('flat overridden', function (done) {
         const lc = this.config.module_config(
             path.join('test','default'),
             path.join('test','override')
         );
-        test.equal(lc.get('test.flat'), 'flatoverrode');
-        test.done();
-    },
-}
+        assert.equal(lc.get('test.flat'), 'flatoverrode');
+        done();
+    })
+})
 
-exports.getInt = {
-    'setUp' : setUp,
+describe('getInt', function () {
+    beforeEach(testSetup)
+
     // config.get('name');
-    'empty filename is NaN' : function (test) {
-        test.expect(2);
+    it('empty filename is NaN', function (done) {
         const result = this.config.getInt();
-        test.equal(typeof result, 'number');
-        test.ok(isNaN(result));
-        test.done();
-    },
-    'empty/missing file contents is NaN' : function (test) {
-        test.expect(2);
+        assert.equal(typeof result, 'number');
+        assert.ok(isNaN(result));
+        done();
+    })
+
+    it('empty/missing file contents is NaN', function (done) {
         const result = this.config.getInt('test-non-exist');
-        test.equal(typeof result, 'number');
-        test.ok(isNaN(result));
-        test.done();
-    },
-    'non-existing file returns default' : function (test) {
-        _test_int(test, 'test-non-exist', 5, 5);
-    },
-    'test.int equals 6' : function (test) {
-        _test_int(test, 'test.int', undefined, 6);
-    },
-    'test.int equals 6 (with default 7)' : function (test) {
-        _test_int(test, 'test.int', 7, 6);
-    },
-}
+        assert.equal(typeof result, 'number');
+        assert.ok(isNaN(result));
+        done();
+    })
+
+    it('non-existing file returns default', function (done) {
+        _test_int(done, 'test-non-exist', 5, 5);
+    })
+
+    it('test.int equals 6', function (done) {
+        _test_int(done, 'test.int', undefined, 6);
+    })
+
+    it('test.int equals 6 (with default 7)', function (done) {
+        _test_int(done, 'test.int', 7, 6);
+    })
+})
 
 const tmpFile = path.resolve('test', 'config', 'dir', '4.ext');
 
@@ -451,42 +454,39 @@ function cleanup (done) {
     })
 }
 
-exports.getDir = {
-    'setUp' : function (done) {
+describe('getDir', function () {
+    beforeEach(function (done) {
         process.env.HARAKA = '';
         clearRequireCache();
         this.config = require('../config');
         cleanup(done);
-    },
-    'tearDown' : function (done) {
-        cleanup(done);
-    },
-    'loads all files in dir' : function (test) {
-        test.expect(4);
+    })
+
+    it('loads all files in dir', function (done) {
         this.config.getDir('dir', { type: 'binary' }, (err, files) => {
             // console.log(files);
-            test.equal(err, null);
-            test.equal(files.length, 3);
-            test.equal(files[0].data, 'contents1\n');
-            test.equal(files[2].data, 'contents3\n');
-            test.done();
+            assert.equal(err, null);
+            assert.equal(files.length, 3);
+            assert.equal(files[0].data, 'contents1\n');
+            assert.equal(files[2].data, 'contents3\n');
+            done();
         })
-    },
-    'errs on invalid dir' : function (test) {
-        test.expect(1);
+    })
+
+    it('errs on invalid dir', function (done) {
         this.config.getDir('dirInvalid', { type: 'binary' }, (err, files) => {
             // console.log(arguments);
-            test.equal(err.code, 'ENOENT');
-            test.done();
+            assert.equal(err.code, 'ENOENT');
+            done();
         })
-    },
-    'reloads when file in dir is touched' : function (test) {
+    })
+
+    it('reloads when file in dir is touched', function (done) {
         if (/darwin/.test(process.platform)) {
             // due to differences in fs.watch, this test is not reliable on Mac OS X
-            test.done();
+            done();
             return;
         }
-        test.expect(6);
         const self = this;
         let callCount = 0;
         function getDirDone (err, files) {
@@ -495,19 +495,19 @@ exports.getDir = {
             callCount++;
             if (callCount === 1) {
                 // console.log(files);
-                test.equal(err, null);
-                test.equal(files.length, 3);
-                test.equal(files[0].data, 'contents1\n');
-                test.equal(files[2].data, 'contents3\n');
+                assert.equal(err, null);
+                assert.equal(files.length, 3);
+                assert.equal(files[0].data, 'contents1\n');
+                assert.equal(files[2].data, 'contents3\n');
                 fs.writeFile(tmpFile, 'contents4\n', (err2, res) => {
-                    test.equal(err2, null);
+                    assert.equal(err2, null);
                     // console.log('file touched, waiting for callback');
                     // console.log(res);
                 });
             }
             if (callCount === 2) {
-                test.equal(files[3].data, 'contents4\n');
-                test.done();
+                assert.equal(files[3].data, 'contents4\n');
+                done();
             }
         }
         function getDir () {
@@ -515,53 +515,53 @@ exports.getDir = {
             self.config.getDir('dir', opts2, getDirDone);
         }
         getDir();
-    }
-}
+    })
+})
 
-exports.hjsonOverrides = {
-    'setUp' : setUp,
-    'no override for smtpgreeting': function (test) {
-        test.expect(1);
+describe('hjsonOverrides', function () {
+    beforeEach(testSetup)
+
+    it('no override for smtpgreeting', function (done) {
         // console.log(this.config);
-        test.deepEqual(
+        assert.deepEqual(
             this.config.get('smtpgreeting', 'list'),
             []
         );
-        test.done();
-    },
-    'with smtpgreeting override': function (test) {
-        test.expect(1);
+        done();
+    })
+
+    it('with smtpgreeting override', function (done) {
         process.env.WITHOUT_CONFIG_CACHE='';
         const main = this.config.get('main.hjson');
         console.log(main);
-        test.deepEqual(
+        assert.deepEqual(
             this.config.get('smtpgreeting', 'list'),
             [ 'this is line one for hjson', 'this is line two for hjson' ]
         );
-        test.done();
-    }
-}
+        done();
+    })
+})
 
-exports.jsonOverrides = {
-    'setUp' : setUp,
-    'no override for smtpgreeting': function (test) {
-        test.expect(1);
+describe('jsonOverrides', function () {
+    beforeEach(testSetup)
+
+    it('no override for smtpgreeting', function (done) {
         // console.log(this.config);
-        test.deepEqual(
+        assert.deepEqual(
             this.config.get('smtpgreeting', 'list'),
             []
         );
-        test.done();
-    },
-    'with smtpgreeting override': function (test) {
-        test.expect(1);
+        done();
+    })
+
+    it('with smtpgreeting override', function (done) {
         process.env.WITHOUT_CONFIG_CACHE='';
         const main = this.config.get('main.json');
         console.log(main);
-        test.deepEqual(
+        assert.deepEqual(
             this.config.get('smtpgreeting', 'list'),
             [ 'this is line one', 'this is line two' ]
         );
-        test.done();
-    }
-}
+        done();
+    })
+})

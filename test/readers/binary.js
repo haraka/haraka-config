@@ -1,31 +1,30 @@
-'use strict';
 
-const fs = require('fs');
+const assert = require('assert')
+const fs     = require('fs')
+const path   = require('path')
 
-function _set_up (done) {
-    this.bin = require('../../readers/binary');
-    done();
-}
+beforeEach(function (done) {
+    this.bin = require('../../readers/binary')
+    done()
+})
 
-exports.load = {
-    setUp : _set_up,
-    'module is required' : function (test) {
-        test.expect(1);
-        test.ok(this.bin);
-        test.done();
-    },
-    'has a load function': function (test) {
-        test.expect(1);
-        test.ok(typeof this.bin.load === 'function');
-        test.done();
-    },
-    'loads the test binary file': function (test) {
-        test.expect(3);
-        const testBin = 'test/config/test.binary';
-        const result = this.bin.load(testBin);
-        test.ok(Buffer.isBuffer(result));
-        test.equal(result.length, 120);
-        test.deepEqual(result, fs.readFileSync(testBin));
-        test.done();
-    },
-}
+describe('binary', function () {
+    it('module is required', function (done) {
+        assert.ok(this.bin)
+        done()
+    })
+
+    it('has a load function', function (done) {
+        assert.ok(typeof this.bin.load === 'function')
+        done()
+    })
+
+    it('loads the test binary file', function (done) {
+        const testBin = path.join('test','config','test.binary')
+        const result = this.bin.load(testBin)
+        assert.ok(Buffer.isBuffer(result))
+        assert.equal(result.length, 120)
+        assert.deepEqual(result, fs.readFileSync(testBin))
+        done()
+    })
+})

@@ -1,30 +1,30 @@
-'use strict';
 
-function _set_up (done) {
-    this.hjson = require('../../readers/hjson');
-    done();
-}
+const assert = require('assert')
+const path   = require('path')
 
-exports.load = {
-    setUp : _set_up,
-    'module is required' : function (test) {
-        test.expect(1);
-        test.ok(this.hjson);
-        test.done();
-    },
-    'has a load function': function (test) {
-        test.expect(1);
-        test.ok(typeof this.hjson.load === 'function');
-        test.done();
-    },
-    'loads the test HJSON file': function (test) {
-        test.expect(4);
-        const result = this.hjson.load('test/config/test.hjson');
-        // console.log(result);
-        test.equal(result.matt, 'waz here and also made comments');
-        test.ok(result.differentArray.length);
-        test.ok(result.object['has a property one']);
-        test.ok(result.object['has a property two']);
-        test.done();
-    },
-}
+beforeEach(function (done) {
+    this.hjson = require('../../readers/hjson')
+    done()
+})
+
+describe('hjson', function () {
+    it('module is required', function (done) {
+        assert.ok(this.hjson)
+        done()
+    })
+
+    it('has a load function', function (done) {
+        assert.ok(typeof this.hjson.load === 'function')
+        done()
+    })
+
+    it('loads the test HJSON file', function (done) {
+        const result = this.hjson.load(path.join('test','config','test.hjson'))
+        // console.log(result)
+        assert.equal(result.matt, 'waz here and also made comments')
+        assert.ok(result.differentArray.length)
+        assert.ok(result.object['has a property one'])
+        assert.ok(result.object['has a property two'])
+        done()
+    })
+})
