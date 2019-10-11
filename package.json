@@ -14,10 +14,10 @@
     "node": ">= 6"
   },
   "dependencies": {
-    "js-yaml": "^3.5.3"
+    "js-yaml": "^3.13.1"
   },
   "optionalDependencies": {
-    "hjson": "^3.1.0"
+    "hjson": "^3.2.0"
   },
   "devDependencies": {
     "eslint": "*",
