@@ -482,7 +482,7 @@ describe('getDir', function () {
     })
 
     it('reloads when file in dir is touched', function (done) {
-        this.timeout(3000);
+        this.timeout(3500);
         if (/darwin/.test(process.platform)) {
             // due to differences in fs.watch, this test is not reliable on Mac OS X
             done();
@@ -502,7 +502,7 @@ describe('getDir', function () {
                 assert.equal(files[2].data, 'contents3\n');
                 fs.writeFile(tmpFile, 'contents4\n', (err2, res) => {
                     assert.equal(err2, null);
-                    console.log('file touched, waiting for callback');
+                    // console.log('file touched, waiting for callback');
                     // console.log(res);
                 });
             }

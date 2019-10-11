@@ -188,9 +188,9 @@ cfreader.read_config = (name, type, cb, options) => {
     //    other files written to the same directory.
 
     cfreader._read_args[name] = {
-        type: type,
-        cb: cb,
-        options: options
+        type,
+        cb,
+        options
     };
 
     // Check cache first
@@ -263,7 +263,7 @@ function fsWatchDir (dirPath) {
 
 cfreader.read_dir = (name, opts, done) => {
 
-    cfreader._read_args[name] = { opts: opts }
+    cfreader._read_args[name] = { opts }
     const type = opts.type || 'binary';
 
     isDirectory(name)
