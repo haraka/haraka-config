@@ -109,25 +109,23 @@ class cfreader {
         const cp = this.config_path;
         if (this._watchers[cp]) return;
 
-        function watcher (fse, filename) {
-            if (!filename) return;
-            const full_path = path.join(cp, filename);
-            if (!this._read_args[full_path]) return;
-            const args = this._read_args[full_path];
-            if (args.options && args.options.no_watch) return;
-            if (this._sedation_timers[filename]) {
-                clearTimeout(this._sedation_timers[filename]);
-            }
-            this._sedation_timers[filename] = setTimeout(() => {
-                console.log(`Reloading file: ${full_path}`);
-                this.load_config(full_path, args.type, args.options);
-                delete this._sedation_timers[filename];
-                if (typeof args.cb === 'function') args.cb();
-            }, 5 * 1000);
-
-        }
         try {
-            this._watchers[cp] = fs.watch(cp, { persistent: false }, watcher);
+            this._watchers[cp] = fs.watch(cp, { persistent: false }, (fse, filename) => {
+                if (!filename) return;
+                const full_path = path.join(cp, filename);
+                if (!this._read_args[full_path]) return;
+                const args = this._read_args[full_path];
+                if (args.options && args.options.no_watch) return;
+                if (this._sedation_timers[filename]) {
+                    clearTimeout(this._sedation_timers[filename]);
+                }
+                this._sedation_timers[filename] = setTimeout(() => {
+                    console.log(`Reloading file: ${full_path}`);
+                    this.load_config(full_path, args.type, args.options);
+                    delete this._sedation_timers[filename];
+                    if (typeof args.cb === 'function') args.cb();
+                }, 5 * 1000);
+            });
         }
         catch (e) {
             console.error(`Error watching directory ${cp}(${e})`);
@@ -378,7 +376,7 @@ class cfreader {
 module.exports = new cfreader();
 
 function isDirectory (filepath) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         fs.stat(filepath, (err, stat) => {
             if (err) return reject(err);
             resolve(stat.isDirectory());
@@ -387,7 +385,7 @@ function isDirectory (filepath) {
 }
 
 function fsReadDir (filepath) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         fs.readdir(filepath, (err, fileList) => {
             if (err) return reject(err);
             resolve(fileList);
