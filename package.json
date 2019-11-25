@@ -3,7 +3,7 @@
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -11,7 +11,7 @@
   },
   "main": "config.js",
   "engines": {
-    "node": ">= 6"
+    "node": ">= 10"
   },
   "dependencies": {
     "js-yaml": "^3.13.1"
@@ -29,9 +29,9 @@
     "url": "https://github.com/haraka/haraka-config/issues"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha test test/readers",
-    "lint": "./node_modules/.bin/eslint *.js readers/*.js test/*.js test/*/*.js",
-    "lintfix": "./node_modules/.bin/eslint --fix *.js readers/*.js test/*.js test/*/*.js",
-    "cover": "./node_modules/.bin/nyc --reporter=lcov ./node_modules/.bin/mocha test test/readers"
+    "test": "npx mocha test test/readers",
+    "lint": "npx eslint *.js readers/*.js test/*.js test/*/*.js",
+    "lintfix": "npx eslint --fix *.js readers/*.js test/*.js test/*/*.js",
+    "cover": "npx nyc --reporter=lcov npm test"
   }
 }

@@ -1,7 +1,7 @@
 engines:
   eslint:
     enabled: true
-    channel: "eslint-4"
+    channel: "eslint-6"
     config:
       config: ".eslintrc.yaml"
 
