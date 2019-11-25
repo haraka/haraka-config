@@ -73,7 +73,7 @@ class cfreader {
     }
 
     on_watch_event (name, type, options, cb) {
-        return function (fse, filename) {
+        return (fse, filename) => {
             if (this._sedation_timers[name]) {
                 clearTimeout(this._sedation_timers[name]);
             }
@@ -89,10 +89,7 @@ class cfreader {
             // After a rename event, re-watch the file
             this._watchers[name].close();
             try {
-                this._watchers[name] = fs.watch(
-                    name,
-                    { persistent: false },
-                    this.on_watch_event(name, type, options, cb));
+                this._watchers[name] = fs.watch(name, { persistent: false }, this.on_watch_event(...arguments));
             }
             catch (e) {
                 if (e.code === 'ENOENT') {
@@ -145,10 +142,9 @@ class cfreader {
         // files. Instead, note which files we attempted
         // to watch that returned ENOENT and fs.stat each periodically
         if (this._watchers[name] || (options && options.no_watch)) return;
+
         try {
-            this._watchers[name] = fs.watch(
-                name, {persistent: false},
-                this.on_watch_event(name, type, options, cb));
+            this._watchers[name] = fs.watch(name, {persistent: false}, this.on_watch_event(name, type, options, cb));
         }
         catch (e) {
             if (e.code !== 'ENOENT') { // ignore error when ENOENT
@@ -159,7 +155,6 @@ class cfreader {
                 this.ensure_enoent_timer();
             }
         }
-        return;
     }
 
     get_cache_key (name, options) {
@@ -168,8 +163,7 @@ class cfreader {
         if (this._overrides[name]) return name;
 
         if (options) {
-            // this ordering of objects isn't guaranteed to be consistent, but I've
-            // heard that it typically is.
+            // ordering of objects isn't guaranteed to be consistent, but typically is.
             return name + JSON.stringify(options);
         }
 
@@ -222,32 +216,32 @@ class cfreader {
         return result;
     }
 
-    read_dir (name, opts, done) {
+    read_dir (name, opts) {
+        return new Promise((resolve, reject) => {
 
-        this._read_args[name] = { opts }
-        const type = opts.type || 'binary';
+            this._read_args[name] = { opts }
+            const type = opts.type || 'binary';
 
-        isDirectory(name)
-            .then((result) => {
-                return fsReadDir(name);
-            })
-            .then((fileList) => {
-                const reader = require(path.resolve(__dirname, 'readers', type));
-                const promises = [];
-                for (const file of fileList) {
-                    promises.push(reader.loadPromise(path.resolve(name, file)))
-                }
-                return Promise.all(promises);
-            })
-            .then((fileList) => {
-                // console.log(fileList);
-                done(null, fileList);
-            })
-            .catch((error) => {
-                done(error);
-            })
+            isDirectory(name)
+                .then((result) => {
+                    return fsReadDir(name);
+                })
+                .then((fileList) => {
+                    const reader = require(path.resolve(__dirname, 'readers', type));
+                    const promises = [];
+                    for (const file of fileList) {
+                        promises.push(reader.loadPromise(path.resolve(name, file)))
+                    }
+                    return Promise.all(promises);
+                })
+                .then((fileList) => {
+                    // console.log(fileList);
+                    resolve(fileList);
+                })
+                .catch(reject)
 
-        if (opts.watchCb) this.fsWatchDir(name);
+            if (opts.watchCb) this.fsWatchDir(name);
+        })
     }
 
     ensure_enoent_timer () {
