@@ -469,8 +469,8 @@ describe('getDir', function () {
             // console.log(files);
             assert.equal(err, null);
             assert.equal(files.length, 3);
-            assert.equal(files[0].data.toString(), `contents1${os.EOL}`);
-            assert.equal(files[2].data.toString(), `contents3${os.EOL}`);
+            assert.equal(files[0].data, `contents1${os.EOL}`);
+            assert.equal(files[2].data, `contents3${os.EOL}`);
             done();
         })
     })
