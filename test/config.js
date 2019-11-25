@@ -1,7 +1,8 @@
 
 const assert = require('assert')
-const fs     = require('fs');
-const path   = require('path');
+const fs     = require('fs')
+const os     = require('os')
+const path   = require('path')
 
 function cb () { return false; }
 const opts = { booleans: ['arg1'] };
@@ -468,8 +469,8 @@ describe('getDir', function () {
             // console.log(files);
             assert.equal(err, null);
             assert.equal(files.length, 3);
-            assert.equal(files[0].data.toString(), 'contents1\n');
-            assert.equal(files[2].data.toString(), 'contents3\n');
+            assert.equal(files[0].data.toString(), `contents1${os.EOL}`);
+            assert.equal(files[2].data.toString(), `contents3${os.EOL}`);
             done();
         })
     })
@@ -499,8 +500,8 @@ describe('getDir', function () {
                 // console.log(files);
                 assert.equal(err, null);
                 assert.equal(files.length, 3);
-                assert.equal(files[0].data, 'contents1\n');
-                assert.equal(files[2].data, 'contents3\n');
+                assert.equal(files[0].data, `contents1${os.EOL}`);
+                assert.equal(files[2].data, `contents3${os.EOL}`);
                 fs.writeFile(tmpFile, 'contents4\n', (err2, res) => {
                     assert.equal(err2, null);
                     // console.log('file touched, waiting for callback');
