@@ -464,11 +464,12 @@ describe('getDir', function () {
 
     it('loads all files in dir', function (done) {
         this.config.getDir('dir', { type: 'binary' }, (err, files) => {
+            assert.ifError(err);
             // console.log(files);
             assert.equal(err, null);
             assert.equal(files.length, 3);
-            assert.equal(files[0].data, 'contents1\n');
-            assert.equal(files[2].data, 'contents3\n');
+            assert.equal(files[0].data.toString(), 'contents1\n');
+            assert.equal(files[2].data.toString(), 'contents3\n');
             done();
         })
     })

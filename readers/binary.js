@@ -7,7 +7,7 @@ exports.load = (name) => {
 }
 
 exports.loadPromise = (name) => {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         fs.readFile(name, (err, content) => {
             if (err) return reject(err);
             resolve({ path: name, data: content });

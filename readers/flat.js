@@ -52,7 +52,7 @@ exports.load = (name, type, options, regex) => {
     return result;
 }
 
-exports.empty = function (options, type) {
+exports.empty = (options, type) => {
     switch (type) {
         case 'flat':
         case 'value':
