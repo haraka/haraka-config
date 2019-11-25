@@ -249,20 +249,17 @@ class cfreader {
         // Create timer
         this._enoent_timer = setInterval(() => {
             const files = Object.keys(this._enoent_files);
-            for (let i=0; i<files.length; i++) {
-                const fileOuter = files[i];
+            for (const fileOuter of files) {
                 /* BLOCK SCOPE */
-                (function (file) {
+                ((file) => {
                     fs.stat(file, (err) => {
                         if (err) return;
                         // File now exists
                         delete(this._enoent_files[file]);
                         const args = this._read_args[file];
                         this.load_config(file, args.type, args.options, args.cb);
-                        this._watchers[file] = fs.watch(
-                            file, {persistent: false},
-                            this.on_watch_event(
-                                file, args.type, args.options, args.cb));
+                        this._watchers[file] = fs.watch(file, {persistent: false},
+                            this.on_watch_event(file, args.type, args.options, args.cb));
                     });
                 })(fileOuter); // END BLOCK SCOPE
             }
@@ -338,31 +335,30 @@ class cfreader {
         //     * remove them and add them back
         const cp = this.config_path;
         const cache_key = this.get_cache_key(name, options);
+
         if (this._config_cache[cache_key]) {
-            const ck_keys = Object.keys(this._config_cache[cache_key]);
-            for (let i=0; i<ck_keys.length; i++) {
-                if (ck_keys[i].substr(0,1) !== '!') continue;
-                delete this._config_cache[path.join(cp, ck_keys[i].substr(1))];
+            for (const ck in this._config_cache[cache_key]) {
+                if (ck.substr(0,1) === '!') delete this._config_cache[path.join(cp, ck.substr(1))];
             }
         }
 
         // Allow JSON files to create or overwrite other config file data
         // by prefixing the outer variable name with ! e.g. !smtp.ini
-        const keys = Object.keys(result);
-        for (let j=0; j<keys.length; j++) {
-            if (keys[j].substr(0,1) !== '!') continue;
-            const fn = keys[j].substr(1);
+        for (const key in result) {
+            if (key.substr(0,1) !== '!') continue;
+            const fn = key.substr(1);
             // Overwrite the config cache for this filename
             console.log(`Overriding file ${fn} with config from ${name}`);
-            this._config_cache[path.join(cp, fn)] = result[keys[j]];
+            this._config_cache[path.join(cp, fn)] = result[key];
         }
     }
 
     fsWatchDir (dirPath) {
 
         if (this._watchers[dirPath]) return;
+        const watchOpts = { persistent: false, recursive: true }
 
-        this._watchers[dirPath] = fs.watch(dirPath, { persistent: false, recursive: true }, (fse, filename) => {
+        this._watchers[dirPath] = fs.watch(dirPath, watchOpts, (fse, filename) => {
             // console.log(`event: ${fse}, ${filename}`);
             if (!filename) return;
             const full_path = path.join(dirPath, filename);
