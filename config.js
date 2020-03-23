@@ -52,7 +52,9 @@ class Config {
     }
 
     getDir (name, opts, done) {
-        cfreader.read_dir(path.resolve(this.root_path, name), opts, done);
+        cfreader.read_dir(path.resolve(this.root_path, name), opts).then((files) => {
+            done(null, files)   // keep the API consistent
+        }).catch(done)
     }
 
     arrange_args (args) {
