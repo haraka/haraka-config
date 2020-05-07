@@ -35,9 +35,17 @@ class cfreader {
             is_truth:       /^(?:true|yes|ok|enabled|on|1)$/i,
             is_array:       /(.+)\[\]$/,
         }
+
+        let watch_interval = process.env.HARAKA_CONFIG_SLOWWATCH
+        if (watch_interval) console.error(`configfile.js: Requested to use SLOW config watchers with POLL interval ${watch_interval} secs`)
     }
 
     get_path_to_config_dir () {
+        if (process.env.HARAKA_CONFIG_CUSTOM_DIR) {
+            this.config_path = process.env.HARAKA_CONFIG_CUSTOM_DIR
+            return
+        }
+
         if (process.env.HARAKA) {
             // console.log(`process.env.HARAKA: ${process.env.HARAKA}`);
             this.config_path = path.join(process.env.HARAKA, 'config');
@@ -103,6 +111,25 @@ class cfreader {
         }
     }
 
+    on_slowwatch_event (name, type, options, cb) {
+        return (fstat_cur, fstat_prev) => {
+            // skipping initial missing file watch reload
+            if (fstat_prev.mtimeMs === 0 && fstat_cur.mtimeMs === 0) return
+
+            console.log(`WATCH EVENT: ${fstat_prev.mtime} -> ${fstat_cur.mtime}, will trigger reload in 5secs`)
+
+            if (this._sedation_timers[name]) {
+                clearTimeout(this._sedation_timers[name]);
+            }
+            this._sedation_timers[name] = setTimeout(() => {
+                console.log(`Reloading file: ${name}`);
+                this.load_config(name, type, options);
+                delete this._sedation_timers[name];
+                if (typeof cb === 'function') cb();
+            }, 5 * 1000);
+        }
+    }
+
     watch_dir () {
         // NOTE: Has OS platform limitations:
         // https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener
@@ -155,6 +182,14 @@ class cfreader {
         }
     }
 
+    slowwatch_file (name, type, cb, options) {
+        if (this._watchers[name] || (options && options.no_watch)) return;
+
+        this._watchers[name] = fs.watchFile(name,
+            { persistent: false, interval: process.env.HARAKA_CONFIG_SLOWWATCH * 1000 },
+            this.on_slowwatch_event(name, type, options, cb))
+    }
+
     get_cache_key (name, options) {
 
         // Ignore options etc. if this is an overriden value
@@ -197,6 +232,12 @@ class cfreader {
         // load config file
         const result = this.load_config(name, type, options);
         if (!this.watch_files) return result;
+
+        if (process.env.HARAKA_CONFIG_SLOWWATCH) {
+            this.slowwatch_file(name, type, cb, options)
+
+            return result
+        }
 
         // We can watch the directory on these platforms which
         // allows us to notice when files are newly created.
@@ -284,10 +325,12 @@ class cfreader {
         }
 
         let cfrType = this.get_filetype_reader(type);
+        const cache_key = this.get_cache_key(name, options);
 
         if (!fs.existsSync(name)) {
             if (!/\.h?json$/.test(name)) {
-                return cfrType.empty(options, type);
+                // console.error(`ENOENT ${name}`)
+                return this._config_cache[cache_key] = cfrType.empty(options, type)
             }
 
             const yaml_name = name.replace(/\.h?json$/, '.yaml');
@@ -299,7 +342,6 @@ class cfreader {
             cfrType = this.get_filetype_reader(type);
         }
 
-        const cache_key = this.get_cache_key(name, options);
         try {
             switch (type) {
                 case 'ini':

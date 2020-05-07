@@ -116,7 +116,7 @@ class Config {
     }
 
     module_config (defaults_path, overrides_path) {
-        const cfg = new Config(path.join(defaults_path, 'config'), true);
+        const cfg = new Config(process.env.HARAKA_CONFIG_CUSTOM_DIR || path.join(defaults_path, 'config'), true);
         if (overrides_path) {
             cfg.overrides_path = path.join(overrides_path, 'config');
         }
