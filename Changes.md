@@ -1,6 +1,8 @@
 
 ## 1.N.NN - 20YY-MM-DD
 
+- configfile: allow selecting slow watch behavior via env var
+
 ## 1.0.19 - 2019-MM-DD
 
 - configfile: convert to es6 class

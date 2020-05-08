@@ -329,3 +329,8 @@ in a plugins register() function are read *before* Haraka drops privileges.
 Be sure that Haraka's user/group has permission to read these files else
 Haraka will be unable to update them after changes.
 
+### Network filesystems
+
+Auto-reload is not supported on an FS that doesn't implement proper file changes notify mechanism. 
+
+Imagine you've got several Haraka nodes that keep their config dir on a network FS. You have updated a configuration file on the network server and would like to let all Haraka nodes know your file has been updated. For that, you have to login to all your Haraka nodes and `touch` the relevant config file manually. Obviously, this really resembles plain old `scp` copy, except that you only touch files instead of copying data. It almost makes no point of using a network FS then. So, for those people who desire all this drama to be irrelevant, we've made a special option available that allows to poll files for changes periodically instead of relying on notify mechanism. It is very slow and triggers traffic on network FS during the poll, but it's the only way around. Set `HARAKA_CONFIG_SLOWWATCH` env var to desired poll interval (> 10 recommended) and you'll have your config files reloaded (in > 15 secs) after the file update.
