@@ -4,6 +4,7 @@
 
 ## 1.0.19 - 2021-06-10
 
+- configfile: disable watch dir when platform not mac or win
 - configfile: convert to es6 class
 - configfile.read_dir: promisify
 - configfile: use simpler es6 `for..in` and `for..of`

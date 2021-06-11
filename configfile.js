@@ -356,6 +356,9 @@ class cfreader {
         if (this._watchers[dirPath]) return;
         const watchOpts = { persistent: false, recursive: true }
 
+        // recursive is only supported on Windows (win32, win64) and macOS (darwin)
+        if (!/win/.test(process.platform)) watchOpts.recursive = false
+
         this._watchers[dirPath] = fs.watch(dirPath, watchOpts, (fse, filename) => {
             // console.log(`event: ${fse}, ${filename}`);
             if (!filename) return;
