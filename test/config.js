@@ -492,30 +492,30 @@ describe('getDir', function () {
         }
         const self = this;
         let callCount = 0;
-        function getDirDone (err, files) {
-            // console.log('Loading: test/config/dir');
-            if (err) console.error(err);
-            callCount++;
-            if (callCount === 1) {
-                // console.log(files);
-                assert.equal(err, null);
-                assert.equal(files.length, 3);
-                assert.equal(files[0].data, `contents1${os.EOL}`);
-                assert.equal(files[2].data, `contents3${os.EOL}`);
-                fs.writeFile(tmpFile, 'contents4\n', (err2, res) => {
-                    assert.equal(err2, null);
-                    // console.log('file touched, waiting for callback');
-                    // console.log(res);
-                });
-            }
-            if (callCount === 2) {
-                assert.equal(files[3].data, 'contents4\n');
-                done();
-            }
-        }
+
         function getDir () {
             const opts2 = { type: 'binary', watchCb: getDir };
-            self.config.getDir('dir', opts2, getDirDone);
+            self.config.getDir('dir', opts2, (err, files) => {
+                // console.log('Loading: test/config/dir');
+                if (err) console.error(err);
+                callCount++;
+                if (callCount === 1) {
+                    // console.log(files);
+                    assert.equal(err, null);
+                    assert.equal(files.length, 3);
+                    assert.equal(files[0].data, `contents1${os.EOL}`);
+                    assert.equal(files[2].data, `contents3${os.EOL}`);
+                    fs.writeFile(tmpFile, 'contents4\n', (err2, res) => {
+                        assert.equal(err2, null);
+                        // console.log('file touched, waiting for callback');
+                        // console.log(res);
+                    });
+                }
+                if (callCount === 2) {
+                    assert.equal(files[3].data, 'contents4\n');
+                    done();
+                }
+            });
         }
         getDir();
     })

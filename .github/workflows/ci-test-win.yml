@@ -14,11 +14,11 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        node-version: [10.x, 12.x]
+        node-version: [ 12.x, 14.x, 16.x ]
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       name: git checkout
       with:
         fetch-depth: 1
