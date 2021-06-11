@@ -1,11 +1,13 @@
 
-## 1.N.NN - 20YY-MM-DD
+## NEXT - 202Y-MM-DD
 
-## 1.0.19 - 2019-MM-DD
+
+## 1.0.19 - 2021-06-10
 
 - configfile: convert to es6 class
 - configfile.read_dir: promisify
 - configfile: use simpler es6 `for..in` and `for..of`
+- getDir tests, use os.EOL for comparison
 
 
 ## 1.0.18 - 2019-10-11

@@ -20,9 +20,11 @@ jobs:
       with:
         version: 12.x
 
-    - name: install, run
+    - name: Install
+      run: npm install
+
+    - name: Test
       run: |
-        npm install
         npm install nyc codecov
         npm run cover
 
