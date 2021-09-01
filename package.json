@@ -14,7 +14,7 @@
     "node": ">= 10"
   },
   "dependencies": {
-    "js-yaml": "^3.13.1"
+    "js-yaml": "^4.1.0"
   },
   "optionalDependencies": {
     "hjson": "^3.2.0"
