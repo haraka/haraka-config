@@ -3,7 +3,7 @@
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -11,18 +11,18 @@
   },
   "main": "config.js",
   "engines": {
-    "node": ">= 10"
+    "node": ">= 12"
   },
   "dependencies": {
-    "js-yaml": "^3.13.1"
+    "js-yaml": "^4.1.0"
   },
   "optionalDependencies": {
     "hjson": "^3.2.0"
   },
   "devDependencies": {
-    "eslint": "*",
+    "eslint": ">=6",
     "eslint-plugin-haraka": "*",
-    "mocha": "*"
+    "mocha": ">=8"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
