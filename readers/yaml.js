@@ -4,7 +4,7 @@ const fs   = require('fs');
 const yaml = require('js-yaml');
 
 exports.load = (name) => {
-    return yaml.safeLoad(fs.readFileSync(name, 'utf8'));
+    return yaml.load(fs.readFileSync(name, 'utf8'));
 }
 
 exports.empty = () => {
