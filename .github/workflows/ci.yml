@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+
+env:
+  CI: true
+
+jobs:
+  lint:
+    uses: haraka/.github/.github/workflows/lint.yml@master
+
+  coverage:
+    uses: haraka/.github/.github/workflows/coverage.yml@master
+    secrets: inherit
+
+  test:
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    # services:
+    #   redis:
+    #     image: redis
+    #     ports:
+    #       - 6379:6379
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        node-version: [ 14, 16, 18 ]
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-node@v3
+      name: Node ${{ matrix.node-version }} on ${{ matrix.os }}
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - run: npm install
+
+    - run: npm test
