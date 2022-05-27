@@ -1,16 +1,21 @@
-name: Lint
+name: Ubuntu CI Tests
 
 on: [ push, pull_request ]
 
 jobs:
 
-  lint:
+  ci-test:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        node-version: [ 14.x ]
+        os: [ ubuntu-latest ]
+        node-version: [ 12, 14, 16 ]
+      fail-fast: false
+
+    env:
+      CI: true
 
     steps:
     - uses: actions/checkout@v2
@@ -18,17 +23,12 @@ jobs:
       with:
         fetch-depth: 1
 
-    - uses: actions/setup-node@v1
+    - uses: actions/setup-node@v2
       name: Use Node.js ${{ matrix.node-version }}
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Install
+    - name: npm install
       run: npm install
 
-    - name: Lint
-      run: npm run lint
-
-      env:
-        CI: true
-
+    - run: npm run test
