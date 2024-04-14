@@ -251,23 +251,19 @@ class cfreader {
     if (this._enoent_timer) return
     // Create timer
     this._enoent_timer = setInterval(() => {
-      const files = Object.keys(this._enoent_files)
-      for (const fileOuter of files) {
-        /* BLOCK SCOPE */
-        ;((file) => {
-          fs.stat(file, (err) => {
-            if (err) return
-            // File now exists
-            delete this._enoent_files[file]
-            const args = this._read_args[file]
-            this.load_config(file, args.type, args.options, args.cb)
-            this._watchers[file] = fs.watch(
-              file,
-              { persistent: false },
-              this.on_watch_event(file, args.type, args.options, args.cb),
-            )
-          })
-        })(fileOuter) // END BLOCK SCOPE
+      for (const file of Object.keys(this._enoent_files)) {
+        fs.stat(file, (err) => {
+          if (err) return
+          // File now exists
+          delete this._enoent_files[file]
+          const args = this._read_args[file]
+          this.load_config(file, args.type, args.options, args.cb)
+          this._watchers[file] = fs.watch(
+            file,
+            { persistent: false },
+            this.on_watch_event(file, args.type, args.options, args.cb),
+          )
+        })
       }
     }, 60 * 1000)
     this._enoent_timer.unref() // This shouldn't block exit
