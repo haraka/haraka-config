@@ -8,32 +8,27 @@ beforeEach(function (done) {
 })
 
 describe('flat', function () {
-  it('module is required', function (done) {
+  it('module is required', function () {
     assert.ok(this.flat)
-    done()
   })
 
-  it('has a load function', function (done) {
+  it('has a load function', function () {
     assert.ok(typeof this.flat.load === 'function')
-    done()
   })
 
-  it('loads the test flat file, as list', function (done) {
+  it('loads the test flat file, as list', function () {
     const result = this.flat.load('test/config/test.flat', 'list', null, regex)
     assert.deepEqual(result, ['line1', 'line2', 'line3', 'line5'])
-    done()
   })
 
-  it('loads the test flat file, unspecified type', function (done) {
+  it('loads the test flat file, unspecified type', function () {
     const result = this.flat.load('test/config/test.flat', null, null, regex)
     assert.deepEqual(result, 'line1')
-    done()
   })
 
-  it('returns hostname for empty "me"', function (done) {
+  it('returns hostname for empty "me"', function () {
     const result = this.flat.load('test/config/me', null, null, regex)
     console.log(result)
     assert.ok(result)
-    done()
   })
 })

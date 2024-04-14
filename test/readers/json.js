@@ -6,22 +6,19 @@ beforeEach(function (done) {
 })
 
 describe('json', function () {
-  it('module is required', function (done) {
+  it('module is required', function () {
     assert.ok(this.json)
-    done()
   })
 
-  it('has a load function', function (done) {
+  it('has a load function', function () {
     assert.ok(typeof this.json.load === 'function')
-    done()
   })
 
-  it('loads the test JSON file', function (done) {
+  it('loads the test JSON file', function () {
     const result = this.json.load('test/config/test.json')
     // console.log(result);
     assert.equal(result.matt, 'waz here')
     assert.ok(result.array.length)
     assert.ok(result.objecty['has a property'])
-    done()
   })
 })

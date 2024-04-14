@@ -5,3 +5,6 @@ env:
   es2022: true
 
 extends: ['@haraka']
+
+rules:
+  no-extra-semi: 1
