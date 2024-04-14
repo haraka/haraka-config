@@ -73,7 +73,7 @@ class cfreader {
     }
 
     on_watch_event (name, type, options, cb) {
-        return (fse, filename) => {
+        return (fse) => {
             if (this._sedation_timers[name]) {
                 clearTimeout(this._sedation_timers[name]);
             }
@@ -221,7 +221,7 @@ class cfreader {
             const type = opts.type || 'binary';
 
             isDirectory(name)
-                .then((result) => {
+                .then(() => {
                     return fsReadDir(name);
                 })
                 .then((fileList) => {

@@ -117,7 +117,6 @@ exports.init_booleans = (options, result) => {
     return result;
 }
 
-exports.logger = (msg, level) => {
-    // if (!level) level = 'logwarn';
+exports.logger = (msg) => {
     console.log(msg);
 }

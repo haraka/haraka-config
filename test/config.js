@@ -466,7 +466,6 @@ describe('getDir', function () {
     it('loads all files in dir', function (done) {
         this.config.getDir('dir', { type: 'binary' }, (err, files) => {
             assert.ifError(err);
-            // console.log(files);
             assert.equal(err, null);
             assert.equal(files.length, 3);
             assert.equal(files[0].data, `contents1${os.EOL}`);
@@ -476,8 +475,7 @@ describe('getDir', function () {
     })
 
     it('errs on invalid dir', function (done) {
-        this.config.getDir('dirInvalid', { type: 'binary' }, (err, files) => {
-            // console.log(arguments);
+        this.config.getDir('dirInvalid', { type: 'binary' }, (err) => {
             assert.equal(err.code, 'ENOENT');
             done();
         })
@@ -505,10 +503,9 @@ describe('getDir', function () {
                     assert.equal(files.length, 3);
                     assert.equal(files[0].data, `contents1${os.EOL}`);
                     assert.equal(files[2].data, `contents3${os.EOL}`);
-                    fs.writeFile(tmpFile, 'contents4\n', (err2, res) => {
+                    fs.writeFile(tmpFile, 'contents4\n', (err2) => {
                         assert.equal(err2, null);
                         // console.log('file touched, waiting for callback');
-                        // console.log(res);
                     });
                 }
                 if (callCount === 2) {

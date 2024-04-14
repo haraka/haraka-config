@@ -1,6 +1,10 @@
 
-## NEXT - 202Y-MM-DD
+### Unreleased
 
+### 1.2.0 - 2024-04-14
+
+- 
+- deps: version bumps
 
 ### 1.1.0 - 2022-05-27
 
@@ -115,3 +119,4 @@
 
 - added wildcard boolean support
 - reduce node required 4.3 -> 0.10.43
+[1.2.0]: https://github.com/haraka/haraka-config/releases/tag/1.2.0
