@@ -16,9 +16,9 @@ jobs:
     secrets: inherit
 
   ubuntu:
-    needs: [ lint ]
+    needs: [lint]
     uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
   windows:
-    needs: [ lint ]
+    needs: [lint]
     uses: haraka/.github/.github/workflows/windows.yml@master

@@ -1,9 +1,9 @@
-'use strict';
+'use strict'
 
 exports.load = (name) => {
-    return require(name);
+  return require(name)
 }
 
 exports.empty = () => {
-    return {};
+  return {}
 }

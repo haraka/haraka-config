@@ -10,7 +10,11 @@
     "url": "git@github.com:haraka/haraka-config.git"
   },
   "main": "config.js",
-  "files": ["readers","configfile.js","CHANGELOG.md"],
+  "files": [
+    "readers",
+    "configfile.js",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=16"
   },
