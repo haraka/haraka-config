@@ -16,8 +16,7 @@ class cfreader {
     this._config_cache = {}
     this._read_args = {}
     this._watchers = {}
-    this._enoent_timer = false
-    this._enoent_files = {}
+    this._enoent = { timer: false, files: [] }
     this._sedation_timers = {}
     this._overrides = {}
 
@@ -62,7 +61,7 @@ class cfreader {
     for (const candidate of config_dir_candidates) {
       try {
         const stat = fs.statSync(candidate)
-        if (stat && stat.isDirectory()) {
+        if (stat?.isDirectory()) {
           this.config_path = candidate
           return
         }
@@ -99,6 +98,7 @@ class cfreader {
       if (this._sedation_timers[name]) {
         clearTimeout(this._sedation_timers[name])
       }
+
       this._sedation_timers[name] = setTimeout(() => {
         console.log(`Reloading file: ${name}`)
         this.load_config(name, type, options)
@@ -118,7 +118,7 @@ class cfreader {
         )
       } catch (e) {
         if (e.code === 'ENOENT') {
-          this._enoent_files[name] = true
+          this._enoent.files[name] = true
           this.ensure_enoent_timer()
         } else {
           console.error(`Error watching file: ${name} : ${e}`)
@@ -179,7 +179,7 @@ class cfreader {
         // ignore error when ENOENT
         console.error(`Error watching config file: ${name} : ${e}`)
       } else {
-        this._enoent_files[name] = true
+        this._enoent.files[name] = true
         this.ensure_enoent_timer()
       }
     }
@@ -269,14 +269,14 @@ class cfreader {
   }
 
   ensure_enoent_timer() {
-    if (this._enoent_timer) return
+    if (this._enoent.timer) return
     // Create timer
-    this._enoent_timer = setInterval(() => {
-      for (const file of Object.keys(this._enoent_files)) {
+    this._enoent.timer = setInterval(() => {
+      for (const file of Object.keys(this._enoent.files)) {
         fs.stat(file, (err) => {
           if (err) return
           // File now exists
-          delete this._enoent_files[file]
+          delete this._enoent.files[file]
           const args = this._read_args[file]
           this.load_config(file, args.type, args.options, args.cb)
           this._watchers[file] = fs.watch(
@@ -287,7 +287,7 @@ class cfreader {
         })
       }
     }, 60 * 1000)
-    this._enoent_timer.unref() // This shouldn't block exit
+    this._enoent.timer.unref() // This shouldn't block exit
   }
 
   get_filetype_reader(type) {
