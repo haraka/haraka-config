@@ -6,6 +6,10 @@
 - feat: all file readers now have load and loadPromise, so that
   a feature like getDir can safely use the nicer promise API
 - chore: require syntax, prefix node builtins with `node:`
+- moved configfile -> lib/reader
+- moved readers/ -> lib/readers
+- refactored regex lib to lib/regex
+- refactored watch functions into lib/watch
 - es6
   - add several uses of `...` (spread operator / param collection)
   - replace `for i` with `for ... of`
