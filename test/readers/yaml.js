@@ -1,7 +1,7 @@
 const assert = require('assert')
 
 beforeEach(function (done) {
-  this.yaml = require('../../readers/yaml')
+  this.yaml = require('../../lib/readers/yaml')
   done()
 })
 

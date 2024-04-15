@@ -8,14 +8,14 @@ Haraka config file loader, parser, and watcher.
 
 Haraka's config loader can load several types of configuration files.
 
-- 'value' - load a flat file containing a single value (default)
-- 'ini'.  - load an ini file
-- 'json'  - load a json file
-- 'hjson' - load a hjson file
-- 'yaml'  - load a yaml file
-- 'list'  - load a flat file containing a list of values
-- 'data'  - load a flat file containing a list, keeping comments and whitespace.
-- 'binary' - load a binary file into a Buffer
+- value - load a flat file containing a single value (default)
+- ini - load an ini file
+- json - load a json file
+- hjson - load a hjson file
+- yaml - load a yaml file
+- list - load a flat file containing a list of values
+- data - load a flat file containing a list, keeping comments and whitespace.
+- binary - load a binary file into a Buffer
 
 See the [File Formats](#file_formats) section below for a more detailed
 explanation of each of the formats.
@@ -68,12 +68,8 @@ exports.hook_connect = function (next, connection) {
 The `options` object can accepts the following keys:
 
 - `no_watch` (default: false) - prevents Haraka from watching for updates.
-- `no_cache` (default: false) - prevents Haraka from caching the file. This
-  means that the file will be re-read on every call to `config.get`. This is
-  not recommended as config files are read syncronously, will block the event
-  loop, and will slow down Haraka.
-- `booleans` (default: none) - for .ini files, this allows specifying
-  boolean type keys. Default true or false can be specified.
+- `no_cache` (default: false) - prevents Haraka from caching the file. The file will be re-read on every call to `config.get`. This is not recommended as config files are read syncronously and will slow down Haraka.
+- `booleans` (default: none) - for .ini files, this allows specifying boolean type keys. Default true or false can be specified.
 
 ## <a name="overrides">Default Config and Overrides</a>
 
@@ -134,17 +130,14 @@ sub1=something
 sub2=otherthing
 ```
 
-This allows plugins to provide a default config, and allow users to override
+This allows plugins to ship a default config and users can override
 values on a key-by-key basis.
 
 # <a name="file_formats">File Formats</a>
 
 ## Ini Files
 
-INI files have their heritage in early versions of Microsoft Windows.
-Entries are a simple format of key=value pairs, with optional [sections].
-
-Here is a typical example:
+[INI files](https://en.wikipedia.org/wiki/INI_file) are key=value pairs, with optional [sections]. A typical example:
 
 ```ini
 first_name=Matt
@@ -180,14 +173,14 @@ That produces the following Javascript object:
 }
 ```
 
-Items before any [section] marker are in the implicit [main] section.
+Items before any `[section]` marker are in the implicit `[main]` section.
 
-There is some auto-conversion of values on the right hand side of
-the equals: integers are converted to integers, floats are converted to
-floats.
+Some values on the right hand side of the equals are converted:
 
-The key=value pairs support continuation lines using the
-backslash "\" character.
+- integers are converted to integers
+- floats are converted to floats.
+
+The key=value pairs support continuation lines using the backslash "\" character.
 
 The `options` object allows you to specify which keys are boolean:
 
@@ -198,9 +191,9 @@ The `options` object allows you to specify which keys are boolean:
 ```
 
 On the options declarations, key names are formatted as section.key.
-If the key name does not specify a section, it is presumed to be [main].
+If the key name does not specify a section, it is presumed to be `[main]`.
 
-This ensures these values are converted to true Javascript booleans when parsed, and supports the following options for boolean values:
+Declaring booleans ensures that values are converted as boolean when parsed, and supports the following options for boolean values:
 
 ```
 true, yes, ok, enabled, on, 1
@@ -241,20 +234,13 @@ which produces this javascript array:
 
 ## Flat Files
 
-Flat files are simply either lists of values separated by \n or a single
-value in a file on its own. Those who have used qmail or qpsmtpd will be
-familiar with this format.
-Lines starting with '#' and blank lines will be ignored unless the type is
-specified as 'data', however even then line endings will be stripped.
-See plugins/dnsbl.js for an example.
+Flat files are simply either lists of values separated by \n or a single value in a file on its own. Qmail or qpsmtpd users will be familiar with this format. Lines starting with '#' and blank lines will be ignored unless the type is specified as 'data', however even then line endings will be stripped.
 
 ## JSON Files
 
 These are as you would expect, and returns an object as given in the file.
 
-If a requested .json or .hjson file does not exist then the same file will be checked
-for with a .yaml extension and that will be loaded instead. This is done
-because YAML files are far easier for a human to write.
+If a requested .json or .hjson file does not exist then the same file will be checked for with a .yaml extension and that will be loaded instead. This is done because YAML files are far easier for a human to write.
 
 You can use JSON, HJSON or YAML files to override any other file by prefixing the outer variable name with a `!` e.g.
 
@@ -264,11 +250,9 @@ You can use JSON, HJSON or YAML files to override any other file by prefixing th
 }
 ```
 
-If the config/smtpgreeting file did not exist, then this value would replace
-it.
+If the config/smtpgreeting file did not exist, then this value would replace it.
 
-NOTE: You must ensure that the data type (e.g. Object, Array or String) for
-the replaced value is correct. This cannot be done automatically.
+NOTE: You must ensure that the data type (e.g. Object, Array or String) for the replaced value is correct. This cannot be done automatically.
 
 ## Hjson Files
 
@@ -287,24 +271,24 @@ Example syntax
 
 ```hjson
 {
-    # specify rate in requests/second (because comments are helpful!)
-    rate: 1000
+  # specify rate in requests/second (because comments are helpful!)
+  rate: 1000
 
-    // prefer c-style comments?
-    /* feeling old fashioned? */
+  // prefer c-style comments?
+  /* feeling old fashioned? */
 
-    # did you notice that rate does not need quotes?
-    hey: look ma, no quotes for strings either!
+  # did you notice that rate does not need quotes?
+  hey: look ma, no quotes for strings either!
 
-    # best of all
-    notice: []
-    anything: ?
+  # best of all
+  notice: []
+  anything: ?
 
-    # yes, commas are optional!
+  # yes, commas are optional!
 }
 ```
 
-NOTE: Hjson can be also replaced by YAML configuration file. You can find more on this issue under JSON section.
+NOTE: Hjson can be also replaced by a YAML configuration file. You can find more on this issue under JSON section.
 
 ## YAML Files
 
@@ -312,21 +296,10 @@ As per JSON files above but in YAML format.
 
 # Reloading/Caching
 
-Haraka automatically reloads configuration files, but this only works if
-whatever is looking at that config re-calls config.get() to retrieve the
-new config. Providing a callback in the config.get() call is the most
-efficient method to do this.
+Haraka automatically reloads configuration files, but this only works if whatever is looking at that config re-calls config.get() to retrieve the new config. Providing a callback in the config.get() call is the most efficient method to do this.
 
-Configuration files are watched for changes using filesystem events which
-are inexpensive. Due to caching, calling config.get() is normally a
-lightweight process.
+Configuration files are watched for changes using filesystem events which are inexpensive. Due to caching, calling config.get() is normally a lightweight process.
 
-On Linux/Windows, newly created files that Haraka has tried to read in the
-past will be noticed immediately and loaded. For other operating systems,
-it may take up to 60 seconds to load, due to differences between in the
-kernel APIs for watching files/directories.
+On Linux/Windows, newly created files that Haraka has tried to read in the past will be noticed immediately and loaded. For other operating systems, it may take up to 60 seconds to load, due to differences between in the kernel APIs for watching files/directories.
 
-Haraka reads a number of configuration files at startup. Any files read
-in a plugins register() function are read _before_ Haraka drops privileges.
-Be sure that Haraka's user/group has permission to read these files else
-Haraka will be unable to update them after changes.
+Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to update them after changes.

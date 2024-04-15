@@ -3,7 +3,7 @@ const fs = require('fs')
 const path = require('path')
 
 beforeEach(function (done) {
-  this.bin = require('../../readers/binary')
+  this.bin = require('../../lib/readers/binary')
   done()
 })
 

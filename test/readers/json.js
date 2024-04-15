@@ -1,7 +1,7 @@
 const assert = require('assert')
 
 beforeEach(function (done) {
-  this.json = require('../../readers/json')
+  this.json = require('../../lib/readers/json')
   done()
 })
 

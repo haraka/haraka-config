@@ -2,7 +2,7 @@ const assert = require('assert')
 const path = require('path')
 
 beforeEach(function (done) {
-  this.hjson = require('../../readers/hjson')
+  this.hjson = require('../../lib/readers/hjson')
   done()
 })
 

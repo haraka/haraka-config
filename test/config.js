@@ -13,7 +13,7 @@ function clearRequireCache() {
   // the tests are run in the same process, so process.env changes affect
   // other tests. Invalidate the require cache between tests
   delete require.cache[`${path.resolve(__dirname, '..', 'config')}.js`]
-  delete require.cache[`${path.resolve(__dirname, '..', 'configfile')}.js`]
+  delete require.cache[`${path.resolve(__dirname, '..', 'lib', 'reader')}.js`]
 }
 
 function testSetup(done) {

@@ -2,7 +2,7 @@
 
 const path = require('path')
 
-const cfreader = require('./configfile')
+const cfreader = require('./lib/reader')
 
 class Config {
   constructor(root_path, no_overrides) {

@@ -1,9 +1,7 @@
 const assert = require('assert')
 
-const regex = require('../../configfile').regex
-
 beforeEach(function (done) {
-  this.ini = require('../../readers/ini')
+  this.ini = require('../../lib/readers/ini')
   this.opts = {
     booleans: ['main.bool_true', 'main.bool_false'],
   }
@@ -20,7 +18,7 @@ describe('ini', function () {
   })
 
   it('loads the test ini file', function () {
-    const result = this.ini.load('test/config/test.ini', {}, regex)
+    const result = this.ini.load('test/config/test.ini', {})
     // console.log(result);
     assert.deepEqual(result.main, {
       bool_true: 'true',
@@ -32,7 +30,7 @@ describe('ini', function () {
 
   describe('test.ini', function () {
     it('no opts', function () {
-      const r = this.ini.load('test/config/test.ini', {}, regex)
+      const r = this.ini.load('test/config/test.ini', {})
       assert.strictEqual(r.main.bool_true, 'true')
       assert.strictEqual(r.main.bool_false, 'false')
       assert.strictEqual(r.main.str_true, 'true')
@@ -40,7 +38,7 @@ describe('ini', function () {
     })
 
     it('opts', function () {
-      const r = this.ini.load('test/config/test.ini', this.opts, regex).main
+      const r = this.ini.load('test/config/test.ini', this.opts).main
       assert.strictEqual(r.bool_true, true)
       assert.strictEqual(r.bool_false, false)
       assert.strictEqual(r.str_true, 'true')
@@ -48,13 +46,9 @@ describe('ini', function () {
     })
 
     it('sect1, opts', function () {
-      const r = this.ini.load(
-        'test/config/test.ini',
-        {
-          booleans: ['sect1.bool_true', 'sect1.bool_false'],
-        },
-        regex,
-      )
+      const r = this.ini.load('test/config/test.ini', {
+        booleans: ['sect1.bool_true', 'sect1.bool_false'],
+      })
       assert.strictEqual(r.sect1.bool_true, true)
       assert.strictEqual(r.sect1.bool_false, false)
       assert.strictEqual(r.sect1.str_true, 'true')
@@ -62,18 +56,14 @@ describe('ini', function () {
     })
 
     it('sect1, opts, w/defaults', function () {
-      const r = this.ini.load(
-        'test/config/test.ini',
-        {
-          booleans: [
-            '+sect1.bool_true',
-            '-sect1.bool_false',
-            '+sect1.bool_true_default',
-            'sect1.-bool_false_default',
-          ],
-        },
-        regex,
-      )
+      const r = this.ini.load('test/config/test.ini', {
+        booleans: [
+          '+sect1.bool_true',
+          '-sect1.bool_false',
+          '+sect1.bool_true_default',
+          'sect1.-bool_false_default',
+        ],
+      })
       assert.strictEqual(r.sect1.bool_true, true)
       assert.strictEqual(r.sect1.bool_false, false)
       assert.strictEqual(r.sect1.str_true, 'true')
@@ -83,13 +73,9 @@ describe('ini', function () {
     })
 
     it('wildcard boolean', function () {
-      const r = this.ini.load(
-        'test/config/test.ini',
-        {
-          booleans: ['+main.bool_true', '*.is_bool'],
-        },
-        regex,
-      )
+      const r = this.ini.load('test/config/test.ini', {
+        booleans: ['+main.bool_true', '*.is_bool'],
+      })
       assert.strictEqual(r['*'], undefined)
       assert.strictEqual(r.main.bool_true, true)
       assert.strictEqual(r.main.is_bool, undefined)
@@ -147,7 +133,7 @@ describe('ini', function () {
 
   describe('goobers.ini', function () {
     it('goobers.ini has invalid entry', function () {
-      const result = this.ini.load('test/config/goobers.ini', {}, regex)
+      const result = this.ini.load('test/config/goobers.ini', {})
       assert.deepEqual(result, { main: {} })
     })
   })
