@@ -2,6 +2,16 @@
 
 ### [1.2.0] - 2024-04-14
 
+- feat: getDir can parse different types of files in a dir
+- feat: all file readers now have load and loadPromise, so that
+  a feature like getDir can safely use the nicer promise API
+- chore: require syntax, prefix node builtins with `node:`
+- es6
+  - add several uses of `...` (spread operator / param collection)
+  - replace `for i` with `for ... of`
+  - consolidate all cases of type detection into configfile.getType
+  - replace `new Promise` with async/await
+  - use shortened array function syntax
 - ci: update to shared haraka/.github
 - dep: eslint-plugin-haraka -> @haraka/eslint-config
 - lint: remove duplicate / stale rules from .eslintrc

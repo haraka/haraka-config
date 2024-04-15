@@ -1,7 +1,8 @@
 'use strict'
 
-const fs = require('fs')
-const path = require('path')
+const fs = require('node:fs')
+const fsp = require('node:fs/promises')
+const path = require('node:path')
 
 let config_dir_candidates = [
   // these work when this file is loaded as require('./config.js')
@@ -68,6 +69,28 @@ class cfreader {
       } catch (ignore) {
         console.error(ignore.message)
       }
+    }
+  }
+
+  getType(fileName) {
+    const ext = path.extname(fileName).substring(1).toLowerCase()
+    switch (ext) {
+      case 'hjson':
+      case 'json':
+      case 'yaml':
+      case 'js':
+      case 'ini':
+      case 'list':
+      case 'data':
+        return ext
+      case 'yml':
+        return 'yaml'
+      case 'pem':
+      case 'bin':
+      case 'binary':
+        return 'binary'
+      default:
+        return 'value'
     }
   }
 
@@ -220,27 +243,25 @@ class cfreader {
     return result
   }
 
-  read_dir(name, opts) {
+  read_dir(name, opts = {}) {
     return new Promise((resolve, reject) => {
       this._read_args[name] = { opts }
-      const type = opts.type || 'binary'
 
-      isDirectory(name)
-        .then(() => {
-          return fsReadDir(name)
-        })
-        .then((fileList) => {
-          const reader = require(path.resolve(__dirname, 'readers', type))
-          const promises = []
+      fsp
+        .stat(name)
+        .then((stat) => stat.isDirectory())
+        .then(() => fsp.readdir(name))
+        .then(async (fileList) => {
+          const contents = []
           for (const file of fileList) {
-            promises.push(reader.loadPromise(path.resolve(name, file)))
+            const type = opts.type ?? this.getType(file)
+            contents.push(
+              this.load_config(path.resolve(name, file), type, opts),
+            )
           }
-          return Promise.all(promises)
+          return contents
         })
-        .then((fileList) => {
-          // console.log(fileList);
-          resolve(fileList)
-        })
+        .then(resolve)
         .catch(reject)
 
       if (opts.watchCb) this.fsWatchDir(name)
@@ -283,9 +304,7 @@ class cfreader {
   load_config(name, type, options) {
     let result
 
-    if (!type) {
-      type = path.extname(name).toLowerCase().substring(1)
-    }
+    if (!type) type = this.getType(name)
 
     let cfrType = this.get_filetype_reader(type)
 
@@ -380,21 +399,3 @@ class cfreader {
 }
 
 module.exports = new cfreader()
-
-function isDirectory(filepath) {
-  return new Promise((resolve, reject) => {
-    fs.stat(filepath, (err, stat) => {
-      if (err) return reject(err)
-      resolve(stat.isDirectory())
-    })
-  })
-}
-
-function fsReadDir(filepath) {
-  return new Promise((resolve, reject) => {
-    fs.readdir(filepath, (err, fileList) => {
-      if (err) return reject(err)
-      resolve(fileList)
-    })
-  })
-}

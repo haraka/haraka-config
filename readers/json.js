@@ -1,9 +1,11 @@
 'use strict'
 
-const fs = require('fs')
-
 exports.load = (name) => {
-  return JSON.parse(fs.readFileSync(name))
+  return JSON.parse(require('node:fs').readFileSync(name))
+}
+
+exports.loadPromise = async (name) => {
+  return JSON.parse(await require('node:fs/promises').readFile(name))
 }
 
 exports.empty = () => {

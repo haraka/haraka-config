@@ -1,10 +1,13 @@
 'use strict'
 
-const fs = require('fs')
 const hjson = require('hjson')
 
 exports.load = (name) => {
-  return hjson.parse(fs.readFileSync(name, 'utf8'))
+  return hjson.parse(require('node:fs').readFileSync(name, 'UTF-8'))
+}
+
+exports.loadPromise = async (name) => {
+  return hjson.parse(await require('node:fs/promises').readFile(name, 'UTF-8'))
 }
 
 exports.empty = () => {

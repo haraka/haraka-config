@@ -1,8 +1,8 @@
-const assert = require('assert')
+const assert = require('node:assert')
 // const { beforeEach, describe, it } = require('node:test')
-const fs = require('fs')
-const os = require('os')
-const path = require('path')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
 
 function cb() {
   return false
@@ -10,9 +10,8 @@ function cb() {
 const opts = { booleans: ['arg1'] }
 
 function clearRequireCache() {
-  // node_unit runs all the tests in the same process, so the process.env
-  // changes affect other tests. Icky. Work around by invalidating
-  // the require cache, so config and configfile re-initialize
+  // the tests are run in the same process, so process.env changes affect
+  // other tests. Invalidate the require cache between tests
   delete require.cache[`${path.resolve(__dirname, '..', 'config')}.js`]
   delete require.cache[`${path.resolve(__dirname, '..', 'configfile')}.js`]
 }
@@ -242,7 +241,6 @@ describe('get', function () {
     done()
   })
 
-  // config.get('test.ini');
   it('test.ini, no opts', function () {
     _test_get('test.ini', null, null, null, {
       main: {
@@ -307,12 +305,10 @@ describe('get', function () {
     )
   })
 
-  // config.get('test.txt');
   it('test.txt', function () {
     _test_get('test.txt', null, null, null, null)
   })
 
-  // config.get('test.flat');
   it('test.flat, type=', function () {
     _test_get('test.flat', null, null, null, 'line1')
   })
@@ -320,12 +316,10 @@ describe('get', function () {
   // NOTE: the test.flat file had to be duplicated for these tests, to avoid
   // the config cache from returning invalid results.
 
-  // config.get('test.flat', 'value');
   it('test.flat, type=value', function () {
     _test_get('test.value', 'value', null, null, 'line1')
   })
 
-  // config.get('test.flat', 'list');
   it('test.flat, type=list', function () {
     _test_get('test.list', 'list', null, null, [
       'line1',
@@ -335,7 +329,6 @@ describe('get', function () {
     ])
   })
 
-  // config.get('test.flat', 'data');
   it('test.flat, type=data', function () {
     _test_get('test.data', 'data', null, null, [
       'line1',
@@ -346,53 +339,47 @@ describe('get', function () {
     ])
   })
 
-  // config.get('test.hjson');
   it('test.hjson, type=', function () {
     _test_get('test.hjson', null, null, null, hjsonRes)
   })
 
-  // config.get('test.hjson', 'hjson');
   it('test.hjson, type=hjson', function () {
     _test_get('test.hjson', 'hjson', null, null, hjsonRes)
   })
 
-  // config.get('test.json');
   it('test.json, type=', function () {
     _test_get('test.json', null, null, null, jsonRes)
   })
 
-  // config.get('test.json', 'json');
   it('test.json, type=json', function () {
     _test_get('test.json', 'json', null, null, jsonRes)
   })
 
-  // config.get('test.yaml');
   it('test.yaml, type=', function () {
     _test_get('test.yaml', null, null, null, yamlRes)
   })
-  // config.get('test.yaml', 'yaml');
+
   it('test.yaml, type=yaml', function () {
     _test_get('test.yaml', 'yaml', null, null, yamlRes)
   })
-  // config.get('missing2.hjson');
+
   it('missing2.yaml, asked for hjson', function () {
     _test_get('missing2.hjson', 'hjson', null, null, {
       matt: 'waz here - hjson type',
     })
   })
-  // config.get('missing.json');
+
   it('missing.yaml, asked for json', function () {
     _test_get('missing.json', 'json', null, null, { matt: 'waz here' })
   })
 
-  it('test.bin, type=binary', function (done) {
+  it('test.bin, type=binary', function () {
     const res = this.config.get('test.binary', 'binary')
     assert.equal(res.length, 120)
     assert.ok(Buffer.isBuffer(res))
-    done()
   })
 
-  it('fully qualified path: /etc/services', function (done) {
+  it('fully qualified path: /etc/services', function () {
     let res
     if (/^win/.test(process.platform)) {
       res = this.config.get('c:\\windows\\win.ini', 'list')
@@ -400,23 +387,21 @@ describe('get', function () {
       res = this.config.get('/etc/services', 'list')
     }
     assert.ok(res.length)
-    done()
   })
 })
 
 describe('merged', function () {
   beforeEach(testSetup)
 
-  it('before_merge', function (done) {
+  it('before_merge', function () {
     const lc = this.config.module_config(path.join('test', 'default'))
     assert.deepEqual(lc.get('test.ini'), {
       main: {},
       defaults: { one: 'one', two: 'two' },
     })
-    done()
   })
 
-  it('after_merge', function (done) {
+  it('after_merge', function () {
     const lc = this.config.module_config(
       path.join('test', 'default'),
       path.join('test', 'override'),
@@ -425,16 +410,14 @@ describe('merged', function () {
       main: {},
       defaults: { one: 'three', two: 'four' },
     })
-    done()
   })
 
-  it('flat overridden', function (done) {
+  it('flat overridden', function () {
     const lc = this.config.module_config(
       path.join('test', 'default'),
       path.join('test', 'override'),
     )
     assert.equal(lc.get('test.flat'), 'flatoverrode')
-    done()
   })
 })
 
@@ -442,18 +425,16 @@ describe('getInt', function () {
   beforeEach(testSetup)
 
   // config.get('name');
-  it('empty filename is NaN', function (done) {
+  it('empty filename is NaN', function () {
     const result = this.config.getInt()
     assert.equal(typeof result, 'number')
     assert.ok(isNaN(result))
-    done()
   })
 
-  it('empty/missing file contents is NaN', function (done) {
+  it('empty/missing file contents is NaN', function () {
     const result = this.config.getInt('test-non-exist')
     assert.equal(typeof result, 'number')
     assert.ok(isNaN(result))
-    done()
   })
 
   it('non-existing file returns default', function () {
@@ -479,18 +460,22 @@ function cleanup(done) {
 
 describe('getDir', function () {
   beforeEach(function (done) {
+    process.env.NODE_ENV = 'test'
     process.env.HARAKA = ''
+    process.env.WITHOUT_CONFIG_CACHE = '1'
+    clearRequireCache()
     this.config = require('../config')
     cleanup(done)
   })
 
   it('loads all files in dir', function (done) {
     this.config.getDir('dir', { type: 'binary' }, (err, files) => {
+      if (err) console.error(err)
       assert.ifError(err)
       assert.equal(err, null)
       assert.equal(files.length, 3)
-      assert.equal(files[0].data, `contents1${os.EOL}`)
-      assert.equal(files[2].data, `contents3${os.EOL}`)
+      assert.equal(files[0], `contents1${os.EOL}`)
+      assert.equal(files[2], `contents3${os.EOL}`)
       done()
     })
   })
@@ -509,6 +494,7 @@ describe('getDir', function () {
       done()
       return
     }
+
     const self = this
     let callCount = 0
 
@@ -522,15 +508,16 @@ describe('getDir', function () {
           // console.log(files);
           assert.equal(err, null)
           assert.equal(files.length, 3)
-          assert.equal(files[0].data, `contents1${os.EOL}`)
-          assert.equal(files[2].data, `contents3${os.EOL}`)
+          assert.equal(files[0], `contents1${os.EOL}`)
+          assert.equal(files[2], `contents3${os.EOL}`)
           fs.writeFile(tmpFile, 'contents4\n', (err2) => {
             assert.equal(err2, null)
             // console.log('file touched, waiting for callback');
           })
         }
         if (callCount === 2) {
-          assert.equal(files[3].data, 'contents4\n')
+          assert.equal(files[3], 'contents4\n')
+          fs.unlink(tmpFile, () => {})
           done()
         }
       })
@@ -548,7 +535,7 @@ describe('hjsonOverrides', function () {
 
   it('with smtpgreeting override', function () {
     process.env.WITHOUT_CONFIG_CACHE = ''
-    const main = this.config.get('main.hjson')
+    this.config.get('main.hjson')
     assert.deepEqual(this.config.get('smtpgreeting', 'list'), [
       'this is line one for hjson',
       'this is line two for hjson',
@@ -565,7 +552,7 @@ describe('jsonOverrides', function () {
 
   it('with smtpgreeting override', function () {
     process.env.WITHOUT_CONFIG_CACHE = ''
-    const main = this.config.get('main.json')
+    this.config.get('main.json')
     assert.deepEqual(this.config.get('smtpgreeting', 'list'), [
       'this is line one',
       'this is line two',

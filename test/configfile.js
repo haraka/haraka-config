@@ -1,16 +1,15 @@
 'use strict'
 
-const assert = require('assert')
-
-function _setUp(done) {
-  process.env.NODE_ENV === 'test'
-  this.cfreader = require('../configfile')
-  this.opts = { booleans: ['main.bool_true', 'main.bool_false'] }
-  done()
-}
+const assert = require('node:assert')
+const path = require('node:path')
 
 describe('configfile', function () {
-  beforeEach(_setUp)
+  beforeEach(function (done) {
+    process.env.NODE_ENV === 'test'
+    this.cfreader = require('../configfile')
+    this.opts = { booleans: ['main.bool_true', 'main.bool_false'] }
+    done()
+  })
 
   describe('load_config', function () {
     describe('non-exist.ini', function () {
@@ -166,6 +165,24 @@ describe('configfile', function () {
         )
         assert.deepEqual([123, 456, 789], r.array_test.intlist)
       })
+    })
+  })
+
+  describe('read_dir', function () {
+    it.skip('returns dir contents', async function () {
+      // may have race collission with config.getDir test
+      const result = await this.cfreader.read_dir(
+        path.resolve('test/config/dir'),
+      )
+      assert.deepEqual(result, ['contents1', 'contents2', 'contents3'])
+    })
+
+    it('returns dir with mixed types', async function () {
+      const result = await this.cfreader.read_dir('test/config/mixed')
+      assert.deepEqual(result, [
+        { main: {}, sect: { one: 'true' } },
+        { main: { two: false } },
+      ])
     })
   })
 

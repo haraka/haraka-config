@@ -18,22 +18,23 @@ class Config {
     }
   }
 
-  get(name, type, cb, options) {
-    const a = this.arrange_args([name, type, cb, options])
-    if (!a[1]) a[1] = 'value'
+  get(...args) {
+    /* eslint prefer-const: 0 */
+    let [name, type, cb, options] = this.arrange_args(args)
+    if (!type) type = 'value'
 
     const full_path = path.isAbsolute(name)
       ? name
-      : path.resolve(this.root_path, a[0])
+      : path.resolve(this.root_path, name)
 
-    let results = cfreader.read_config(full_path, a[1], a[2], a[3])
+    let results = cfreader.read_config(full_path, type, cb, options)
 
     if (this.overrides_path) {
-      const overrides_path = path.resolve(this.overrides_path, a[0])
+      const overrides_path = path.resolve(this.overrides_path, name)
 
-      const overrides = cfreader.read_config(overrides_path, a[1], a[2], a[3])
+      const overrides = cfreader.read_config(overrides_path, type, cb, options)
 
-      results = merge_config(results, overrides, a[1])
+      results = merge_config(results, overrides, type)
     }
 
     // Pass arrays by value to prevent config being modified accidentally.
@@ -77,45 +78,27 @@ class Config {
     let cb
     let options
 
-    for (let i = 0; i < args.length; i++) {
-      if (args[i] === undefined) continue
-      switch (
-        typeof args[i] // what is it?
-      ) {
+    for (const arg of args) {
+      if ([undefined, null].includes(arg)) continue
+      switch (typeof arg) {
         case 'function':
-          cb = args[i]
-          break
+          cb = arg
+          continue
         case 'object':
-          options = args[i]
-          break
+          options = arg
+          continue
         case 'string':
-          if (/^(ini|value|list|data|h?json|js|yaml|binary)$/.test(args[i])) {
-            fs_type = args[i]
-            break
+          if (/^(ini|value|list|data|h?json|js|yaml|binary)$/.test(arg)) {
+            fs_type = arg
+            continue
           }
-          console.log(`unknown string: ${args[i]}`)
-          break
+          console.log(`unknown string: ${arg}`)
+          continue
       }
-      // console.log(`unknown arg: ${args[i]}, typeof: ${typeof args[i]}`);
+      // console.log(`unknown arg: ${arg}, typeof: ${typeof arg}`);
     }
 
-    if (!fs_type) {
-      const fs_ext = path.extname(fs_name).substring(1)
-
-      switch (fs_ext) {
-        case 'hjson':
-        case 'json':
-        case 'yaml':
-        case 'js':
-        case 'ini':
-          fs_type = fs_ext
-          break
-
-        default:
-          fs_type = 'value'
-          break
-      }
-    }
+    if (!fs_type) fs_type = cfreader.getType(fs_name)
 
     return [fs_name, fs_type, cb, options]
   }

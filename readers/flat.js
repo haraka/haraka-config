@@ -1,11 +1,22 @@
 'use strict'
 
-const fs = require('fs')
+exports.load = (...args) => {
+  return this.parseValue(
+    ...args,
+    require('node:fs').readFileSync(args[0], 'UTF-8'),
+  )
+}
 
-exports.load = (name, type, options, regex) => {
+exports.loadPromise = async (...args) => {
+  return this.parseValue(
+    ...args,
+    await require('node:fs/promises').readFile(args[0], 'UTF-8'),
+  )
+}
+
+exports.parseValue = (name, type, options, regex, data) => {
   let result = []
 
-  let data = fs.readFileSync(name, 'UTF-8')
   if (type === 'data') {
     while (data.length > 0) {
       const match = data.match(/^([^\r\n]*)\r?\n?/)
@@ -15,15 +26,15 @@ exports.load = (name, type, options, regex) => {
     return result
   }
 
-  data.split(/\r\n|\r|\n/).forEach((line) => {
-    if (regex.comment.test(line)) return
-    if (regex.blank.test(line)) return
+  for (const line of data.split(/\r\n|\r|\n/)) {
+    if (regex.comment.test(line)) continue
+    if (regex.blank.test(line)) continue
 
     const line_data = regex.line.exec(line)
-    if (!line_data) return
+    if (!line_data) continue
 
     result.push(line_data[1].trim())
-  })
+  }
 
   if (result.length && type !== 'list' && type !== 'data') {
     result = result[0]
@@ -63,7 +74,6 @@ exports.empty = (options, type) => {
 }
 
 function in_array(item, array) {
-  if (!array) return false
   if (!Array.isArray(array)) return false
-  return array.indexOf(item) !== -1
+  return array.includes(item)
 }

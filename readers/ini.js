@@ -1,81 +1,77 @@
 'use strict'
 
-const fs = require('fs')
+exports.load = (...args) => {
+  return this.parseIni(
+    ...args,
+    require('node:fs').readFileSync(args[0], 'UTF-8'),
+  )
+}
 
-exports.load = (name, options, regex) => {
+exports.loadPromise = async (...args) => {
+  return this.parseIni(
+    ...args,
+    await require('node:fs/promises').readFile(args[0], 'UTF-8'),
+  )
+}
+
+exports.parseIni = (name, options = {}, regex, data) => {
   let result = { main: {} }
   let current_sect = result.main
   let current_sect_name = 'main'
   this.bool_matches = []
-  if (options && options.booleans) {
+  if (options?.booleans) {
     this.bool_matches = options.booleans.slice()
   }
 
   // Initialize any booleans
   result = this.init_booleans(options, result)
 
-  let match
-  let setter
   let pre = ''
 
-  fs.readFileSync(name, 'UTF-8')
-    .split(/\r\n|\r|\n/)
-    .forEach((line) => {
-      if (regex.comment.test(line)) return
-      if (regex.blank.test(line)) return
+  for (let line of data.split(/\r\n|\r|\n/)) {
+    if (regex.comment.test(line)) continue
+    if (regex.blank.test(line)) continue
 
-      match = regex.section.exec(line)
-      if (match) {
-        if (!result[match[1]]) result[match[1]] = {}
-        current_sect = result[match[1]]
-        current_sect_name = match[1]
-        return
-      }
+    let match = regex.section.exec(line)
+    if (match) {
+      if (!result[match[1]]) result[match[1]] = {}
+      current_sect = result[match[1]]
+      current_sect_name = match[1]
+      continue
+    }
 
-      if (regex.continuation.test(line)) {
-        pre += line.replace(regex.continuation, '')
-        return
-      }
+    if (regex.continuation.test(line)) {
+      pre += line.replace(regex.continuation, '')
+      continue
+    }
 
-      line = `${pre}${line}`
-      pre = ''
+    line = `${pre}${line}`
+    pre = ''
 
-      match = regex.param.exec(line)
-      if (!match) {
-        exports.logger(`Invalid line in config file '${name}': ${line}`)
-        return
-      }
+    match = regex.param.exec(line)
+    if (!match) {
+      exports.logger(`Invalid line in config file '${name}': ${line}`)
+      continue
+    }
 
-      const is_array_match = regex.is_array.exec(match[1])
-      if (is_array_match) {
-        setter = function (key, value) {
-          key = key.replace('[]', '')
-          if (!current_sect[key]) current_sect[key] = []
-          current_sect[key].push(value)
-        }
-      } else {
-        setter = function (key, value) {
-          current_sect[key] = value
-        }
-      }
+    const keyName = match[1]
+    const keyVal = match[2]
 
-      if (
-        options &&
-        Array.isArray(options.booleans) &&
-        (exports.bool_matches.indexOf(`${current_sect_name}.${match[1]}`) !==
-          -1 ||
-          exports.bool_matches.indexOf(`*.${match[1]}`) !== -1)
-      ) {
-        current_sect[match[1]] = regex.is_truth.test(match[2])
-        // exports.logger(`Using boolean ${current_sect[match[1]]} for ${current_sect_name}.${match[1]}=${match[2]}`, 'logdebug');
-      } else if (regex.is_integer.test(match[2])) {
-        setter(match[1], parseInt(match[2], 10))
-      } else if (regex.is_float.test(match[2])) {
-        setter(match[1], parseFloat(match[2]))
-      } else {
-        setter(match[1], match[2])
-      }
-    })
+    const setter = this.getSetter(current_sect, regex.is_array.test(keyName))
+
+    if (
+      exports.isDeclaredBoolean(`${current_sect_name}.${keyName}`) ||
+      exports.isDeclaredBoolean(`*.${keyName}`)
+    ) {
+      current_sect[keyName] = regex.is_truth.test(keyVal)
+    } else if (regex.is_integer.test(keyVal)) {
+      setter(keyName, parseInt(keyVal, 10))
+    } else if (regex.is_float.test(keyVal)) {
+      setter(keyName, parseFloat(keyVal))
+    } else {
+      setter(keyName, keyVal)
+    }
+  }
 
   return result
 }
@@ -83,6 +79,25 @@ exports.load = (name, options, regex) => {
 exports.empty = (options) => {
   this.bool_matches = []
   return this.init_booleans(options, { main: {} })
+}
+
+exports.getSetter = (current_sect, isArray) => {
+  if (isArray) {
+    return (key, value) => {
+      key = key.replace('[]', '')
+      if (!current_sect[key]) current_sect[key] = []
+      current_sect[key].push(value)
+    }
+  } else {
+    return (key, value) => {
+      current_sect[key] = value
+    }
+  }
+}
+
+exports.isDeclaredBoolean = (entry) => {
+  if (exports.bool_matches.includes(entry)) return true
+  return false
 }
 
 exports.init_booleans = (options, result) => {
