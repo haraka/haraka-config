@@ -2,18 +2,18 @@
 
 const path = require('path')
 
-const cfreader = require('./lib/reader')
+const reader = require('./lib/reader')
 
 class Config {
   constructor(root_path, no_overrides) {
-    this.root_path = root_path || cfreader.config_path
+    this.root_path = root_path || reader.config_path
 
     if (process.env.HARAKA_TEST_DIR) {
       this.root_path = path.join(process.env.HARAKA_TEST_DIR, 'config')
       return
     }
     if (process.env.HARAKA && !no_overrides) {
-      this.overrides_path = root_path || cfreader.config_path
+      this.overrides_path = root_path || reader.config_path
       this.root_path = path.join(process.env.HARAKA, 'config')
     }
   }
@@ -27,12 +27,12 @@ class Config {
       ? name
       : path.resolve(this.root_path, name)
 
-    let results = cfreader.read_config(full_path, type, cb, options)
+    let results = reader.read_config(full_path, type, cb, options)
 
     if (this.overrides_path) {
       const overrides_path = path.resolve(this.overrides_path, name)
 
-      const overrides = cfreader.read_config(overrides_path, type, cb, options)
+      const overrides = reader.read_config(overrides_path, type, cb, options)
 
       results = merge_config(results, overrides, type)
     }
@@ -47,14 +47,14 @@ class Config {
     if (!filename) return NaN
 
     const full_path = path.resolve(this.root_path, filename)
-    const r = parseInt(cfreader.read_config(full_path, 'value', null, null), 10)
+    const r = parseInt(reader.read_config(full_path, 'value', null, null), 10)
 
     if (!isNaN(r)) return r
     return parseInt(default_value, 10)
   }
 
   getDir(name, opts, done) {
-    cfreader
+    reader
       .read_dir(path.resolve(this.root_path, name), opts)
       .then((files) => {
         done(null, files) // keep the API consistent
@@ -98,7 +98,7 @@ class Config {
       // console.log(`unknown arg: ${arg}, typeof: ${typeof arg}`);
     }
 
-    if (!fs_type) fs_type = cfreader.getType(fs_name)
+    if (!fs_type) fs_type = reader.getType(fs_name)
 
     return [fs_name, fs_type, cb, options]
   }
