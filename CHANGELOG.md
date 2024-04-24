@@ -4,11 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-### [1.2.1] - 2024-04-24
-
-- config: guard against prototype pollution
-
-### [1.2.0] - 2024-04-14
+### [1.2.2] - 2024-04-24
 
 - feat: getDir can parse different types of files in a dir
 - feat: all file readers now have load and loadPromise, so that
@@ -29,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - lint: remove duplicate / stale rules from .eslintrc
 - package.json: populate [files]
 - deps: version bumps
+- config: guard against prototype pollution
 
 ### [1.1.0] - 2022-05-27
 
@@ -128,5 +125,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - reduce node required 4.3 -> 0.10.43
 
 [1.1.0]: https://github.com/haraka/haraka-config/releases/tag/1.1.0
-[1.2.0]: https://github.com/haraka/haraka-config/releases/tag/v1.2.0
-[1.2.1]: https://github.com/haraka/haraka-config/releases/tag/v1.2.1
+[1.2.2]: https://github.com/haraka/haraka-config/releases/tag/v1.2.2
