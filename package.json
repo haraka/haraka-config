@@ -3,7 +3,7 @@
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
