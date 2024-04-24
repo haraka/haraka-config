@@ -228,6 +228,7 @@ hosts[] = third_host
 
 which produces this javascript array:
 
+<!-- prettier-ignore -->
 ```js
 ['first_host', 'second_host', 'third_host']
 ```
