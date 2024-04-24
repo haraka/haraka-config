@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+  pull_request:
 
 env:
   CI: true
@@ -14,28 +15,10 @@ jobs:
     uses: haraka/.github/.github/workflows/coverage.yml@master
     secrets: inherit
 
-  test:
-    needs: lint
-    runs-on: ${{ matrix.os }}
-    # services:
-    #   redis:
-    #     image: redis
-    #     ports:
-    #       - 6379:6379
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest ]
-        node-version: [ 14, 16, 18 ]
-      fail-fast: false
+  ubuntu:
+    needs: [lint]
+    uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
-    steps:
-    - uses: actions/checkout@v3
-
-    - uses: actions/setup-node@v3
-      name: Node ${{ matrix.node-version }} on ${{ matrix.os }}
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    - run: npm install
-
-    - run: npm test
+  windows:
+    needs: [lint]
+    uses: haraka/.github/.github/workflows/windows.yml@master

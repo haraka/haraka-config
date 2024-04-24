@@ -3,35 +3,41 @@
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
     "url": "git@github.com:haraka/haraka-config.git"
   },
   "main": "config.js",
+  "files": [
+    "lib",
+    "CHANGELOG.md"
+  ],
   "engines": {
-    "node": ">= 12"
+    "node": ">=16"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"
   },
   "optionalDependencies": {
-    "hjson": "^3.2.0"
+    "hjson": "^3.2.2"
   },
   "devDependencies": {
-    "eslint": ">=8",
-    "eslint-plugin-haraka": "*",
-    "mocha": ">=9"
+    "@haraka/eslint-config": "^1.1.3"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
     "url": "https://github.com/haraka/haraka-config/issues"
   },
   "scripts": {
-    "test": "npx mocha test test/readers",
-    "lint": "npx eslint *.js readers test test/*/*.js",
-    "lintfix": "npx eslint --fix *.js readers test test/*/*.js",
-    "versions": "npx dependency-version-checker check"
+    "format": "npm run prettier:fix && npm run lint:fix",
+    "lint": "npx eslint@^8 *.js lib test test/*/*.js",
+    "lint:fix": "npx eslint@^8 *.js lib test test/*/*.js --fix",
+    "prettier": "npx prettier . --check",
+    "prettier:fix": "npx prettier . --write --log-level=warn",
+    "test": "npx mocha@10 test test/readers",
+    "versions": "npx dependency-version-checker check",
+    "versions:fix": "npx dependency-version-checker update && npm run prettier:fix"
   }
 }
