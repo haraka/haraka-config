@@ -169,19 +169,23 @@ describe('reader', function () {
   })
 
   describe('read_dir', function () {
-    it.skip('returns dir contents', async function () {
+    it('returns dir contents', async function () {
       // may have race collission with config.getDir test
       const result = await this.cfreader.read_dir(
         path.resolve('test/config/dir'),
       )
-      assert.deepEqual(result, ['contents1', 'contents2', 'contents3'])
+      assert.deepEqual(result, [
+        {data: 'contents1', path: '1.ext' },
+        {data: 'contents2', path: '2.ext' },
+        {data: 'contents3', path: '3.ext' }
+      ])
     })
 
     it('returns dir with mixed types', async function () {
       const result = await this.cfreader.read_dir('test/config/mixed')
       assert.deepEqual(result, [
-        { main: {}, sect: { one: 'true' } },
-        { main: { two: false } },
+        { data: { main: {}, sect: { one: 'true' } }, path: '1.ini' },
+        { data: { main: { two: false } }, path: '2.yml' },
       ])
     })
   })
@@ -340,6 +344,7 @@ describe('reader', function () {
     })
 
     it('NODE_ENV=test', function () {
+      delete process.env.HARAKA
       process.env.NODE_ENV = 'test'
       this.cfreader.get_path_to_config_dir()
       assert.ok(
