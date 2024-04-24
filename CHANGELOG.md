@@ -1,4 +1,12 @@
+# Changelog
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
 ### Unreleased
+
+### [1.2.1] - 2024-04-24
+
+- config: guard against prototype pollution
 
 ### [1.2.0] - 2024-04-14
 
@@ -121,3 +129,4 @@
 
 [1.1.0]: https://github.com/haraka/haraka-config/releases/tag/1.1.0
 [1.2.0]: https://github.com/haraka/haraka-config/releases/tag/v1.2.0
+[1.2.1]: https://github.com/haraka/haraka-config/releases/tag/v1.2.1
