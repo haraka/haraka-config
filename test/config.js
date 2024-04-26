@@ -234,11 +234,10 @@ describe('get', function () {
     _test_get('test', null, null, null, null)
   })
 
-  it('test (non-existing, cached)', function (done) {
+  it('test (non-existing, cached)', function () {
     process.env.WITHOUT_CONFIG_CACHE = ''
     const cfg = this.config.get('test', null, null)
     assert.deepEqual(cfg, null)
-    done()
   })
 
   it('test.ini, no opts', function () {
@@ -309,12 +308,13 @@ describe('get', function () {
     _test_get('test.txt', null, null, null, null)
   })
 
+  it('test.int', function () {
+    _test_get('test.int', null, null, null, 6)
+  })
+
   it('test.flat, type=', function () {
     _test_get('test.flat', null, null, null, 'line1')
   })
-
-  // NOTE: the test.flat file had to be duplicated for these tests, to avoid
-  // the config cache from returning invalid results.
 
   it('test.flat, type=value', function () {
     _test_get('test.value', 'value', null, null, 'line1')
@@ -452,20 +452,15 @@ describe('getInt', function () {
 
 const tmpFile = path.resolve('test', 'config', 'dir', '4.ext')
 
-function cleanup(done) {
-  fs.unlink(tmpFile, () => {
-    done()
-  })
-}
-
 describe('getDir', function () {
+
   beforeEach(function (done) {
     process.env.NODE_ENV = 'test'
     process.env.HARAKA = ''
     process.env.WITHOUT_CONFIG_CACHE = '1'
     clearRequireCache()
     this.config = require('../config')
-    cleanup(done)
+    fs.unlink(tmpFile, () => done())
   })
 
   it('loads all files in dir', function (done) {
@@ -489,18 +484,15 @@ describe('getDir', function () {
 
   it('reloads when file in dir is touched', function (done) {
     this.timeout(3500)
-    if (/darwin/.test(process.platform)) {
-      // due to differences in fs.watch, this test is not reliable on Mac OS X
-      done()
-      return
-    }
 
-    const self = this
+    // due to differences in fs.watch, this test is not reliable on Mac OS X
+    if (/darwin/.test(process.platform)) return done()
+
     let callCount = 0
 
-    function getDir() {
+    const getDir = () => {
       const opts2 = { type: 'binary', watchCb: getDir }
-      self.config.getDir('dir', opts2, (err, files) => {
+      this.config.getDir('dir', opts2, (err, files) => {
         // console.log('Loading: test/config/dir');
         if (err) console.error(err)
         callCount++
