@@ -175,9 +175,9 @@ describe('reader', function () {
         path.resolve('test/config/dir'),
       )
       assert.deepEqual(result, [
-        {data: 'contents1', path: '1.ext' },
-        {data: 'contents2', path: '2.ext' },
-        {data: 'contents3', path: '3.ext' }
+        { data: 'contents1', path: '1.ext' },
+        { data: 'contents2', path: '2.ext' },
+        { data: 'contents3', path: '3.ext' },
       ])
     })
 

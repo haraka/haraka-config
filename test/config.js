@@ -453,7 +453,6 @@ describe('getInt', function () {
 const tmpFile = path.resolve('test', 'config', 'dir', '4.ext')
 
 describe('getDir', function () {
-
   beforeEach(function (done) {
     process.env.NODE_ENV = 'test'
     process.env.HARAKA = ''
