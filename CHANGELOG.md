@@ -4,9 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-### [1.2.3] - 2024-04-26
+### [1.2.4] - 2024-04-26
 
-- reader: use path.sep instead of [\\/] to be more obvious
+- fix(watch): callback was losing context. Use explicit obj
+- fix(reader): use path.sep instead of [\\/] to be more obvious
 
 ### [1.2.2] - 2024-04-24
 
@@ -129,7 +130,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - reduce node required 4.3 -> 0.10.43
 
 [1.1.0]: https://github.com/haraka/haraka-config/releases/tag/1.1.0
-[1.2.2]: https://github.com/haraka/haraka-config/releases/tag/v1.2.2
-[1.2.3]: https://github.com/haraka/haraka-config/releases/tag/v1.2.3
 [1.2.0]: https://github.com/haraka/haraka-config/releases/tag/v1.2.0
 [1.2.1]: https://github.com/haraka/haraka-config/releases/tag/v1.2.1
+[1.2.2]: https://github.com/haraka/haraka-config/releases/tag/v1.2.2
+[1.2.4]: https://github.com/haraka/haraka-config/releases/tag/v1.2.4
