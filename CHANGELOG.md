@@ -130,8 +130,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - reduce node required 4.3 -> 0.10.43
 
 [1.1.0]: https://github.com/haraka/haraka-config/releases/tag/1.1.0
-[1.2.2]: https://github.com/haraka/haraka-config/releases/tag/v1.2.2
-[1.2.3]: https://github.com/haraka/haraka-config/releases/tag/v1.2.3
 [1.2.0]: https://github.com/haraka/haraka-config/releases/tag/v1.2.0
 [1.2.1]: https://github.com/haraka/haraka-config/releases/tag/v1.2.1
+[1.2.2]: https://github.com/haraka/haraka-config/releases/tag/v1.2.2
 [1.2.4]: https://github.com/haraka/haraka-config/releases/tag/v1.2.4
