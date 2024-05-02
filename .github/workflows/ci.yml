@@ -16,9 +16,36 @@ jobs:
     secrets: inherit
 
   ubuntu:
-    needs: [lint]
     uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
   windows:
-    needs: [lint]
     uses: haraka/.github/.github/workflows/windows.yml@master
+
+  macos:
+    needs: [get-lts]
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        node-version: ${{ fromJson(needs.get-lts.outputs.active) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        name: Node ${{ matrix.node-version }} on macos-latest
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: install Redis
+        run: |
+          brew install redis
+          brew services start redis
+      - run: npm install
+      - run: npm test
+
+  get-lts:
+    runs-on: macos-latest
+    steps:
+      - id: get
+        uses: msimerson/node-lts-versions@v1
+    outputs:
+      active: ${{ steps.get.outputs.active }}
+      lts: ${{ steps.get.outputs.lts }}
