@@ -504,8 +504,7 @@ describe('getDir', function () {
             assert.equal(err2, null)
             // console.log('file touched, waiting for callback');
           })
-        }
-        else if (callCount === 2) {
+        } else if (callCount === 2) {
           assert.equal(files[3].data, 'contents4\n')
           fs.unlink(tmpFile, () => {})
           done()
