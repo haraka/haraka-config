@@ -170,22 +170,23 @@ describe('reader', function () {
 
   describe('read_dir', function () {
     it('returns dir contents', async function () {
-      // may have race collission with config.getDir test
-      const result = await this.cfreader.read_dir(
-        path.resolve('test/config/dir'),
-      )
-      assert.deepEqual(result, [
-        { data: 'contents1', path: '1.ext' },
-        { data: 'contents2', path: '2.ext' },
-        { data: 'contents3', path: '3.ext' },
+      const dir = path.resolve('test/config/dir')
+      assert.deepEqual(await this.cfreader.read_dir(dir), [
+        { data: 'contents1', path: path.join(dir, '1.ext') },
+        { data: 'contents2', path: path.join(dir, '2.ext') },
+        { data: 'contents3', path: path.join(dir, '3.ext') },
+        { data: 'contents4', path: path.join(dir, 'subdir', '4.flat') },
       ])
     })
 
     it('returns dir with mixed types', async function () {
-      const result = await this.cfreader.read_dir('test/config/mixed')
-      assert.deepEqual(result, [
-        { data: { main: {}, sect: { one: 'true' } }, path: '1.ini' },
-        { data: { main: { two: false } }, path: '2.yml' },
+      const dir = path.join('test', 'config', 'mixed')
+      assert.deepEqual(await this.cfreader.read_dir(dir), [
+        {
+          data: { main: {}, sect: { one: 'true' } },
+          path: path.join(dir, '1.ini'),
+        },
+        { data: { main: { two: false } }, path: path.join(dir, '2.yml') },
       ])
     })
   })
