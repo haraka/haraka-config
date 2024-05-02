@@ -467,7 +467,7 @@ describe('getDir', function () {
       if (err) console.error(err)
       assert.ifError(err)
       assert.equal(err, null)
-      assert.equal(files.length, 3)
+      assert.equal(files.length, 4)
       assert.equal(files[0].data, `contents1${os.EOL}`)
       assert.equal(files[2].data, `contents3${os.EOL}`)
       done()
@@ -484,8 +484,8 @@ describe('getDir', function () {
   it('reloads when file in dir is touched', function (done) {
     this.timeout(3500)
 
-    // due to differences in fs.watch, this test is not reliable on Mac OS X
-    if (/darwin/.test(process.platform)) return done()
+    // due to differences in fs.watch, this test is unreliable on Mac OS X
+    // if (/darwin/.test(process.platform)) return done()
 
     let callCount = 0
 
@@ -496,17 +496,15 @@ describe('getDir', function () {
         if (err) console.error(err)
         callCount++
         if (callCount === 1) {
-          // console.log(files);
           assert.equal(err, null)
-          assert.equal(files.length, 3)
+          assert.equal(files.length, 4)
           assert.equal(files[0].data, `contents1${os.EOL}`)
           assert.equal(files[2].data, `contents3${os.EOL}`)
           fs.writeFile(tmpFile, 'contents4\n', (err2) => {
             assert.equal(err2, null)
             // console.log('file touched, waiting for callback');
           })
-        }
-        if (callCount === 2) {
+        } else if (callCount === 2) {
           assert.equal(files[3].data, 'contents4\n')
           fs.unlink(tmpFile, () => {})
           done()

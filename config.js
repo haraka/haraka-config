@@ -54,8 +54,13 @@ class Config {
   }
 
   getDir(name, opts, done) {
+    const dir = path.resolve(this.root_path, name)
+
+    // no callback, return promise
+    if (arguments.length < 3) return reader.read_dir(dir, opts)
+
     reader
-      .read_dir(path.resolve(this.root_path, name), opts)
+      .read_dir(dir, opts)
       .then((files) => {
         done(null, files) // keep the API consistent
       })

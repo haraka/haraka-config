@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.3.0] - 2024-05-02
+
+- feat: getDir is now recursive
+
 ### [1.2.4] - 2024-04-26
 
 - fix(watch): callback was losing context. Use explicit obj
@@ -134,3 +138,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.2.1]: https://github.com/haraka/haraka-config/releases/tag/v1.2.1
 [1.2.2]: https://github.com/haraka/haraka-config/releases/tag/v1.2.2
 [1.2.4]: https://github.com/haraka/haraka-config/releases/tag/v1.2.4
+[1.3.0]: https://github.com/haraka/haraka-config/releases/tag/v1.3.0
