@@ -90,6 +90,7 @@ Overrides work in the following manner:
   key by key basis.
 - For every other config format, an override file replaces the entire
   config.
+- If `smtp.json` or `smtp.yaml` exist, their contents will be loaded before all other config files. You can make use of [JSON Overrides](#json-overrides) here for a single file config.
 
 ## Examples
 
@@ -243,15 +244,28 @@ These are as you would expect, and returns an object as given in the file.
 
 If a requested .json or .hjson file does not exist then the same file will be checked for with a .yaml extension and that will be loaded instead. This is done because YAML files are far easier for a human to write.
 
+### <a name="json-overrides">JSON Overrides</a>
 You can use JSON, HJSON or YAML files to override any other file by prefixing the outer variable name with a `!` e.g.
 
 ```js
 {
-    "!smtpgreeting": [ 'this is line one', 'this is line two' ]
+  "!smtpgreeting": ['this is line one', 'this is line two'],
+  "!smtp.ini": {
+    main: {
+      nodes: 0,
+    },
+    headers: {
+      max_lines: 1000,
+      max_received: 100,
+    },
+  },
+  "!custom-plugin.yaml": {
+    secret: 'example',
+  },
 }
 ```
 
-If the config/smtpgreeting file did not exist, then this value would replace it.
+If the config/smtpgreeting wasn't loaded before, then this value would replace it. Since `smtp.json` is always loaded first, it can be used to override existing config files.
 
 NOTE: You must ensure that the data type (e.g. Object, Array or String) for the replaced value is correct. This cannot be done automatically.
 
