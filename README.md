@@ -259,7 +259,7 @@ NOTE: You must ensure that the data type (e.g. Object, Array or String) for the 
 
 Hjson is a syntax extension to JSON. It is intended to be used like a user interface for humans, to read and edit before passing the JSON data to the machine. That means you can use it to parse JSON files but it is not intended as a replacement.
 
-You can check [Hjson's homepage](https://hjson.org) to get familiar with it and you can [try out its syntax](https://hjson.org/try.html).
+You can check [Hjson's homepage](https://hjson.github.io/) to get familiar with it and you can [try out its syntax](https://hjson.github.io/try.html).
 
 Main features:
 
