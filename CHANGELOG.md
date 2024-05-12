@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.4.0] - 2024-05-12
+
+- doc(README): fix hjson link (#78)
+- config: fix json overrides (#77)
+
 ### [1.3.0] - 2024-05-02
 
 - feat: getDir is now recursive
@@ -137,5 +142,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.2.0]: https://github.com/haraka/haraka-config/releases/tag/v1.2.0
 [1.2.1]: https://github.com/haraka/haraka-config/releases/tag/v1.2.1
 [1.2.2]: https://github.com/haraka/haraka-config/releases/tag/v1.2.2
+[1.2.3]: https://github.com/haraka/haraka-config/releases/tag/v1.2.3
 [1.2.4]: https://github.com/haraka/haraka-config/releases/tag/v1.2.4
 [1.3.0]: https://github.com/haraka/haraka-config/releases/tag/v1.3.0
+[1.4.0]: https://github.com/haraka/haraka-config/releases/tag/v1.4.0
