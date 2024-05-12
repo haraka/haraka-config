@@ -245,6 +245,7 @@ These are as you would expect, and returns an object as given in the file.
 If a requested .json or .hjson file does not exist then the same file will be checked for with a .yaml extension and that will be loaded instead. This is done because YAML files are far easier for a human to write.
 
 ### <a name="json-overrides">JSON Overrides</a>
+
 You can use JSON, HJSON or YAML files to override any other file by prefixing the outer variable name with a `!` e.g.
 
 ```js

@@ -159,4 +159,4 @@ function merge_struct(defaults, overrides) {
 }
 
 // JSON overrides needs smtp.(json|yaml) loaded early
-module.exports.get('smtp.json');
+module.exports.get('smtp.json')
