@@ -240,7 +240,7 @@ Flat files are simply either lists of values separated by \n or a single value i
 
 ## JSON Files
 
-These are as you would expect, and returns an object as given in the file.
+These are as you would expect, and return an object as given in the file.
 
 If a requested .json or .hjson file does not exist then the same file will be checked for with a .yaml extension and that will be loaded instead. This is done because YAML files are far easier for a human to write.
 
