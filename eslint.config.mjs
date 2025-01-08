@@ -22,7 +22,7 @@ export default [
       },
     },
     rules: {
-      'no-unused-vars': 'warn',
+      'no-unused-vars': ['warn', { 'caughtErrorsIgnorePattern': '^ignore' }],
     },
   },
 ]
