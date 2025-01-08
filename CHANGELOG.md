@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.4.2] - 2025-01-08
+
+- dep(eslint): upgrade 8 -> 9
+
 ### [1.4.1] - 2024-12-28
 
 - ini: allow key with + character, to accept user+blah@domain.com #80
@@ -151,3 +155,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.3.0]: https://github.com/haraka/haraka-config/releases/tag/v1.3.0
 [1.4.0]: https://github.com/haraka/haraka-config/releases/tag/v1.4.0
 [1.4.1]: https://github.com/haraka/haraka-config/releases/tag/v1.4.1
+[1.4.2]: https://github.com/haraka/haraka-config/releases/tag/v1.4.2
