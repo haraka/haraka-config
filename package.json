@@ -3,7 +3,7 @@
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "homepage": "https://github.com/haraka/haraka-config",
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
     "hjson": "^3.2.2"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "^1.1.5"
+    "@haraka/eslint-config": "^2.0.2"
   },
   "bugs": {
     "url": "https://github.com/haraka/haraka-config/issues"
