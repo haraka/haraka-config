@@ -4,6 +4,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.5.0] - 2026-03-04
+
+- dep: replaced js-yaml with yaml
+  - yaml supports v1.2
+  - js-yaml is barely maintained, replacing it removes most vuln warnings
+- ci: updated publish & release workflows
+
 ### [1.4.2] - 2025-01-08
 
 - dep(eslint): upgrade 8 -> 9
@@ -156,3 +163,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.4.0]: https://github.com/haraka/haraka-config/releases/tag/v1.4.0
 [1.4.1]: https://github.com/haraka/haraka-config/releases/tag/v1.4.1
 [1.4.2]: https://github.com/haraka/haraka-config/releases/tag/v1.4.2
+[1.5.0]: https://github.com/haraka/haraka-config/releases/tag/v1.5.0
