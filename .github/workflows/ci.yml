@@ -1,8 +1,8 @@
 name: CI
 
 on:
-  push:
   pull_request:
+    types: [opened, synchronize, reopened]
 
 env:
   CI: true
@@ -16,10 +16,13 @@ jobs:
     secrets: inherit
 
   ubuntu:
+    needs: [lint]
     uses: haraka/.github/.github/workflows/ubuntu.yml@master
 
   windows:
+    needs: [lint]
     uses: haraka/.github/.github/workflows/windows.yml@master
 
   macos:
+    needs: [lint]
     uses: haraka/.github/.github/workflows/macos.yml@master
