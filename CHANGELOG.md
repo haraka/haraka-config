@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - yaml supports v1.2
   - js-yaml is barely maintained, replacing it removes most vuln warnings
 - test: replaced mocha with node --test
-- test: added watch tests
+- test: added test/watch
 - ci: updated ci, publish & release workflows
 
 ### [1.4.2] - 2025-01-08
