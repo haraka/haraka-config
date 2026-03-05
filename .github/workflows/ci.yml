@@ -11,6 +11,9 @@ jobs:
   lint:
     uses: haraka/.github/.github/workflows/lint.yml@master
 
+  prettier:
+    uses: haraka/.github/.github/workflows/prettier.yml@master
+
   coverage:
     uses: haraka/.github/.github/workflows/coverage.yml@master
     secrets: inherit

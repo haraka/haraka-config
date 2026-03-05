@@ -479,9 +479,10 @@ describe('getDir', function () {
 
   it('reloads when file in dir is touched', { timeout: 5000 }, async (t) => {
 
-    // due to differences in fs.watch, this test is unreliable on Mac OS X before Node 24
+    // due to differences in fs.watch, this test is unreliable on some platforms
     const nodeMajorVersion = parseInt(process.versions.node.split('.')[0])
     if (/darwin/.test(process.platform) && nodeMajorVersion < 24) return
+    if (/^win/.test(process.platform) && nodeMajorVersion < 22) return
 
     await t.test('waits for watch event', async () => {
       return new Promise((resolve) => {
