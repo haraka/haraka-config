@@ -13,6 +13,8 @@ jobs:
 
   prettier:
     uses: haraka/.github/.github/workflows/prettier.yml@master
+    with:
+      branch: ${{ github.head_ref }}
 
   coverage:
     uses: haraka/.github/.github/workflows/coverage.yml@master
