@@ -1,8 +1,8 @@
-const assert = require('assert')
+const assert = require('node:assert')
+const { beforeEach, describe, it } = require('node:test')
 
-beforeEach(function (done) {
+beforeEach(function () {
   this.flat = require('../../lib/readers/flat')
-  done()
 })
 
 describe('flat', function () {

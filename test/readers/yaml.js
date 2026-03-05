@@ -1,8 +1,8 @@
-const assert = require('assert')
+const assert = require('node:assert')
+const { beforeEach, describe, it } = require('node:test')
 
-beforeEach(function (done) {
+beforeEach(function () {
   this.yaml = require('../../lib/readers/yaml')
-  done()
 })
 
 describe('yaml', function () {

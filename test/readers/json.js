@@ -1,8 +1,8 @@
-const assert = require('assert')
+const assert = require('node:assert')
+const { beforeEach, describe, it } = require('node:test')
 
-beforeEach(function (done) {
+beforeEach(function () {
   this.json = require('../../lib/readers/json')
-  done()
 })
 
 describe('json', function () {

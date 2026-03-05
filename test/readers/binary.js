@@ -1,10 +1,10 @@
-const assert = require('assert')
-const fs = require('fs')
-const path = require('path')
+const assert = require('node:assert')
+const { beforeEach, describe, it } = require('node:test')
+const fs = require('node:fs')
+const path = require('node:path')
 
-beforeEach(function (done) {
+beforeEach(function () {
   this.bin = require('../../lib/readers/binary')
-  done()
 })
 
 describe('binary', function () {

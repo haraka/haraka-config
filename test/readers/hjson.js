@@ -1,9 +1,9 @@
-const assert = require('assert')
-const path = require('path')
+const assert = require('node:assert')
+const { beforeEach, describe, it } = require('node:test')
+const path = require('node:path')
 
-beforeEach(function (done) {
+beforeEach(function () {
   this.hjson = require('../../lib/readers/hjson')
-  done()
 })
 
 describe('hjson', function () {

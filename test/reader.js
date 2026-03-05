@@ -1,14 +1,14 @@
 'use strict'
 
 const assert = require('node:assert')
+const { beforeEach, describe, it } = require('node:test')
 const path = require('node:path')
 
 describe('reader', function () {
-  beforeEach(function (done) {
+  beforeEach(function () {
     process.env.NODE_ENV === 'test'
     this.cfreader = require('../lib/reader')
     this.opts = { booleans: ['main.bool_true', 'main.bool_false'] }
-    done()
   })
 
   describe('load_config', function () {

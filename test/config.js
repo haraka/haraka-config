@@ -1,6 +1,6 @@
 const assert = require('node:assert')
-// const { beforeEach, describe, it } = require('node:test')
-const fs = require('node:fs')
+const { beforeEach, describe, it } = require('node:test')
+const fs = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
 
@@ -16,13 +16,12 @@ function clearRequireCache() {
   delete require.cache[`${path.resolve(__dirname, '..', 'lib', 'reader')}.js`]
 }
 
-function testSetup(done) {
+function testSetup() {
   process.env.NODE_ENV = 'test'
   process.env.HARAKA = ''
   process.env.WITHOUT_CONFIG_CACHE = '1'
   clearRequireCache()
   this.config = require('../config')
-  done()
 }
 
 describe('config', function () {
@@ -453,65 +452,68 @@ describe('getInt', function () {
 const tmpFile = path.resolve('test', 'config', 'dir', '4.ext')
 
 describe('getDir', function () {
-  beforeEach(function (done) {
+  beforeEach(async () => {
     process.env.NODE_ENV = 'test'
     process.env.HARAKA = ''
     process.env.WITHOUT_CONFIG_CACHE = '1'
     clearRequireCache()
     this.config = require('../config')
-    fs.unlink(tmpFile, () => done())
+    await fs.unlink(tmpFile).catch(() => {})
   })
 
-  it('loads all files in dir', function (done) {
-    this.config.getDir('dir', { type: 'binary' }, (err, files) => {
-      if (err) console.error(err)
-      assert.ifError(err)
-      assert.equal(err, null)
-      assert.equal(files.length, 4)
-      assert.equal(files[0].data, `contents1${os.EOL}`)
-      assert.equal(files[2].data, `contents3${os.EOL}`)
-      done()
-    })
+  it('loads all files in dir', async () => {
+    const files = await this.config.getDir('dir', { type: 'binary' })
+    assert.equal(files.length, 4)
+    assert.equal(files[0].data, `contents1${os.EOL}`)
+    assert.equal(files[2].data, `contents3${os.EOL}`)
   })
 
-  it('errs on invalid dir', function (done) {
-    this.config.getDir('dirInvalid', { type: 'binary' }, (err) => {
+  it('errs on invalid dir', async () => {
+    try {
+      await this.config.getDir('dirInvalid', { type: 'binary' })
+      assert.fail('expected error')
+    } catch (err) {
       assert.equal(err.code, 'ENOENT')
-      done()
-    })
+    }
   })
 
-  it('reloads when file in dir is touched', function (done) {
-    this.timeout(3500)
+  it('reloads when file in dir is touched', { timeout: 5000 }, async (t) => {
 
-    // due to differences in fs.watch, this test is unreliable on Mac OS X
-    // if (/darwin/.test(process.platform)) return done()
+    // due to differences in fs.watch, this test is unreliable on Mac OS X before Node 24
+    const nodeMajorVersion = parseInt(process.versions.node.split('.')[0])
+    if (/darwin/.test(process.platform) && nodeMajorVersion < 24) return
 
-    let callCount = 0
+    await t.test('waits for watch event', async () => {
+      return new Promise((resolve) => {
 
-    const getDir = () => {
-      const opts2 = { type: 'binary', watchCb: getDir }
-      this.config.getDir('dir', opts2, (err, files) => {
-        // console.log('Loading: test/config/dir');
-        if (err) console.error(err)
-        callCount++
-        if (callCount === 1) {
-          assert.equal(err, null)
-          assert.equal(files.length, 4)
-          assert.equal(files[0].data, `contents1${os.EOL}`)
-          assert.equal(files[2].data, `contents3${os.EOL}`)
-          fs.writeFile(tmpFile, 'contents4\n', (err2) => {
-            assert.equal(err2, null)
-            // console.log('file touched, waiting for callback');
-          })
-        } else if (callCount === 2) {
-          assert.equal(files[3].data, 'contents4\n')
-          fs.unlink(tmpFile, () => {})
-          done()
+        let callCount = 0
+
+        const getDir = async () => {
+          try {
+            const opts2 = { type: 'binary', watchCb: getDir }
+            const files = await this.config.getDir('dir', opts2)
+            callCount++
+            if (callCount === 1) {
+              assert.equal(files.length, 4)
+              assert.equal(files[0].data, `contents1${os.EOL}`)
+              assert.equal(files[2].data, `contents3${os.EOL}`)
+              await fs.writeFile(tmpFile, 'contents4\n')
+            } else if (callCount === 2) {
+              assert.equal(files[3].data, 'contents4\n')
+              await fs.unlink(tmpFile)
+              resolve()
+            }
+            else {
+              console.log('unexpected call count: ', callCount)
+            }
+          }
+          catch (err) {
+            console.error(err)
+          }
         }
+        getDir()
       })
-    }
-    getDir()
+    })
   })
 })
 

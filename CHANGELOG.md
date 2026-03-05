@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - dep: replaced js-yaml with yaml
   - yaml supports v1.2
   - js-yaml is barely maintained, replacing it removes most vuln warnings
+- test: replaced mocha with node --test
+- test: added watch tests
 - ci: updated publish & release workflows
 
 ### [1.4.2] - 2025-01-08

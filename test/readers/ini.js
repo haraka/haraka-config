@@ -1,11 +1,11 @@
-const assert = require('assert')
+const assert = require('node:assert')
+const { beforeEach, describe, it } = require('node:test')
 
-beforeEach(function (done) {
+beforeEach(function () {
   this.ini = require('../../lib/readers/ini')
   this.opts = {
     booleans: ['main.bool_true', 'main.bool_false'],
   }
-  done()
 })
 
 describe('ini', function () {
