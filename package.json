@@ -38,5 +38,10 @@
     "test": "node --test test/*.js test/readers/*.js",
     "versions": "npx dependency-version-checker check",
     "versions:fix": "npx dependency-version-checker update && npm run prettier:fix"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 120,
+    "semi": false
   }
 }

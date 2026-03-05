@@ -96,11 +96,7 @@ describe('reader', function () {
       })
 
       it('opts', function () {
-        const r = this.cfreader.load_config(
-          'test/config/test.ini',
-          'ini',
-          this.opts,
-        )
+        const r = this.cfreader.load_config('test/config/test.ini', 'ini', this.opts)
         assert.strictEqual(r.main.bool_true, true)
         assert.strictEqual(r.main.bool_false, false)
         assert.strictEqual(r.main.str_true, 'true')
@@ -119,12 +115,7 @@ describe('reader', function () {
 
       it('sect1, opts, w/defaults', function () {
         const r = this.cfreader.load_config('test/config/test.ini', 'ini', {
-          booleans: [
-            '+sect1.bool_true',
-            '-sect1.bool_false',
-            '+sect1.bool_true_default',
-            'sect1.-bool_false_default',
-          ],
+          booleans: ['+sect1.bool_true', '-sect1.bool_false', '+sect1.bool_true_default', 'sect1.-bool_false_default'],
         })
         assert.strictEqual(r.sect1.bool_true, true)
         assert.strictEqual(r.sect1.bool_false, false)
@@ -151,18 +142,12 @@ describe('reader', function () {
 
       it('empty value', function () {
         const r = this.cfreader.load_config('test/config/test.ini')
-        assert.deepEqual(
-          { first: undefined, second: undefined },
-          r.empty_values,
-        )
+        assert.deepEqual({ first: undefined, second: undefined }, r.empty_values)
       })
 
       it('array', function () {
         const r = this.cfreader.load_config('test/config/test.ini')
-        assert.deepEqual(
-          ['first_host', 'second_host', 'third_host'],
-          r.array_test.hostlist,
-        )
+        assert.deepEqual(['first_host', 'second_host', 'third_host'], r.array_test.hostlist)
         assert.deepEqual([123, 456, 789], r.array_test.intlist)
       })
     })
@@ -264,10 +249,7 @@ describe('reader', function () {
     })
 
     it('null for binary file', function () {
-      const result = this.cfreader.load_config(
-        'test/config/non-existent.bin',
-        'binary',
-      )
+      const result = this.cfreader.load_config('test/config/non-existent.bin', 'binary')
       assert.equal(result, null)
     })
 
@@ -298,17 +280,11 @@ describe('reader', function () {
     })
 
     it('one option is name + serialized opts', function () {
-      assert.equal(
-        this.cfreader.get_cache_key('test', { foo: 'bar' }),
-        'test{"foo":"bar"}',
-      )
+      assert.equal(this.cfreader.get_cache_key('test', { foo: 'bar' }), 'test{"foo":"bar"}')
     })
 
     it('two options are returned predictably', function () {
-      assert.equal(
-        this.cfreader.get_cache_key('test', { opt1: 'foo', opt2: 'bar' }),
-        'test{"opt1":"foo","opt2":"bar"}',
-      )
+      assert.equal(this.cfreader.get_cache_key('test', { opt1: 'foo', opt2: 'bar' }), 'test{"opt1":"foo","opt2":"bar"}')
     })
   })
 
@@ -320,10 +296,7 @@ describe('reader', function () {
 
   describe('overrides', function () {
     it('missing hjson loads yaml instead', function () {
-      assert.deepEqual(
-        this.cfreader.load_config('test/config/override2.hjson'),
-        { hasDifferent: { value: false } },
-      )
+      assert.deepEqual(this.cfreader.load_config('test/config/override2.hjson'), { hasDifferent: { value: false } })
     })
 
     it('missing json loads yaml instead', function () {
@@ -337,10 +310,7 @@ describe('reader', function () {
     it('Haraka runtime (env.HARAKA=*)', function () {
       process.env.HARAKA = '/etc/'
       this.cfreader.get_path_to_config_dir()
-      assert.ok(
-        /etc.config$/.test(this.cfreader.config_path),
-        this.cfreader.config_path,
-      )
+      assert.ok(/etc.config$/.test(this.cfreader.config_path), this.cfreader.config_path)
       delete process.env.HARAKA
     })
 
@@ -348,10 +318,7 @@ describe('reader', function () {
       delete process.env.HARAKA
       process.env.NODE_ENV = 'test'
       this.cfreader.get_path_to_config_dir()
-      assert.ok(
-        /haraka-config.test.config$/.test(this.cfreader.config_path),
-        this.cfreader.config_path,
-      )
+      assert.ok(/haraka-config.test.config$/.test(this.cfreader.config_path), this.cfreader.config_path)
       delete process.env.NODE_ENV
     })
 
@@ -359,10 +326,7 @@ describe('reader', function () {
       delete process.env.HARAKA
       delete process.env.NODE_ENV
       this.cfreader.get_path_to_config_dir()
-      assert.ok(
-        /haraka-config$/.test(this.cfreader.config_path),
-        this.cfreader.config_path,
-      )
+      assert.ok(/haraka-config$/.test(this.cfreader.config_path), this.cfreader.config_path)
     })
   })
 })

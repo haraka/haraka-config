@@ -137,9 +137,22 @@ describe('watch', function () {
         this.load_config_calls++
       },
     }
-    const args = { type: 'ini', options: {}, cb_calls: 0, cb() { this.cb_calls++ } }
+    const args = {
+      type: 'ini',
+      options: {},
+      cb_calls: 0,
+      cb() {
+        this.cb_calls++
+      },
+    }
 
-    const watcher = { closed: 0, close() { this.closed++ }, unref() {} }
+    const watcher = {
+      closed: 0,
+      close() {
+        this.closed++
+      },
+      unref() {},
+    }
     let watchCalls = 0
     let watchListener
 
@@ -175,8 +188,22 @@ describe('watch', function () {
     const reader = {
       config_path: cfgPath,
       _read_args: {
-        [fullPath]: { type: 'ini', options: {}, cb_calls: 0, cb() { this.cb_calls++ } },
-        [dirPath]: { opts: { watchCb_calls: 0, watchCb() { this.watchCb_calls++ } } },
+        [fullPath]: {
+          type: 'ini',
+          options: {},
+          cb_calls: 0,
+          cb() {
+            this.cb_calls++
+          },
+        },
+        [dirPath]: {
+          opts: {
+            watchCb_calls: 0,
+            watchCb() {
+              this.watchCb_calls++
+            },
+          },
+        },
       },
       load_config_calls: 0,
       load_config() {

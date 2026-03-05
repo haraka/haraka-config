@@ -57,12 +57,7 @@ describe('ini', function () {
 
     it('sect1, opts, w/defaults', function () {
       const r = this.ini.load('test/config/test.ini', {
-        booleans: [
-          '+sect1.bool_true',
-          '-sect1.bool_false',
-          '+sect1.bool_true_default',
-          'sect1.-bool_false_default',
-        ],
+        booleans: ['+sect1.bool_true', '-sect1.bool_false', '+sect1.bool_true_default', 'sect1.-bool_false_default'],
       })
       assert.strictEqual(r.sect1.bool_true, true)
       assert.strictEqual(r.sect1.bool_false, false)

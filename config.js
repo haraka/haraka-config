@@ -23,9 +23,7 @@ class Config {
     let [name, type, cb, options] = this.arrange_args(args)
     if (!type) type = 'value'
 
-    const full_path = path.isAbsolute(name)
-      ? name
-      : path.resolve(this.root_path, name)
+    const full_path = path.isAbsolute(name) ? name : path.resolve(this.root_path, name)
 
     let results = reader.read_config(full_path, type, cb, options)
 
@@ -129,11 +127,7 @@ function merge_config(defaults, overrides, type) {
       return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides)
   }
 
-  if (
-    Array.isArray(overrides) &&
-    Array.isArray(defaults) &&
-    overrides.length > 0
-  ) {
+  if (Array.isArray(overrides) && Array.isArray(defaults) && overrides.length > 0) {
     return overrides
   }
 
