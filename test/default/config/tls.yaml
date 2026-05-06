@@ -1,0 +1,3 @@
+tls:
+  key: /etc/ssl/key.pem
+  cert: /etc/ssl/cert.pem

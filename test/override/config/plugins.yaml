@@ -1,0 +1,3 @@
+plugins:
+  rspamd:
+    enabled: true

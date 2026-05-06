@@ -35,3 +35,5 @@ node_modules
 # npm manifestation of the manifest
 # https://docs.npmjs.com/files/package-lock.json
 package-lock.json
+CLAUDE.md
+.github/copilot-instructions.md

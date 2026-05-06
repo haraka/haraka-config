@@ -345,6 +345,23 @@ describe('merged', function () {
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
     assert.equal(lc.get('test.flat'), 'flatoverrode')
   })
+
+  it('null default value overridden with object does not throw', function () {
+    // regression: typeof null === 'object' caused merge_struct to recurse into null,
+    // then `key in null` threw TypeError (GitHub #85)
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.doesNotThrow(() => lc.get('plugins.yaml'))
+  })
+
+  it('null default value replaced by override object', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(lc.get('plugins.yaml'), { plugins: { rspamd: { enabled: true } } })
+  })
+
+  it('null override value replaces default object', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(lc.get('tls.yaml'), { tls: null })
+  })
 })
 
 describe('getInt', function () {
