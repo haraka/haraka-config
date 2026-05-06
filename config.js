@@ -136,11 +136,13 @@ function merge_config(defaults, overrides, type) {
   return defaults
 }
 
+const isObject = (v) => typeof v === 'object' && v !== null
+
 function merge_struct(defaults, overrides) {
   for (const k in overrides) {
     if (['__proto__', 'constructor'].includes(k)) continue
     if (k in defaults) {
-      if (typeof overrides[k] === 'object' && typeof defaults[k] === 'object') {
+      if (isObject(overrides[k]) && isObject(defaults[k])) {
         defaults[k] = merge_struct(defaults[k], overrides[k])
       } else {
         defaults[k] = overrides[k]
