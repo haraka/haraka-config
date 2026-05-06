@@ -358,9 +358,10 @@ describe('merged', function () {
     assert.deepEqual(lc.get('plugins.yaml'), { plugins: { rspamd: { enabled: true } } })
   })
 
-  it('null override value replaces default object', function () {
+  it('null override value preserves default object', function () {
+    // a bare YAML key (null) should not wipe out a default object — deep key-by-key semantics
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
-    assert.deepEqual(lc.get('tls.yaml'), { tls: null })
+    assert.deepEqual(lc.get('tls.yaml'), { tls: { key: '/etc/ssl/key.pem', cert: '/etc/ssl/cert.pem' } })
   })
 })
 
