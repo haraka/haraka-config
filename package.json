@@ -30,6 +30,7 @@
     "url": "https://github.com/haraka/haraka-config/issues"
   },
   "scripts": {
+    "clean": "rm -rf coverage node_modules package-lock.json",
     "format": "npm run prettier:fix && npm run lint:fix",
     "lint": "npx eslint *.js lib test test/*/*.js",
     "lint:fix": "npx eslint *.js lib test test/*/*.js --fix",
@@ -38,7 +39,8 @@
     "test": "node --test test/*.js test/readers/*.js",
     "versions": "npx npm-dep-mgr check",
     "versions:fix": "npx npm-dep-mgr update",
-    "test:coverage": "npx c8 --reporter=text --reporter=text-summary npm test"
+    "test:coverage": "node --test --experimental-test-coverage test/*.js test/readers/*.js",
+    "test:coverage:lcov": "mkdir -p coverage && node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.js test/readers/*.js"
   },
   "prettier": {
     "singleQuote": true,

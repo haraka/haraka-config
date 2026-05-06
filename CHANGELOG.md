@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### [1.5.1] - 2026-05-06
 
 - fix: TypeError on yaml null values #85
+- test: replace c8 with node:test --coverage
 
 ### [1.5.0] - 2026-03-04
 
