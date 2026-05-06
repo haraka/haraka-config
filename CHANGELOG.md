@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.5.1] - 2026-05-06
+
+- 
+
 ### [1.5.0] - 2026-03-04
 
 - dep: replaced js-yaml with yaml
@@ -166,3 +170,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.4.1]: https://github.com/haraka/haraka-config/releases/tag/v1.4.1
 [1.4.2]: https://github.com/haraka/haraka-config/releases/tag/v1.4.2
 [1.5.0]: https://github.com/haraka/haraka-config/releases/tag/v1.5.0
+[1.5.1]: https://github.com/haraka/haraka-config/releases/tag/v1.5.1

@@ -3,7 +3,7 @@
   "name": "haraka-config",
   "license": "MIT",
   "description": "Haraka's config file loader",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "homepage": "https://github.com/haraka/haraka-config",
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
     "hjson": "^3.2.2"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "^2.0.3"
+    "@haraka/eslint-config": "^2.0.4"
   },
   "bugs": {
     "url": "https://github.com/haraka/haraka-config/issues"
@@ -36,8 +36,9 @@
     "prettier": "npx prettier . --check",
     "prettier:fix": "npx prettier . --write --log-level=warn",
     "test": "node --test test/*.js test/readers/*.js",
-    "versions": "npx dependency-version-checker check",
-    "versions:fix": "npx dependency-version-checker update && npm run prettier:fix"
+    "versions": "npx npm-dep-mgr check",
+    "versions:fix": "npx npm-dep-mgr update",
+    "test:coverage": "npx c8 --reporter=text --reporter=text-summary npm test"
   },
   "prettier": {
     "singleQuote": true,
