@@ -4,6 +4,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.5.2] - 2026-05-19
+
+- fix(security): prevent prototype pollution in INI section/key names
+- fix(security): confine relative config names to the config root
+- fix: surface reload parse failures to the callback and logs
+- doc: document `js` config format and its code-execution risk
+
 ### [1.5.1] - 2026-05-06
 
 - fix: TypeError on yaml null values #85
@@ -172,3 +179,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.4.2]: https://github.com/haraka/haraka-config/releases/tag/v1.4.2
 [1.5.0]: https://github.com/haraka/haraka-config/releases/tag/v1.5.0
 [1.5.1]: https://github.com/haraka/haraka-config/releases/tag/v1.5.1
+[1.5.2]: https://github.com/haraka/haraka-config/releases/tag/v1.5.2
