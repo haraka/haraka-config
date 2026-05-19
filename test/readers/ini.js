@@ -1,5 +1,5 @@
 const assert = require('node:assert')
-const { beforeEach, describe, it } = require('node:test')
+const { afterEach, beforeEach, describe, it } = require('node:test')
 
 beforeEach(function () {
   this.ini = require('../../lib/readers/ini')
@@ -130,6 +130,55 @@ describe('ini', function () {
     it('goobers.ini has invalid entry', function () {
       const result = this.ini.load('test/config/goobers.ini', {})
       assert.deepEqual(result, { main: {} })
+    })
+  })
+
+  describe('prototype pollution', function () {
+    beforeEach(function () {
+      this.warnings = []
+      this.origLogger = this.ini.logger
+      this.ini.logger = (m) => this.warnings.push(m)
+    })
+    afterEach(function () {
+      this.ini.logger = this.origLogger
+      delete Object.prototype.polluted
+      delete Array.prototype.polluted
+    })
+
+    it('ignores a [__proto__] section', function () {
+      const r = this.ini.parseIni('x', {}, '[__proto__]\npolluted=yes\n')
+      assert.strictEqual({}.polluted, undefined)
+      assert.deepEqual(Object.keys(r), ['main'])
+      assert.equal(this.warnings.length, 1)
+    })
+
+    it('ignores [constructor] and [prototype] sections', function () {
+      this.ini.parseIni('x', {}, '[constructor]\nx=1\n[prototype]\ny=2\n')
+      assert.strictEqual({}.x, undefined)
+      assert.strictEqual({}.y, undefined)
+      assert.equal(this.warnings.length, 2)
+    })
+
+    it('ignores a __proto__ key', function () {
+      const r = this.ini.parseIni('x', {}, 'foo=bar\n__proto__=evil\n')
+      assert.strictEqual({}.toString.name, 'toString') // sanity
+      assert.strictEqual(r.main.foo, 'bar')
+      assert.strictEqual(Object.prototype.polluted, undefined)
+      assert.equal(this.warnings.length, 1)
+    })
+
+    it('ignores a __proto__[] array key', function () {
+      this.ini.parseIni('x', {}, '__proto__[]=evil\n')
+      assert.strictEqual([].polluted, undefined)
+      assert.strictEqual(Array.prototype.polluted, undefined)
+      assert.equal(this.warnings.length, 1)
+    })
+
+    it('does not alias a section to an inherited member', function () {
+      // [toString] previously aliased Object.prototype.toString
+      const r = this.ini.parseIni('x', {}, '[toString]\nx=1\n')
+      assert.deepEqual(r.toString, { x: 1 })
+      assert.strictEqual(typeof {}.toString, 'function')
     })
   })
 })

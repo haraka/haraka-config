@@ -16,9 +16,14 @@ Haraka's config loader can load several types of configuration files.
 - list - load a flat file containing a list of values
 - data - load a flat file containing a list, keeping comments and whitespace.
 - binary - load a binary file into a Buffer
+- js - `require()` a JavaScript module and use its export as config
 
 See the [File Formats](#file_formats) section below for a more detailed
 explanation of each of the formats.
+
+> Security note: a `js` config is executed, not parsed — loading it runs
+> the module's code. Only use `js` configs you fully control, and never
+> place untrusted files where they may be loaded as `.js` config.
 
 # Usage
 
@@ -29,11 +34,17 @@ const cfg = this.config.get(name, [type], [callback], [options])
 
 This will load the file config/rambling.paths in the Haraka directory.
 
-`name` is not a full path, but a filename in the config/ directory. For example:
+`name` is normally a filename in the config/ directory, not a full path.
+For example:
 
 ```js
 const cfg = this.config.get('rambling.paths', 'list')
 ```
+
+A relative `name` is confined to the config directory: a name containing
+`..` that would resolve outside the config root is rejected. An explicit
+absolute path (e.g. `/etc/services`) is still accepted as a deliberate
+opt-in.
 
 `type` can be any of the types listed above.
 
@@ -43,7 +54,12 @@ the `type` parameter can be omitted.
 `callback` is an optional callback function that will be called when
 an update is detected on the file after the configuration cache has been
 updated by re-reading the file. Use this to refresh configuration
-variables within your plugin. Example:
+variables within your plugin.
+
+If the changed file fails to parse, the previously loaded config stays in
+effect and the callback is invoked with the parse `Error` as its first
+argument (it is called with no argument on success). The file continues to
+be watched, so correcting it triggers another reload. Example:
 
 ```js
 exports.register = function () {

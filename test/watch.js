@@ -67,6 +67,9 @@ describe('watch', function () {
       load_config() {
         this.load_config_calls++
       },
+      last_load_error() {
+        return undefined
+      },
     }
 
     let watchCalls = 0
@@ -135,6 +138,9 @@ describe('watch', function () {
       load_config_calls: 0,
       load_config() {
         this.load_config_calls++
+      },
+      last_load_error() {
+        return undefined
       },
     }
     const args = {
@@ -208,6 +214,9 @@ describe('watch', function () {
       load_config_calls: 0,
       load_config() {
         this.load_config_calls++
+      },
+      last_load_error() {
+        return undefined
       },
     }
 

@@ -1,5 +1,5 @@
 const assert = require('node:assert')
-const { beforeEach, describe, it } = require('node:test')
+const { afterEach, beforeEach, describe, it } = require('node:test')
 const fs = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
@@ -486,5 +486,88 @@ describe('jsonOverrides', function () {
     process.env.WITHOUT_CONFIG_CACHE = ''
     this.config.get('main.json')
     assert.deepEqual(this.config.get('smtpgreeting', 'list'), ['this is line one', 'this is line two'])
+  })
+})
+
+describe('path containment', function () {
+  beforeEach(testSetup)
+
+  it('rejects a relative name that escapes the config root', function () {
+    assert.throws(() => this.config.get('../../../../../../etc/passwd', 'list'), /escapes the config directory/)
+  })
+
+  it('rejects a .. escape in getInt', function () {
+    assert.throws(() => this.config.getInt('../../../../etc/passwd'), /escapes the config directory/)
+  })
+
+  it('rejects a .. escape in getDir', function () {
+    assert.throws(() => this.config.getDir('../../../../etc'), /escapes the config directory/)
+  })
+
+  it('still allows an explicit absolute path', function () {
+    let res
+    if (/^win/.test(process.platform)) {
+      res = this.config.get('c:\\windows\\win.ini', 'list')
+    } else {
+      res = this.config.get('/etc/services', 'list')
+    }
+    assert.ok(res.length)
+  })
+
+  it('still allows normal root-relative names', function () {
+    assert.strictEqual(this.config.get('test.ini').main.str_true, 'true')
+  })
+
+  it('allows subdir-relative names within the root', function () {
+    // test/config/test/plugin.ini exists in fixtures
+    assert.ok(this.config.get(path.join('test', 'plugin.ini')))
+  })
+})
+
+describe('reload failure', function () {
+  let tmpDir
+  let reader
+  let Watch
+  let file
+  let calls
+
+  beforeEach(async function () {
+    process.env.NODE_ENV = 'test'
+    process.env.WITHOUT_CONFIG_CACHE = ''
+    clearRequireCache()
+    delete require.cache[`${path.resolve(__dirname, '..', 'lib', 'watch')}.js`]
+    reader = require('../lib/reader')
+    Watch = require('../lib/watch')
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hc-c1-'))
+    file = path.join(tmpDir, 'a.json')
+    await fs.writeFile(file, '{"k":"good"}')
+    calls = []
+  })
+
+  afterEach(async function () {
+    await fs.rm(tmpDir, { recursive: true, force: true })
+  })
+
+  it('keeps prior config and signals the error, watcher survives', async function () {
+    const args = { type: 'json', options: null, cb: (err) => calls.push(err) }
+    // initial good load
+    const first = reader.load_config(file, 'json', null)
+    assert.strictEqual(first.k, 'good')
+    assert.strictEqual(reader.last_load_error(file, 'json', null), undefined)
+
+    // corrupt the file, then run the same path the watcher uses
+    await fs.writeFile(file, '{ this is not json')
+    Watch.reload(reader, file, args)
+    const err = reader.last_load_error(file, 'json', null)
+    assert.ok(err instanceof Error) // failure surfaced
+    assert.strictEqual(reader.load_config(file, 'json', null).k, 'good') // prior retained
+    assert.ok(calls[0] instanceof Error) // cb told about failure
+
+    // operator fixes the file; the same (still-active) path reloads it
+    await fs.writeFile(file, '{"k":"fixed"}')
+    Watch.reload(reader, file, args)
+    assert.strictEqual(reader.last_load_error(file, 'json', null), undefined)
+    assert.strictEqual(reader.load_config(file, 'json', null).k, 'fixed')
+    assert.strictEqual(calls[1], undefined) // success: cb called w/o error
   })
 })

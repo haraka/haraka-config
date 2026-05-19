@@ -1,8 +1,22 @@
 'use strict'
 
-const path = require('path')
+const path = require('node:path')
 
 const reader = require('./lib/reader')
+
+// Resolve a caller-supplied config name against `base`.
+// Absolute paths are an explicit, documented opt-in (e.g. /etc/services).
+// Relative names must stay inside `base`; a `..` escape is rejected so a
+// name can't reach files outside the configured config directory.
+function safe_resolve(base, name) {
+  if (path.isAbsolute(name)) return name
+  const resolved = path.resolve(base, name)
+  const rel = path.relative(base, resolved)
+  if (rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)) {
+    throw new Error(`config name '${name}' escapes the config directory (${base})`)
+  }
+  return resolved
+}
 
 class Config {
   constructor(root_path, no_overrides) {
@@ -23,12 +37,12 @@ class Config {
     let [name, type, cb, options] = this.arrange_args(args)
     if (!type) type = 'value'
 
-    const full_path = path.isAbsolute(name) ? name : path.resolve(this.root_path, name)
+    const full_path = safe_resolve(this.root_path, name)
 
     let results = reader.read_config(full_path, type, cb, options)
 
     if (this.overrides_path) {
-      const overrides_path = path.resolve(this.overrides_path, name)
+      const overrides_path = safe_resolve(this.overrides_path, name)
 
       const overrides = reader.read_config(overrides_path, type, cb, options)
 
@@ -44,7 +58,7 @@ class Config {
   getInt(filename, default_value) {
     if (!filename) return NaN
 
-    const full_path = path.resolve(this.root_path, filename)
+    const full_path = safe_resolve(this.root_path, filename)
     const r = parseInt(reader.read_config(full_path, 'value', null, null), 10)
 
     if (!isNaN(r)) return r
@@ -52,7 +66,7 @@ class Config {
   }
 
   getDir(name, opts, done) {
-    const dir = path.resolve(this.root_path, name)
+    const dir = safe_resolve(this.root_path, name)
 
     // no callback, return promise
     if (arguments.length < 3) return reader.read_dir(dir, opts)

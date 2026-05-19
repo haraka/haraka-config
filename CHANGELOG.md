@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(security): prevent prototype pollution in INI section/key names
+- fix(security): confine relative config names to the config root
+- fix: surface reload parse failures to the callback and logs
+- doc: document `js` config format and its code-execution risk
+
 ### [1.5.1] - 2026-05-06
 
 - fix: TypeError on yaml null values #85
