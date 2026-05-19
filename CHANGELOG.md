@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.6.0] - 2026-05-19
+
+- feat: env-var driven config (#39) via opt-in `<name>.js` fallback
+  - enabled with `HARAKA_JS_CONFIG=1`
+
 ### [1.5.2] - 2026-05-19
 
 - fix(security): prevent prototype pollution in INI section/key names
@@ -180,3 +185,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.5.0]: https://github.com/haraka/haraka-config/releases/tag/v1.5.0
 [1.5.1]: https://github.com/haraka/haraka-config/releases/tag/v1.5.1
 [1.5.2]: https://github.com/haraka/haraka-config/releases/tag/v1.5.2
+[1.6.0]: https://github.com/haraka/haraka-config/releases/tag/v1.6.0

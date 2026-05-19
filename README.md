@@ -22,8 +22,10 @@ See the [File Formats](#file_formats) section below for a more detailed
 explanation of each of the formats.
 
 > Security note: a `js` config is executed, not parsed — loading it runs
-> the module's code. Only use `js` configs you fully control, and never
-> place untrusted files where they may be loaded as `.js` config.
+> the module's code. There is also an opt-in `<name>.js` fallback for
+> missing files (env var `HARAKA_JS_CONFIG=1`). See [JS Files](#js-files)
+> for the env-var use case, the shape contract, and the security
+> implications of the fallback.
 
 # Usage
 
@@ -326,12 +328,34 @@ NOTE: Hjson can be also replaced by a YAML configuration file. You can find more
 
 As per JSON files above but in YAML format.
 
+## JS Files
+
+A `.js` config is a Node module that is `require()`d; its `module.exports`
+becomes the config value. Because it is code, it can compute config at load
+time — most usefully from `process.env`, (issue #39).
+
+```js
+// config/host_list.js
+module.exports = (process.env.HARAKA_HOST_LIST || '').split(/\s+/).filter(Boolean)
+```
+
+### `<name>.js` fallback (opt-in)
+
+So that environment-driven config works, when `HARAKA_JS_CONFIG=1` is enabled
+a missing config file falls back to `<name>.js`. For `host_list.ini` the fallback
+is `host_list.ini.js`.
+
+The `.js` module must export the structure the caller's `type` expects — an array for `list`, a scalar for `value`, the section/key object an `ini` consumer expects, etc. No coercion is performed.
+
+> Security note: a `js` config is **executed, not parsed** — loading it runs
+> the module's code. Only enable this where the config directory is trusted.
+
 # Reloading/Caching
 
 Haraka automatically reloads configuration files, but this only works if whatever is looking at that config re-calls config.get() to retrieve the new config. Providing a callback in the config.get() call is the most efficient method to do this.
 
 Configuration files are watched for changes using filesystem events which are inexpensive. Due to caching, calling config.get() is normally a lightweight process.
 
-On Linux/Windows, newly created files that Haraka has tried to read in the past will be noticed immediately and loaded. For other operating systems, it may take up to 60 seconds to load, due to differences between in the kernel APIs for watching files/directories.
+On Linux/Windows, newly created files that Haraka has tried to read in the past will be noticed immediately and loaded. For other operating systems, it may take up to 60 seconds to load, due to differences between in the kernel APIs for watching files or directories.
 
-Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to update them after changes.
+Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to read updates after they change.

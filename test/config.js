@@ -173,13 +173,16 @@ describe('get', function () {
   beforeEach(testSetup)
 
   // config.get('name');
-  it('test (non-existing)', function () {
-    _test_get('test', null, null, null, null)
+  // Use a name with no backing fixture *and* no `<name>.js` shadow: a
+  // missing file now falls back to <name>.js (issue #39), so 'test' would
+  // resolve to test/config/test.js.
+  it('non-existing returns null', function () {
+    _test_get('nonexist', null, null, null, null)
   })
 
-  it('test (non-existing, cached)', function () {
+  it('non-existing returns null (cached)', function () {
     process.env.WITHOUT_CONFIG_CACHE = ''
-    const cfg = this.config.get('test', null, null)
+    const cfg = this.config.get('nonexist', null, null)
     assert.deepEqual(cfg, null)
   })
 
@@ -569,5 +572,81 @@ describe('reload failure', function () {
     assert.strictEqual(reader.last_load_error(file, 'json', null), undefined)
     assert.strictEqual(reader.load_config(file, 'json', null).k, 'fixed')
     assert.strictEqual(calls[1], undefined) // success: cb called w/o error
+  })
+})
+
+describe('.js fallback (issue #39)', function () {
+  beforeEach(function () {
+    testSetup.call(this)
+    process.env.HARAKA_JS_CONFIG = '1' // opt-in
+  })
+  afterEach(function () {
+    delete process.env.HARAKA_JS_CONFIG
+  })
+
+  it('is opt-in: disabled without HARAKA_JS_CONFIG', function () {
+    delete process.env.HARAKA_JS_CONFIG
+    assert.strictEqual(this.config.get('env-hostname'), null)
+  })
+
+  it('no-extension name falls back to <name>.js (core-file case)', function () {
+    // e.g. the `me` hostname file — env-driven without forking Haraka
+    assert.strictEqual(this.config.get('env-hostname'), 'env-hostname-default')
+  })
+
+  it('reads process.env via the .js fallback', function () {
+    process.env.TEST_HOSTNAME = 'mail.example.com'
+    try {
+      assert.strictEqual(this.config.get('env-hostname'), 'mail.example.com')
+    } finally {
+      delete process.env.TEST_HOSTNAME
+    }
+  })
+
+  it('list caller gets the array its .js fallback returns', function () {
+    // js-list.js exports an array; documents the shape contract
+    assert.deepEqual(this.config.get('js-list', 'list'), ['a', 'b'])
+  })
+
+  it('second get() is served from cache', function () {
+    process.env.WITHOUT_CONFIG_CACHE = ''
+    const a = this.config.get('env-hostname')
+    process.env.TEST_HOSTNAME = 'changed'
+    try {
+      // cached: same value despite env change (no reload triggered)
+      assert.strictEqual(this.config.get('env-hostname'), a)
+    } finally {
+      delete process.env.TEST_HOSTNAME
+    }
+  })
+
+  it('the .js fallback cannot reintroduce a path escape', function () {
+    // safe_resolve runs before the fallback; an escaping, extension-less
+    // name must still be rejected (not turned into ../evil.js)
+    assert.throws(() => this.config.get('../../../../../tmp/evil'), /escapes the config directory/)
+  })
+
+  describe('override layer', function () {
+    let defRoot
+    let ovrRoot
+
+    beforeEach(async function () {
+      defRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'hc-def-'))
+      ovrRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'hc-ovr-'))
+      await fs.mkdir(path.join(defRoot, 'config'))
+      await fs.mkdir(path.join(ovrRoot, 'config'))
+      await fs.writeFile(path.join(defRoot, 'config', 'svc.js'), 'module.exports = { a: 1, b: 1 }\n')
+      await fs.writeFile(path.join(ovrRoot, 'config', 'svc.js'), 'module.exports = { b: 2, c: 3 }\n')
+    })
+
+    afterEach(async function () {
+      await fs.rm(defRoot, { recursive: true, force: true })
+      await fs.rm(ovrRoot, { recursive: true, force: true })
+    })
+
+    it('deep-merges a .js default with a .js override', function () {
+      const cfg = this.config.module_config(defRoot, ovrRoot)
+      assert.deepEqual(cfg.get('svc', 'js'), { a: 1, b: 2, c: 3 })
+    })
   })
 })
