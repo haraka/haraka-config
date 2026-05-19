@@ -4,6 +4,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.6.0] - 2026-05-19
+
+
+- feat: opt-in `<name>.js` fallback for missing config files, enabling
+  env-var driven config without forking plugins/core (#39, `HARAKA_JS_CONFIG=1`)
+- feat(js): hot-reload `.js` configs by busting the require cache
+- fix(js): resolve relative paths so the js reader works regardless of cwd
+- fix(reader): key cache/errors by the requested name so `.js`/`.yaml`
+  fallbacks cache-hit and `last_load_error` is found
+
 ### [1.5.2] - 2026-05-19
 
 - fix(security): prevent prototype pollution in INI section/key names
@@ -180,3 +190,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.5.0]: https://github.com/haraka/haraka-config/releases/tag/v1.5.0
 [1.5.1]: https://github.com/haraka/haraka-config/releases/tag/v1.5.1
 [1.5.2]: https://github.com/haraka/haraka-config/releases/tag/v1.5.2
+[1.6.0]: https://github.com/haraka/haraka-config/releases/tag/v1.6.0
