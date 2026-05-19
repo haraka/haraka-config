@@ -332,8 +332,7 @@ As per JSON files above but in YAML format.
 
 A `.js` config is a Node module that is `require()`d; its `module.exports`
 becomes the config value. Because it is code, it can compute config at load
-time — most usefully from `process.env`, which is the supported answer to
-deriving config from environment variables (issue #39):
+time — most usefully from `process.env`, (issue #39).
 
 ```js
 // config/host_list.js
@@ -342,26 +341,14 @@ module.exports = (process.env.HARAKA_HOST_LIST || '').split(/\s+/).filter(Boolea
 
 ### `<name>.js` fallback (opt-in)
 
-So that environment-driven config works without forking plugins or core
-(which hard-code names like `config.get('host_list', 'list')`), a missing
-config file falls back to `<name>.js`. For `host_list.ini` the fallback is
-`host_list.ini.js`. This is **opt-in**: set the environment variable
-`HARAKA_JS_CONFIG=1` to enable it. When unset, a missing file behaves as
-before (no `.js` probing).
+So that environment-driven config works, when `HARAKA_JS_CONFIG=1` is enabled
+a missing config file falls back to `<name>.js`. For `host_list.ini` the fallback
+is `host_list.ini.js`.
 
-Shape contract: the `.js` module must export the structure the caller's
-`type` expects — an array for `list`, a scalar for `value`, the
-section/key object an `ini` consumer expects, etc. No coercion is performed.
+The `.js` module must export the structure the caller's `type` expects — an array for `list`, a scalar for `value`, the section/key object an `ini` consumer expects, etc. No coercion is performed.
 
-`.js` configs participate in reload like every other format: the module
-cache is busted on each load, so edits (and changed environment values on
-re-read) take effect.
-
-> Security note: a `js` config is **executed, not parsed** — loading it
-> runs the module's code. With `HARAKA_JS_CONFIG=1`, _any_ `config.get()`
-> for a missing file will probe and execute `<name>.js` if present. Only
-> enable this where the config directory is fully trusted, and never place
-> untrusted files where they may be loaded as `.js` config.
+> Security note: a `js` config is **executed, not parsed** — loading it runs
+> the module's code. Only enable this where the config directory is trusted.
 
 # Reloading/Caching
 
@@ -369,6 +356,6 @@ Haraka automatically reloads configuration files, but this only works if whateve
 
 Configuration files are watched for changes using filesystem events which are inexpensive. Due to caching, calling config.get() is normally a lightweight process.
 
-On Linux/Windows, newly created files that Haraka has tried to read in the past will be noticed immediately and loaded. For other operating systems, it may take up to 60 seconds to load, due to differences between in the kernel APIs for watching files/directories.
+On Linux/Windows, newly created files that Haraka has tried to read in the past will be noticed immediately and loaded. For other operating systems, it may take up to 60 seconds to load, due to differences between in the kernel APIs for watching files or directories.
 
-Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to update them after changes.
+Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to read updates after they change.
