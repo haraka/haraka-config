@@ -22,8 +22,10 @@ See the [File Formats](#file_formats) section below for a more detailed
 explanation of each of the formats.
 
 > Security note: a `js` config is executed, not parsed — loading it runs
-> the module's code. Only use `js` configs you fully control, and never
-> place untrusted files where they may be loaded as `.js` config.
+> the module's code. There is also an opt-in `<name>.js` fallback for
+> missing files (env var `HARAKA_JS_CONFIG=1`). See [JS Files](#js-files)
+> for the env-var use case, the shape contract, and the security
+> implications of the fallback.
 
 # Usage
 
@@ -325,6 +327,41 @@ NOTE: Hjson can be also replaced by a YAML configuration file. You can find more
 ## YAML Files
 
 As per JSON files above but in YAML format.
+
+## JS Files
+
+A `.js` config is a Node module that is `require()`d; its `module.exports`
+becomes the config value. Because it is code, it can compute config at load
+time — most usefully from `process.env`, which is the supported answer to
+deriving config from environment variables (issue #39):
+
+```js
+// config/host_list.js
+module.exports = (process.env.HARAKA_HOST_LIST || '').split(/\s+/).filter(Boolean)
+```
+
+### `<name>.js` fallback (opt-in)
+
+So that environment-driven config works without forking plugins or core
+(which hard-code names like `config.get('host_list', 'list')`), a missing
+config file falls back to `<name>.js`. For `host_list.ini` the fallback is
+`host_list.ini.js`. This is **opt-in**: set the environment variable
+`HARAKA_JS_CONFIG=1` to enable it. When unset, a missing file behaves as
+before (no `.js` probing).
+
+Shape contract: the `.js` module must export the structure the caller's
+`type` expects — an array for `list`, a scalar for `value`, the
+section/key object an `ini` consumer expects, etc. No coercion is performed.
+
+`.js` configs participate in reload like every other format: the module
+cache is busted on each load, so edits (and changed environment values on
+re-read) take effect.
+
+> Security note: a `js` config is **executed, not parsed** — loading it
+> runs the module's code. With `HARAKA_JS_CONFIG=1`, _any_ `config.get()`
+> for a missing file will probe and execute `<name>.js` if present. Only
+> enable this where the config directory is fully trusted, and never place
+> untrusted files where they may be loaded as `.js` config.
 
 # Reloading/Caching
 

@@ -1,7 +1,9 @@
 'use strict'
 
 const assert = require('node:assert')
-const { beforeEach, describe, it } = require('node:test')
+const { afterEach, beforeEach, describe, it } = require('node:test')
+const fs = require('node:fs')
+const os = require('node:os')
 const path = require('node:path')
 
 describe('reader', function () {
@@ -303,6 +305,93 @@ describe('reader', function () {
       assert.deepEqual(this.cfreader.load_config('test/config/override.json'), {
         has: { value: true },
       })
+    })
+  })
+
+  describe('js fallback', function () {
+    // the <name>.js fallback is opt-in via HARAKA_JS_CONFIG
+    beforeEach(function () {
+      process.env.HARAKA_JS_CONFIG = '1'
+    })
+    afterEach(function () {
+      delete process.env.HARAKA_JS_CONFIG
+    })
+
+    it('is disabled unless HARAKA_JS_CONFIG is set', function () {
+      delete process.env.HARAKA_JS_CONFIG
+      // value-type empty is null; the point is it did NOT load the .js
+      assert.strictEqual(this.cfreader.load_config('test/config/js-fallback', 'value'), null)
+    })
+
+    it('missing value file falls back to .js', function () {
+      const result = this.cfreader.load_config('test/config/js-fallback', 'value')
+      assert.equal(result, 'js-fallback-default')
+    })
+
+    it('re-reads process.env on reload (no manual cache clear)', function () {
+      // Intentionally does NOT delete require.cache: this verifies the
+      // js reader busts the cache itself, so .js configs hot-reload.
+      assert.equal(this.cfreader.load_config('test/config/js-fallback', 'value'), 'js-fallback-default')
+      process.env.TEST_JS_FALLBACK = 'from-env'
+      try {
+        assert.equal(this.cfreader.load_config('test/config/js-fallback', 'value'), 'from-env')
+      } finally {
+        delete process.env.TEST_JS_FALLBACK
+      }
+    })
+
+    it('missing ini file falls back to .ini.js', function () {
+      const result = this.cfreader.load_config('test/config/js-fallback.ini', 'ini')
+      assert.deepEqual(result, { main: { host: 'js-ini-fallback-host' } })
+    })
+
+    it('.ini.js fallback re-reads env on reload', function () {
+      assert.deepEqual(this.cfreader.load_config('test/config/js-fallback.ini', 'ini'), {
+        main: { host: 'js-ini-fallback-host' },
+      })
+      process.env.TEST_JS_HOST = 'env-host'
+      try {
+        assert.deepEqual(this.cfreader.load_config('test/config/js-fallback.ini', 'ini'), {
+          main: { host: 'env-host' },
+        })
+      } finally {
+        delete process.env.TEST_JS_HOST
+      }
+    })
+
+    it('existing config file is not replaced by .js fallback', function () {
+      // test.value exists; test.value.js does not — should load the plain file
+      const result = this.cfreader.load_config('test/config/test.value', 'value')
+      assert.ok(result !== null)
+    })
+
+    it('missing .js file returns empty (no infinite loop)', function () {
+      const result = this.cfreader.load_config('test/config/non-existent.js', 'js')
+      assert.deepEqual(result, {})
+    })
+
+    it('last_load_error is found for a broken fallback .js', function () {
+      // create the throwing fixture outside test/ so the node:test runner
+      // does not try to execute it as a test file
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hc-broken-'))
+      const base = path.join(dir, 'broken')
+      fs.writeFileSync(`${base}.js`, "throw new Error('intentional broken')\n")
+      try {
+        const result = this.cfreader.load_config(base, 'value')
+        // failed require -> empty, but the error must be discoverable
+        // under the *original* (pre-fallback) name + type
+        assert.deepEqual(result, {})
+        const err = this.cfreader.last_load_error(base, 'value')
+        assert.ok(err instanceof Error)
+        assert.match(err.message, /intentional broken/)
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true })
+      }
+    })
+
+    it('successful fallback clears a prior load error', function () {
+      this.cfreader.load_config('test/config/js-fallback', 'value')
+      assert.equal(this.cfreader.last_load_error('test/config/js-fallback', 'value'), undefined)
     })
   })
 

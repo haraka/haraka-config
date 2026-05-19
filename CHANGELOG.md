@@ -6,13 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [1.6.0] - 2026-05-19
 
-
-- feat: opt-in `<name>.js` fallback for missing config files, enabling
-  env-var driven config without forking plugins/core (#39, `HARAKA_JS_CONFIG=1`)
-- feat(js): hot-reload `.js` configs by busting the require cache
-- fix(js): resolve relative paths so the js reader works regardless of cwd
-- fix(reader): key cache/errors by the requested name so `.js`/`.yaml`
-  fallbacks cache-hit and `last_load_error` is found
+- feat: env-var driven config (#39) via opt-in `<name>.js` fallback
+  - enabled with `HARAKA_JS_CONFIG=1`
 
 ### [1.5.2] - 2026-05-19
 
