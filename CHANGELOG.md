@@ -6,11 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [1.5.2] - 2026-05-19
 
-#### Fixed
-
-- prevent prototype pollution in INI section/key names
-
-
 - fix(security): prevent prototype pollution in INI section/key names
 - fix(security): confine relative config names to the config root
 - fix: surface reload parse failures to the callback and logs
