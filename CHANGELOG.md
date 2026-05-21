@@ -4,6 +4,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.6.1] - 2026-05-20
+
+- feat: add stop_watching() so callers can close watchers
+- fix: cache using full path names, to avoid name collisions
+- fix: unref all sedation timers so node can exit
+- fix: watch.dir accepts explicit parent dir (tmp, test dir, etc)
+- fix: watch.dir2 tolerates a stale watchCb
+
 ### [1.6.0] - 2026-05-19
 
 - feat: env-var driven config (#39) via opt-in `<name>.js` fallback
@@ -186,3 +194,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.5.1]: https://github.com/haraka/haraka-config/releases/tag/v1.5.1
 [1.5.2]: https://github.com/haraka/haraka-config/releases/tag/v1.5.2
 [1.6.0]: https://github.com/haraka/haraka-config/releases/tag/v1.6.0
+[1.6.1]: https://github.com/haraka/haraka-config/releases/tag/v1.6.1

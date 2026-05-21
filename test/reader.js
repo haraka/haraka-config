@@ -1,10 +1,15 @@
 'use strict'
 
 const assert = require('node:assert')
-const { afterEach, beforeEach, describe, it } = require('node:test')
+const { after, afterEach, beforeEach, describe, it } = require('node:test')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+
+// Windows: workers don't exit on .unref() alone.
+after(() => {
+  require('../lib/watch').closeAll()
+})
 
 describe('reader', function () {
   beforeEach(function () {
