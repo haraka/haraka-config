@@ -120,6 +120,14 @@ class Config {
     return [fs_name, fs_type, cb, options]
   }
 
+  // Stop watching `name`. Idempotent.
+  stop_watching(name) {
+    const full_path = safe_resolve(this.root_path, name)
+    // close both the path itself (getDir target) and its parent (get target)
+    reader.stop_watching(full_path)
+    reader.stop_watching(path.dirname(full_path))
+  }
+
   module_config(defaults_path, overrides_path) {
     const cfg = new Config(path.join(defaults_path, 'config'), true)
     if (overrides_path) {

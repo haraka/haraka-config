@@ -184,6 +184,135 @@ describe('watch', function () {
     assert.equal(watchCalls, 2)
   })
 
+  it('dir watches a caller-supplied path (not just reader.config_path)', function () {
+    const Watch = loadWatch()
+    const cfgPath = path.resolve('test/config')
+    const otherDir = path.resolve('test/config/dir')
+    const filename = 'test.ini'
+    const fullPathInOther = path.join(otherDir, filename)
+
+    const reader = {
+      config_path: cfgPath,
+      _read_args: {
+        [fullPathInOther]: {
+          type: 'ini',
+          options: {},
+          cb_calls: 0,
+          cb() {
+            this.cb_calls++
+          },
+        },
+      },
+      load_config_calls: 0,
+      load_config() {
+        this.load_config_calls++
+      },
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let watchTarget
+    let watchListener
+    fs.watch = (target, opts, listener) => {
+      watchTarget = target
+      watchListener = listener
+      return { close() {}, unref() {} }
+    }
+
+    global.setTimeout = (fn) => {
+      fn()
+      return 1
+    }
+    global.clearTimeout = () => {}
+    console.log = () => {}
+
+    Watch.dir(reader, otherDir)
+    assert.equal(watchTarget, otherDir, 'fs.watch must be called on the caller-supplied dir')
+
+    watchListener('change', filename)
+    assert.equal(reader.load_config_calls, 1, 'change in other dir triggers reload')
+    assert.equal(reader._read_args[fullPathInOther].cb_calls, 1)
+  })
+
+  it('dir2 tolerates a stale watchCb (post-teardown race)', function () {
+    const Watch = loadWatch()
+    const dirPath = path.resolve('test/config/dir2-stale')
+    const reader = {
+      _read_args: {
+        [dirPath]: { opts: { watchCb: undefined } },
+      },
+    }
+
+    let watchListener
+    fs.watch = (target, opts, listener) => {
+      watchListener = listener
+      return { close() {}, unref() {} }
+    }
+
+    global.setTimeout = (fn) => {
+      assert.doesNotThrow(fn, 'sedation callback must not throw on stale watchCb')
+      return { unref() {} }
+    }
+    global.clearTimeout = () => {}
+
+    Watch.dir2(reader, dirPath)
+    watchListener('change', 'host.pem')
+  })
+
+  it('close() shuts the watcher, clears pending sedation timers, and is idempotent', function () {
+    const Watch = loadWatch()
+    const dirPath = path.resolve('test/config/close-me')
+    const childFile = path.join(dirPath, 'a.ini')
+
+    let closeCalls = 0
+    let listener
+    fs.watch = (target, opts, l) => {
+      listener = l
+      return {
+        close() {
+          closeCalls++
+        },
+        unref() {},
+      }
+    }
+
+    let pendingTimer = false
+    let clearedTimers = 0
+    global.setTimeout = () => {
+      pendingTimer = true
+      return { unref() {} }
+    }
+    global.clearTimeout = () => {
+      if (pendingTimer) {
+        clearedTimers++
+        pendingTimer = false
+      }
+    }
+
+    const reader = {
+      _read_args: {
+        [dirPath]: { opts: { watchCb() {} } },
+        [childFile]: { type: 'ini', options: {}, cb() {} },
+      },
+    }
+
+    Watch.dir2(reader, dirPath)
+    // Trigger an event so a sedation timer gets queued under dirPath.
+    listener('change', 'a.ini')
+    assert.ok(pendingTimer, 'a sedation timer should be pending before close')
+
+    Watch.close(reader, dirPath)
+
+    assert.equal(closeCalls, 1, 'fs.watch().close() must be invoked exactly once')
+    assert.equal(clearedTimers, 1, 'pending sedation timer under dirPath must be cleared')
+    assert.equal(reader._read_args[dirPath], undefined, 'reader._read_args entry must be removed')
+
+    // Second close must be a no-op (no fs.watch to close, no timers to clear).
+    Watch.close(reader, dirPath)
+    assert.equal(closeCalls, 1, 'second close() must not invoke close again')
+  })
+
   it('dir and dir2 callbacks reload and invoke watchCb', function () {
     const Watch = loadWatch()
     const cfgPath = path.resolve('test/config')

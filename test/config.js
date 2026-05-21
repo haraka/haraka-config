@@ -1,8 +1,13 @@
 const assert = require('node:assert')
-const { afterEach, beforeEach, describe, it } = require('node:test')
+const { after, afterEach, beforeEach, describe, it } = require('node:test')
 const fs = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
+
+// Windows: workers don't exit on .unref() alone.
+after(() => {
+  require('../lib/watch').closeAll()
+})
 
 function cb() {
   return false
@@ -430,34 +435,39 @@ describe('getDir', function () {
     const nodeMajorVersion = parseInt(process.versions.node.split('.')[0])
     if (/darwin/.test(process.platform) && nodeMajorVersion < 24) return
 
-    await t.test('waits for watch event', async () => {
-      return new Promise((resolve) => {
-        let callCount = 0
+    try {
+      await t.test('waits for watch event', async () => {
+        return new Promise((resolve) => {
+          let callCount = 0
 
-        const getDir = async () => {
-          try {
-            const opts2 = { type: 'binary', watchCb: getDir }
-            const files = await this.config.getDir('dir', opts2)
-            callCount++
-            if (callCount === 1) {
-              assert.equal(files.length, 4)
-              assert.equal(files[0].data, `contents1${os.EOL}`)
-              assert.equal(files[2].data, `contents3${os.EOL}`)
-              await fs.writeFile(tmpFile, 'contents4\n')
-            } else if (callCount === 2) {
-              assert.equal(files[3].data, 'contents4\n')
-              await fs.unlink(tmpFile)
-              resolve()
-            } else {
-              console.log('unexpected call count: ', callCount)
+          const getDir = async () => {
+            try {
+              const opts2 = { type: 'binary', watchCb: getDir }
+              const files = await this.config.getDir('dir', opts2)
+              callCount++
+              if (callCount === 1) {
+                assert.equal(files.length, 4)
+                assert.equal(files[0].data, `contents1${os.EOL}`)
+                assert.equal(files[2].data, `contents3${os.EOL}`)
+                await fs.writeFile(tmpFile, 'contents4\n')
+              } else if (callCount === 2) {
+                assert.equal(files[3].data, 'contents4\n')
+                await fs.unlink(tmpFile)
+                resolve()
+              } else {
+                console.log('unexpected call count: ', callCount)
+              }
+            } catch (err) {
+              console.error(err)
             }
-          } catch (err) {
-            console.error(err)
           }
-        }
-        getDir()
+          getDir()
+        })
       })
-    })
+    } finally {
+      // unlink fires fs.watch post-resolve; close the watcher so Windows can exit
+      this.config.stop_watching('dir')
+    }
   })
 })
 
