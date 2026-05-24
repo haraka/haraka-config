@@ -4,6 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.6.2] - 2026-05-24
+
+- fix: watch non-existing directories quietly #92
+- change: use Set for enoent files & dirs
+
 ### [1.6.1] - 2026-05-20
 
 - feat: add stop_watching() so callers can close watchers
@@ -195,3 +200,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.5.2]: https://github.com/haraka/haraka-config/releases/tag/v1.5.2
 [1.6.0]: https://github.com/haraka/haraka-config/releases/tag/v1.6.0
 [1.6.1]: https://github.com/haraka/haraka-config/releases/tag/v1.6.1
+[1.6.2]: https://github.com/haraka/haraka-config/releases/tag/v1.6.2
