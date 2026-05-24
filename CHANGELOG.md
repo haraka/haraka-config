@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [1.6.2] - 2026-05-24
 
-- fix: watch non-existing directories quietly
+- fix: watch non-existing directories quietly #92
 
 ### [1.6.1] - 2026-05-20
 
