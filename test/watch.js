@@ -235,6 +235,77 @@ describe('watch', function () {
     assert.equal(reader._read_args[fullPathInOther].cb_calls, 1)
   })
 
+  it('dir handles ENOENT and recovers via stat timer', function () {
+    const Watch = loadWatch()
+    const dirPath = path.resolve('test/config/missing-watch-dir')
+    const reader = {
+      config_path: path.resolve('test/config'),
+      _read_args: {},
+    }
+
+    let watchCalls = 0
+    const watchTargets = []
+    let timerFn
+    let intervalUnrefCalls = 0
+    const errors = []
+
+    fs.watch = (target) => {
+      watchCalls++
+      watchTargets.push(target)
+      if (watchCalls === 1) {
+        const err = new Error('missing')
+        err.code = 'ENOENT'
+        throw err
+      }
+      return { close() {}, unref() {} }
+    }
+
+    fs.stat = (target, cb) => {
+      assert.equal(target, dirPath)
+      cb(null, {})
+    }
+
+    global.setInterval = (fn) => {
+      timerFn = fn
+      return {
+        unref() {
+          intervalUnrefCalls++
+        },
+      }
+    }
+
+    console.error = (msg) => errors.push(msg)
+
+    Watch.dir(reader, dirPath)
+
+    assert.deepEqual(errors, [], 'ENOENT during dir watch must not log')
+    assert.equal(typeof timerFn, 'function', 'a stat retry timer must be armed')
+    assert.equal(intervalUnrefCalls, 1, 'timer must be unref()d')
+
+    // simulate the directory appearing later
+    timerFn()
+
+    assert.equal(watchCalls, 2, 'watcher must reattach once the dir exists')
+    assert.equal(watchTargets[1], dirPath)
+  })
+
+  it('dir logs non-ENOENT watch errors', function () {
+    const Watch = loadWatch()
+    const errors = []
+
+    fs.watch = () => {
+      const err = new Error('denied')
+      err.code = 'EACCES'
+      throw err
+    }
+    console.error = (msg) => errors.push(msg)
+
+    Watch.dir({ config_path: '/tmp/no-such-dir' })
+
+    assert.equal(errors.length, 1)
+    assert.match(errors[0], /Error watching directory/)
+  })
+
   it('dir2 tolerates a stale watchCb (post-teardown race)', function () {
     const Watch = loadWatch()
     const dirPath = path.resolve('test/config/dir2-stale')
