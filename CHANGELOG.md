@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix: watch skips getDir slots (makes noise)
+
 ### [1.6.2] - 2026-05-24
 
 - fix: watch non-existing directories quietly #92

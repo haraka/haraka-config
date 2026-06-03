@@ -235,6 +235,46 @@ describe('watch', function () {
     assert.equal(reader._read_args[fullPathInOther].cb_calls, 1)
   })
 
+  it('dir skips getDir slots so it cannot load_config a directory (EISDIR)', function () {
+    const Watch = loadWatch()
+    const cfgPath = path.resolve('test/config')
+    const subDir = 'tls'
+    const subDirPath = path.join(cfgPath, subDir)
+
+    const reader = {
+      config_path: cfgPath,
+      _read_args: {
+        // getDir() registers the directory path itself as { opts }
+        [subDirPath]: { opts: {} },
+      },
+      load_config_calls: 0,
+      load_config() {
+        this.load_config_calls++
+      },
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let watchListener
+    fs.watch = (target, opts, listener) => {
+      watchListener = listener
+      return { close() {}, unref() {} }
+    }
+
+    global.setTimeout = (fn) => {
+      fn()
+      return 1
+    }
+    global.clearTimeout = () => {}
+    console.log = () => {}
+
+    Watch.dir(reader, cfgPath)
+    watchListener('change', subDir)
+
+    assert.equal(reader.load_config_calls, 0, 'getDir directory slot must not be reloaded as a file')
+  })
+
   it('dir handles ENOENT and recovers via stat timer', function () {
     const Watch = loadWatch()
     const dirPath = path.resolve('test/config/missing-watch-dir')

@@ -1,5 +1,7 @@
 # haraka-config
 
+[![Build][ci-img]][ci-url] [![Cover][cov-img]][cov-url] [![Qlty][qlty-img]][qlty-url]
+
 Haraka config file loader, parser, and watcher.
 
 # Config Files
@@ -359,3 +361,10 @@ Configuration files are watched for changes using filesystem events which are in
 On Linux/Windows, newly created files that Haraka has tried to read in the past will be noticed immediately and loaded. For other operating systems, it may take up to 60 seconds to load, due to differences between in the kernel APIs for watching files or directories.
 
 Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to read updates after they change.
+
+[ci-img]: https://github.com/haraka/haraka-config/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/haraka/haraka-config/actions/workflows/ci.yml
+[cov-img]: https://codecov.io/github/haraka/haraka-config/coverage.svg
+[cov-url]: https://codecov.io/github/haraka/haraka-config
+[qlty-img]: https://qlty.sh/gh/haraka/projects/haraka-config/maintainability.svg
+[qlty-url]: https://qlty.sh/gh/haraka/projects/haraka-config
