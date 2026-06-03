@@ -3,7 +3,7 @@ const { beforeEach, describe, it } = require('node:test')
 const path = require('node:path')
 
 beforeEach(function () {
-  this.hjson = require('../../lib/readers/hjson')
+  this.hjson = require('../../lib/readers/structured')
 })
 
 describe('hjson', function () {
@@ -16,7 +16,7 @@ describe('hjson', function () {
   })
 
   it('loads the test HJSON file', function () {
-    const result = this.hjson.load(path.join('test', 'config', 'test.hjson'))
+    const result = this.hjson.load(path.join('test', 'config', 'test.hjson'), 'hjson')
     // console.log(result)
     assert.equal(result.matt, 'waz here and also made comments')
     assert.ok(result.differentArray.length)

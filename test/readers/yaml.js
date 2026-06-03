@@ -2,7 +2,7 @@ const assert = require('node:assert')
 const { beforeEach, describe, it } = require('node:test')
 
 beforeEach(function () {
-  this.yaml = require('../../lib/readers/yaml')
+  this.yaml = require('../../lib/readers/structured')
 })
 
 describe('yaml', function () {
@@ -15,7 +15,7 @@ describe('yaml', function () {
   })
 
   it('loads the test yaml file', function () {
-    const result = this.yaml.load('test/config/test.yaml')
+    const result = this.yaml.load('test/config/test.yaml', 'yaml')
     assert.strictEqual(result.main.bool_true, true)
     assert.equal(result.matt, 'waz here')
     assert.ok(result.array.length)
