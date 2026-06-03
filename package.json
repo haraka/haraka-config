@@ -24,23 +24,25 @@
     "hjson": "^3.2.2"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "^2.0.4"
+    "@haraka/eslint-config": "^3.0.0"
   },
   "bugs": {
     "url": "https://github.com/haraka/haraka-config/issues"
   },
   "scripts": {
+    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "clean": "rm -rf coverage node_modules package-lock.json",
     "format": "npm run prettier:fix && npm run lint:fix",
     "lint": "npx eslint *.js lib test test/*/*.js",
     "lint:fix": "npx eslint *.js lib test test/*/*.js --fix",
     "prettier": "npx prettier . --check",
     "prettier:fix": "npx prettier . --write --log-level=warn",
+    "qlty": "qlty smells --all",
     "test": "node --test test/*.js test/readers/*.js",
-    "versions": "npx npm-dep-mgr check",
-    "versions:fix": "npx npm-dep-mgr update",
     "test:coverage": "node --test --experimental-test-coverage test/*.js test/readers/*.js",
-    "test:coverage:lcov": "mkdir -p coverage && node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.js test/readers/*.js"
+    "test:coverage:lcov": "mkdir -p coverage && node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.js test/readers/*.js",
+    "versions": "npx npm-dep-mgr check",
+    "versions:fix": "npx npm-dep-mgr update"
   },
   "prettier": {
     "singleQuote": true,
