@@ -354,6 +354,12 @@ describe('merged', function () {
     assert.equal(lc.get('test.flat'), 'flatoverrode')
   })
 
+  it('flat list default preserved when the override file is missing', function () {
+    // a missing list override reads as [] and must not wipe the default list
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(lc.get('test.list', 'list'), ['alpha', 'beta', 'gamma'])
+  })
+
   it('null default value overridden with object does not throw', function () {
     // regression: typeof null === 'object' caused merge_struct to recurse into null,
     // then `key in null` threw TypeError (GitHub #85)

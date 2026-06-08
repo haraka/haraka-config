@@ -4,7 +4,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- fix: watch skips getDir slots (makes noise)
+### [1.6.3] - 2026-06-08
+
+- fix: a missing list/data override doesn't wipe the default
+- fix: typo overriden -> overridden
+- boost qlty and coverage (#94)
+- watch skips getDir slots (makes noise) (#93)
 
 ### [1.6.2] - 2026-05-24
 
@@ -203,3 +208,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.6.0]: https://github.com/haraka/haraka-config/releases/tag/v1.6.0
 [1.6.1]: https://github.com/haraka/haraka-config/releases/tag/v1.6.1
 [1.6.2]: https://github.com/haraka/haraka-config/releases/tag/v1.6.2
+[1.6.3]: https://github.com/haraka/haraka-config/releases/tag/v1.6.3

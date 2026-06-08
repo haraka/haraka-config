@@ -149,10 +149,14 @@ function merge_config(defaults, overrides, type) {
       return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides)
   }
 
-  if (Array.isArray(overrides) && Array.isArray(defaults) && overrides.length > 0) {
-    return overrides
+  // flat list/data: a non-empty override replaces the default; an empty
+  // override (e.g. a missing override file, which reads as []) leaves the
+  // default in place rather than silently wiping it
+  if (Array.isArray(overrides)) {
+    return overrides.length ? overrides : defaults
   }
 
+  // flat value: only a present (non-null) override replaces the default
   if (overrides != null) return overrides
 
   return defaults
