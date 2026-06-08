@@ -106,22 +106,18 @@ directory, which you specified when you ran `haraka -i`.
 
 Overrides work in the following manner:
 
-- For `json`, `ini` and `yaml` config, values are overridden on a deep
-  key by key basis.
-- For every other config format, an override file replaces the entire
-  config.
+- For `json`, `ini` and `yaml` config, values are overridden on a deep key by key basis.
+- For every other config format, an override file replaces the entire config.
 - If `smtp.json` or `smtp.yaml` exist, their contents will be loaded before all other config files. You can make use of [JSON Overrides](#json-overrides) here for a single file config.
 
 ## Examples
 
-1. a plugin installed as a module (or a core Haraka plugin)
-   loads a `list` config from their own `config/plugin_name` file. That list
-   can be completely overridden by a file called `config/plugin_name` in the
-   Haraka local install directory.
+1. a plugin installed as a module (or a core Haraka plugin) loads a `list` config
+   from their own `config/plugin_name` file. That list can be completely overridden
+   by a non-empty file called `config/plugin_name` in the Haraka local install directory.
 
-2. a plugin using default config from `config/plugin_name.ini`
-   can be overridden on a key-by-key basis. A default
-   `plugin_name.ini` might contain:
+2. a plugin using default config from `config/plugin_name.ini` can be overridden
+   on a key-by-key basis. A default `plugin_name.ini` might contain:
 
 ```ini
 toplevel1=foo
