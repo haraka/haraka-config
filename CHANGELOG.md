@@ -2,7 +2,7 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-### [1.6.4] - 2026-09-02
+### [1.7.0] - 2026-09-02
 
 - fix(security): getDir() no longer executes .js it merely discovered
   - honors the same `HARAKA_JS_CONFIG` opt-in as the `<name>.js` fallback
@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(security): merged (override layer) ini objects keep their null prototype
 - fix(security): an unknown type throws instead of require()ing lib/readers/<type>
 - change: get() always returns a copy (object, array or Buffer)
+- refactor: the flat reader's value/list/data parsing is a few lines each
+- fix: an empty `me` defaults to the hostname on Windows too
 - fix(security): harden section reads against prototype pollution
 - fix: a watch event arriving after close() no longer throws (or re-watches)
 - fix: stop_watching()/closeAll() unqueue enoent-pending paths
@@ -230,4 +232,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.6.1]: https://github.com/haraka/haraka-config/releases/tag/v1.6.1
 [1.6.2]: https://github.com/haraka/haraka-config/releases/tag/v1.6.2
 [1.6.3]: https://github.com/haraka/haraka-config/releases/tag/v1.6.3
-[1.6.4]: https://github.com/haraka/haraka-config/releases/tag/v1.6.4
+[1.7.0]: https://github.com/haraka/haraka-config/releases/tag/v1.7.0
