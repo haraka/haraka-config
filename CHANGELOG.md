@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix: `+*.key` / `-*.key` wildcard booleans are detected
 - fix: an absolute config name is read once
 - doc: remove `no_cache`, not implemented
+- change: one directory watcher per config dir on every platform
+- fix: stop_watching() releases a shared directory watcher only when nothing else in it is tracked
+- fix: getDir() watches recursively on Linux too (Node >= 20)
 
 ### [1.6.4] - 2026-09-02
 

@@ -1,6 +1,6 @@
 'use strict'
 
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
 const { afterEach, beforeEach, describe, it } = require('node:test')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -10,647 +10,405 @@ function loadWatch() {
   return require('../lib/watch')
 }
 
+const enoent = () => Object.assign(new Error('missing'), { code: 'ENOENT' })
+
+function mockReader(read_args = {}) {
+  return {
+    _read_args: read_args,
+    load_config_calls: 0,
+    load_config() {
+      this.load_config_calls++
+    },
+    last_load_error() {
+      return undefined
+    },
+  }
+}
+
+function fileSlot() {
+  return {
+    type: 'ini',
+    options: {},
+    cb_calls: 0,
+    cb() {
+      this.cb_calls++
+    },
+  }
+}
+
+function dirSlot() {
+  return {
+    opts: {
+      watchCb_calls: 0,
+      watchCb() {
+        this.watchCb_calls++
+      },
+    },
+  }
+}
+
 describe('watch', function () {
-  let fsWatch
-  let fsStat
-  let setTimeoutFn
-  let clearTimeoutFn
-  let setIntervalFn
-  let clearIntervalFn
-  let consoleError
-  let consoleLog
+  const saved = {}
+  const watchCalls = []
+  const watchers = []
 
   beforeEach(function () {
-    fsWatch = fs.watch
-    fsStat = fs.stat
-    setTimeoutFn = global.setTimeout
-    clearTimeoutFn = global.clearTimeout
-    setIntervalFn = global.setInterval
-    clearIntervalFn = global.clearInterval
-    consoleError = console.error
-    consoleLog = console.log
-  })
-
-  afterEach(function () {
-    fs.watch = fsWatch
-    fs.stat = fsStat
-    global.setTimeout = setTimeoutFn
-    global.clearTimeout = clearTimeoutFn
-    global.setInterval = setIntervalFn
-    global.clearInterval = clearIntervalFn
-    console.error = consoleError
-    console.log = consoleLog
-    delete require.cache[require.resolve('../lib/watch')]
-  })
-
-  it('file skips no_watch and avoids duplicate watchers', function () {
-    const Watch = loadWatch()
-    let watchCalls = 0
-
-    fs.watch = () => {
-      watchCalls++
-      return { close() {}, unref() {} }
-    }
-
-    Watch.file({}, 'test/config/test.ini', 'ini', null, { no_watch: true })
-    Watch.file({}, 'test/config/test.ini', 'ini')
-    Watch.file({}, 'test/config/test.ini', 'ini')
-
-    assert.equal(watchCalls, 1)
-  })
-
-  it('file handles ENOENT and recovers via stat timer', function () {
-    const Watch = loadWatch()
-    const name = path.join('test', 'config', 'missing-watch.ini')
-    const reader = {
-      _read_args: {
-        [name]: { type: 'ini', options: { booleans: ['main.test'] }, cb() {} },
-      },
-      load_config_calls: 0,
-      load_config() {
-        this.load_config_calls++
-      },
-      last_load_error() {
-        return undefined
-      },
-    }
-
-    let watchCalls = 0
-    let timerFn
-    let intervalUnrefCalls = 0
-
-    fs.watch = () => {
-      watchCalls++
-      if (watchCalls === 1) {
-        const err = new Error('missing')
-        err.code = 'ENOENT'
-        throw err
-      }
-      return { close() {}, unref() {} }
-    }
-
-    fs.stat = (file, cb) => {
-      assert.equal(file, name)
-      cb(null, {})
-    }
-
-    global.setInterval = (fn) => {
-      timerFn = fn
-      return {
-        unref() {
-          intervalUnrefCalls++
-        },
-      }
-    }
-
-    Watch.file(reader, name, 'ini', reader._read_args[name].cb, {
-      booleans: ['main.test'],
+    Object.assign(saved, {
+      watch: fs.watch,
+      stat: fs.stat,
+      setTimeout: global.setTimeout,
+      clearTimeout: global.clearTimeout,
+      setInterval: global.setInterval,
+      clearInterval: global.clearInterval,
+      error: console.error,
+      log: console.log,
     })
-    Watch.file(reader, `${name}.again`, 'ini', null, null)
-
-    assert.equal(typeof timerFn, 'function')
-    assert.equal(intervalUnrefCalls, 1)
-
-    timerFn()
-
-    assert.equal(reader.load_config_calls, 1)
-    assert.equal(watchCalls, 3)
-  })
-
-  it('file logs non-ENOENT watch errors', function () {
-    const Watch = loadWatch()
-    const errors = []
-
-    fs.watch = () => {
-      const err = new Error('denied')
-      err.code = 'EACCES'
-      throw err
-    }
-    console.error = (msg) => errors.push(msg)
-
-    Watch.file({}, 'test/config/test.ini', 'ini')
-
-    assert.equal(errors.length, 1)
-    assert.match(errors[0], /Error watching config file:/)
-  })
-
-  it('onEvent reloads and re-watches on rename', function () {
-    const Watch = loadWatch()
-    const name = path.join('test', 'config', 'test.ini')
-    const reader = {
-      load_config_calls: 0,
-      load_config() {
-        this.load_config_calls++
-      },
-      last_load_error() {
-        return undefined
-      },
-    }
-    const args = {
-      type: 'ini',
-      options: {},
-      cb_calls: 0,
-      cb() {
-        this.cb_calls++
-      },
-    }
-
-    const watcher = {
-      closed: 0,
-      close() {
-        this.closed++
-      },
-      unref() {},
-    }
-    let watchCalls = 0
-    let watchListener
-
-    fs.watch = (file, opts, listener) => {
-      watchCalls++
-      watchListener = listener
-      return watcher
-    }
-
-    global.setTimeout = (fn) => {
-      fn()
-      return 1
-    }
-    global.clearTimeout = () => {}
-    console.log = () => {}
-
-    Watch.file(reader, name, 'ini', args.cb.bind(args), args.options)
-    watchListener('rename')
-
-    assert.equal(reader.load_config_calls, 1)
-    assert.equal(args.cb_calls, 1)
-    assert.equal(watcher.closed, 1)
-    assert.equal(watchCalls, 2)
-  })
-
-  it('onEvent is inert after the watcher is closed', function () {
-    const Watch = loadWatch()
-    const name = path.join('test', 'config', 'test.ini')
-    const reader = {
-      load_config_calls: 0,
-      load_config() {
-        this.load_config_calls++
-      },
-      last_load_error() {
-        return undefined
-      },
-    }
-
-    let watchCalls = 0
-    let watchListener
-    fs.watch = (file, opts, listener) => {
-      watchCalls++
-      watchListener = listener
-      return { close() {}, unref() {} }
-    }
-    global.setTimeout = (fn) => {
-      fn()
-      return 1
-    }
-    global.clearTimeout = () => {}
-    console.log = () => {}
-
-    Watch.file(reader, name, 'ini', null, {})
-    Watch.close(reader, name)
-
-    // An fs event queued before close() still lands in the handler. It must
-    // neither throw nor resurrect a watcher the caller asked us to drop.
-    assert.doesNotThrow(() => watchListener('rename'))
-    assert.equal(reader.load_config_calls, 0, 'a closed watcher must not reload')
-    assert.equal(watchCalls, 1, 'a closed watcher must not be re-attached')
-  })
-
-  it('enoent timer tolerates a file that vanishes before it can be watched', function () {
-    const Watch = loadWatch()
-    const name = path.join('test', 'config', 'flaky-watch.ini')
-    const reader = {
-      _read_args: { [name]: { type: 'ini', options: {}, cb() {} } },
-      load_config() {},
-      last_load_error() {
-        return undefined
-      },
-    }
-
-    const errors = []
-    console.error = (msg) => errors.push(msg)
-    console.log = () => {}
-
-    fs.watch = () => {
-      const err = new Error('missing')
-      err.code = 'ENOENT'
-      throw err
-    }
-    fs.stat = (file, cb) => cb(null, {})
-
-    let timerFn
-    global.setInterval = (fn) => {
-      timerFn = fn
-      return { unref() {} }
-    }
-
-    Watch.file(reader, name, 'ini', reader._read_args[name].cb, {})
-    // The file appeared for the stat, then vanished again before fs.watch().
-    assert.doesNotThrow(() => timerFn())
-  })
-
-  it('close() unqueues an enoent-pending file so it is not resurrected', function () {
-    const Watch = loadWatch()
-    const name = path.join('test', 'config', 'never-appears.ini')
-    const reader = {
-      _read_args: { [name]: { type: 'ini', options: {}, cb() {} } },
-      load_config_calls: 0,
-      load_config() {
-        this.load_config_calls++
-      },
-      last_load_error() {
-        return undefined
-      },
-    }
-
-    let watchCalls = 0
-    fs.watch = () => {
-      watchCalls++
-      const err = new Error('missing')
-      err.code = 'ENOENT'
-      throw err
-    }
-    let statCalls = 0
-    fs.stat = (file, cb) => {
-      statCalls++
-      cb(null, {})
-    }
-
-    let timerFn
-    let clearedIntervals = 0
-    global.setInterval = (fn) => {
-      timerFn = fn
-      return { unref() {} }
-    }
-    global.clearInterval = () => clearedIntervals++
-    console.log = () => {}
-
-    Watch.file(reader, name, 'ini', reader._read_args[name].cb, {})
-    assert.equal(watchCalls, 1)
-
-    Watch.close(reader, name)
-    timerFn()
-
-    assert.equal(statCalls, 0, 'a closed file must not be polled')
-    assert.equal(reader.load_config_calls, 0, 'a closed file must not be reloaded')
-    assert.equal(clearedIntervals, 1, 'the poller must stop once nothing is pending')
-  })
-
-  it('closeAll() clears enoent registrations and stops the poller', function () {
-    const Watch = loadWatch()
-    const file = path.join('test', 'config', 'gone.ini')
-    const dir = path.resolve('test/config/gone-dir')
-    const reader = { _read_args: {}, load_config() {}, last_load_error: () => undefined }
-
-    fs.watch = () => {
-      const err = new Error('missing')
-      err.code = 'ENOENT'
-      throw err
-    }
-    let statCalls = 0
-    fs.stat = (target, cb) => {
-      statCalls++
-      cb(null, {})
-    }
-
-    let timerFn
-    let clearedIntervals = 0
-    global.setInterval = (fn) => {
-      timerFn = fn
-      return { unref() {} }
-    }
-    global.clearInterval = () => clearedIntervals++
-
-    Watch.file(reader, file, 'ini', null, {})
-    Watch.dir(reader, dir)
-
-    Watch.closeAll()
-    assert.equal(clearedIntervals, 1, 'closeAll must stop the enoent poller')
-
-    timerFn()
-    assert.equal(statCalls, 0, 'closeAll must clear both enoent queues')
-  })
-
-  it('dir watches a caller-supplied path (not just reader.config_path)', function () {
-    const Watch = loadWatch()
-    const cfgPath = path.resolve('test/config')
-    const otherDir = path.resolve('test/config/dir')
-    const filename = 'test.ini'
-    const fullPathInOther = path.join(otherDir, filename)
-
-    const reader = {
-      config_path: cfgPath,
-      _read_args: {
-        [fullPathInOther]: {
-          type: 'ini',
-          options: {},
-          cb_calls: 0,
-          cb() {
-            this.cb_calls++
-          },
-        },
-      },
-      load_config_calls: 0,
-      load_config() {
-        this.load_config_calls++
-      },
-      last_load_error() {
-        return undefined
-      },
-    }
-
-    let watchTarget
-    let watchListener
-    fs.watch = (target, opts, listener) => {
-      watchTarget = target
-      watchListener = listener
-      return { close() {}, unref() {} }
-    }
-
-    global.setTimeout = (fn) => {
-      fn()
-      return 1
-    }
-    global.clearTimeout = () => {}
-    console.log = () => {}
-
-    Watch.dir(reader, otherDir)
-    assert.equal(watchTarget, otherDir, 'fs.watch must be called on the caller-supplied dir')
-
-    watchListener('change', filename)
-    assert.equal(reader.load_config_calls, 1, 'change in other dir triggers reload')
-    assert.equal(reader._read_args[fullPathInOther].cb_calls, 1)
-  })
-
-  it('dir skips getDir slots so it cannot load_config a directory (EISDIR)', function () {
-    const Watch = loadWatch()
-    const cfgPath = path.resolve('test/config')
-    const subDir = 'tls'
-    const subDirPath = path.join(cfgPath, subDir)
-
-    const reader = {
-      config_path: cfgPath,
-      _read_args: {
-        // getDir() registers the directory path itself as { opts }
-        [subDirPath]: { opts: {} },
-      },
-      load_config_calls: 0,
-      load_config() {
-        this.load_config_calls++
-      },
-      last_load_error() {
-        return undefined
-      },
-    }
-
-    let watchListener
-    fs.watch = (target, opts, listener) => {
-      watchListener = listener
-      return { close() {}, unref() {} }
-    }
-
-    global.setTimeout = (fn) => {
-      fn()
-      return 1
-    }
-    global.clearTimeout = () => {}
-    console.log = () => {}
-
-    Watch.dir(reader, cfgPath)
-    watchListener('change', subDir)
-
-    assert.equal(reader.load_config_calls, 0, 'getDir directory slot must not be reloaded as a file')
-  })
-
-  it('dir handles ENOENT and recovers via stat timer', function () {
-    const Watch = loadWatch()
-    const dirPath = path.resolve('test/config/missing-watch-dir')
-    const reader = {
-      config_path: path.resolve('test/config'),
-      _read_args: {},
-    }
-
-    let watchCalls = 0
-    const watchTargets = []
-    let timerFn
-    let intervalUnrefCalls = 0
-    const errors = []
-
-    fs.watch = (target) => {
-      watchCalls++
-      watchTargets.push(target)
-      if (watchCalls === 1) {
-        const err = new Error('missing')
-        err.code = 'ENOENT'
-        throw err
-      }
-      return { close() {}, unref() {} }
-    }
-
-    fs.stat = (target, cb) => {
-      assert.equal(target, dirPath)
-      cb(null, {})
-    }
-
-    global.setInterval = (fn) => {
-      timerFn = fn
-      return {
-        unref() {
-          intervalUnrefCalls++
-        },
-      }
-    }
-
-    console.error = (msg) => errors.push(msg)
-
-    Watch.dir(reader, dirPath)
-
-    assert.deepEqual(errors, [], 'ENOENT during dir watch must not log')
-    assert.equal(typeof timerFn, 'function', 'a stat retry timer must be armed')
-    assert.equal(intervalUnrefCalls, 1, 'timer must be unref()d')
-
-    // simulate the directory appearing later
-    timerFn()
-
-    assert.equal(watchCalls, 2, 'watcher must reattach once the dir exists')
-    assert.equal(watchTargets[1], dirPath)
-  })
-
-  it('dir logs non-ENOENT watch errors', function () {
-    const Watch = loadWatch()
-    const errors = []
-
-    fs.watch = () => {
-      const err = new Error('denied')
-      err.code = 'EACCES'
-      throw err
-    }
-    console.error = (msg) => errors.push(msg)
-
-    Watch.dir({ config_path: '/tmp/no-such-dir' })
-
-    assert.equal(errors.length, 1)
-    assert.match(errors[0], /Error watching directory/)
-  })
-
-  it('dir2 tolerates a stale watchCb (post-teardown race)', function () {
-    const Watch = loadWatch()
-    const dirPath = path.resolve('test/config/dir2-stale')
-    const reader = {
-      _read_args: {
-        [dirPath]: { opts: { watchCb: undefined } },
-      },
-    }
-
-    let watchListener
-    fs.watch = (target, opts, listener) => {
-      watchListener = listener
-      return { close() {}, unref() {} }
-    }
-
-    global.setTimeout = (fn) => {
-      assert.doesNotThrow(fn, 'sedation callback must not throw on stale watchCb')
-      return { unref() {} }
-    }
-    global.clearTimeout = () => {}
-
-    Watch.dir2(reader, dirPath)
-    watchListener('change', 'host.pem')
-  })
-
-  it('close() shuts the watcher, clears pending sedation timers, and is idempotent', function () {
-    const Watch = loadWatch()
-    const dirPath = path.resolve('test/config/close-me')
-    const childFile = path.join(dirPath, 'a.ini')
-
-    let closeCalls = 0
-    let listener
-    fs.watch = (target, opts, l) => {
-      listener = l
-      return {
-        close() {
-          closeCalls++
-        },
-        unref() {},
-      }
-    }
-
-    let pendingTimer = false
-    let clearedTimers = 0
-    global.setTimeout = () => {
-      pendingTimer = true
-      return { unref() {} }
-    }
-    global.clearTimeout = () => {
-      if (pendingTimer) {
-        clearedTimers++
-        pendingTimer = false
-      }
-    }
-
-    const reader = {
-      _read_args: {
-        [dirPath]: { opts: { watchCb() {} } },
-        [childFile]: { type: 'ini', options: {}, cb() {} },
-      },
-    }
-
-    Watch.dir2(reader, dirPath)
-    // Trigger an event so a sedation timer gets queued under dirPath.
-    listener('change', 'a.ini')
-    assert.ok(pendingTimer, 'a sedation timer should be pending before close')
-
-    Watch.close(reader, dirPath)
-
-    assert.equal(closeCalls, 1, 'fs.watch().close() must be invoked exactly once')
-    assert.equal(clearedTimers, 1, 'pending sedation timer under dirPath must be cleared')
-    assert.equal(reader._read_args[dirPath], undefined, 'reader._read_args entry must be removed')
-
-    // Second close must be a no-op (no fs.watch to close, no timers to clear).
-    Watch.close(reader, dirPath)
-    assert.equal(closeCalls, 1, 'second close() must not invoke close again')
-  })
-
-  it('dir and dir2 callbacks reload and invoke watchCb', function () {
-    const Watch = loadWatch()
-    const cfgPath = path.resolve('test/config')
-    const dirPath = path.resolve('test/config/dir')
-    const filename = 'test.ini'
-    const fullPath = path.join(cfgPath, filename)
-
-    const reader = {
-      config_path: cfgPath,
-      _read_args: {
-        [fullPath]: {
-          type: 'ini',
-          options: {},
-          cb_calls: 0,
-          cb() {
-            this.cb_calls++
-          },
-        },
-        [dirPath]: {
-          opts: {
-            watchCb_calls: 0,
-            watchCb() {
-              this.watchCb_calls++
-            },
-          },
-        },
-      },
-      load_config_calls: 0,
-      load_config() {
-        this.load_config_calls++
-      },
-      last_load_error() {
-        return undefined
-      },
-    }
-
-    const watchCalls = []
-    const watchers = []
-
+    watchCalls.length = 0
+    watchers.length = 0
     fs.watch = (target, opts, listener) => {
       watchCalls.push({ target, opts, listener })
       const w = {
-        unref_calls: 0,
-        close() {},
-        unref() {
-          this.unref_calls++
+        close_calls: 0,
+        close() {
+          this.close_calls++
         },
       }
       watchers.push(w)
       return w
     }
-
+    // sedation timers fire immediately
     global.setTimeout = (fn) => {
       fn()
       return 1
     }
     global.clearTimeout = () => {}
     console.log = () => {}
+  })
 
-    Watch.dir(reader)
+  afterEach(function () {
+    fs.watch = saved.watch
+    fs.stat = saved.stat
+    global.setTimeout = saved.setTimeout
+    global.clearTimeout = saved.clearTimeout
+    global.setInterval = saved.setInterval
+    global.clearInterval = saved.clearInterval
+    console.error = saved.error
+    console.log = saved.log
+    delete require.cache[require.resolve('../lib/watch')]
+  })
+
+  const cfgPath = path.resolve('test/config')
+  const subDir = path.join(cfgPath, 'dir')
+
+  it('dir attaches one non-persistent watcher per directory', function () {
+    const Watch = loadWatch()
+    const reader = mockReader()
+
+    Watch.dir(reader, cfgPath)
+    Watch.dir(reader, cfgPath)
+
+    assert.equal(watchCalls.length, 1)
+    assert.equal(watchCalls[0].target, cfgPath)
+    assert.equal(watchCalls[0].opts.persistent, false)
+    assert.equal(watchCalls[0].opts.recursive, false)
+  })
+
+  it('dir reloads a tracked file and invokes its callback', function () {
+    const Watch = loadWatch()
+    const file = path.join(subDir, 'test.ini')
+    const reader = mockReader({ [file]: fileSlot() })
+
+    Watch.dir(reader, subDir)
     watchCalls[0].listener('change')
-    watchCalls[0].listener('change', 'nope.ini')
-    watchCalls[0].listener('change', filename)
-
-    Watch.dir2(reader, dirPath)
-    watchCalls[1].listener('change', '1.ext')
+    watchCalls[0].listener('change', 'untracked.ini')
+    watchCalls[0].listener('change', 'test.ini')
 
     assert.equal(reader.load_config_calls, 1)
-    assert.equal(reader._read_args[fullPath].cb_calls, 1)
-    assert.equal(reader._read_args[dirPath].opts.watchCb_calls, 1)
-    assert.equal(watchCalls[1].opts.persistent, false)
-    assert.equal(watchCalls[1].opts.recursive, /win|darwin/.test(process.platform))
-    assert.equal(watchers[1].unref_calls, 1)
+    assert.equal(reader._read_args[file].cb_calls, 1)
+  })
+
+  it('dir skips no_watch slots', function () {
+    const Watch = loadWatch()
+    const file = path.join(cfgPath, 'quiet.ini')
+    const reader = mockReader({ [file]: { type: 'ini', options: { no_watch: true } } })
+
+    Watch.dir(reader, cfgPath)
+    watchCalls[0].listener('change', 'quiet.ini')
+
+    assert.equal(reader.load_config_calls, 0)
+  })
+
+  it('dir skips getDir slots so it cannot load_config a directory (EISDIR)', function () {
+    const Watch = loadWatch()
+    const reader = mockReader({ [subDir]: { opts: {} } })
+
+    Watch.dir(reader, cfgPath)
+    watchCalls[0].listener('change', 'dir')
+
+    assert.equal(reader.load_config_calls, 0)
+  })
+
+  it('one watcher serves file reloads and a getDir watchCb on the same directory', function () {
+    // get() and getDir() used to have separate watcher kinds keyed by the
+    // same dir; whichever attached first silently starved the other
+    const Watch = loadWatch()
+    const file = path.join(subDir, 'a.pem')
+    const reader = mockReader({ [subDir]: dirSlot(), [file]: fileSlot() })
+
+    Watch.dir(reader, subDir)
+    Watch.dir(reader, subDir, { recursive: true })
+    watchCalls[1].listener('change', 'a.pem')
+
+    assert.equal(reader.load_config_calls, 1)
+    assert.equal(reader._read_args[file].cb_calls, 1)
+    assert.equal(reader._read_args[subDir].opts.watchCb_calls, 1)
+  })
+
+  it('a recursive request upgrades an existing watcher, once', function () {
+    const Watch = loadWatch()
+    const reader = mockReader()
+
+    Watch.dir(reader, subDir)
+    Watch.dir(reader, subDir, { recursive: true })
+    Watch.dir(reader, subDir, { recursive: true })
+    Watch.dir(reader, subDir)
+
+    assert.equal(watchCalls.length, 2)
+    assert.equal(watchers[0].close_calls, 1, 'the plain watcher is closed on upgrade')
+    assert.equal(watchCalls[1].opts.recursive, true)
+  })
+
+  it('falls back to a plain watcher where recursive is unavailable', function () {
+    const Watch = loadWatch()
+    const plainWatch = fs.watch
+    fs.watch = (target, opts, listener) => {
+      if (opts.recursive) throw Object.assign(new Error('nope'), { code: 'ERR_FEATURE_UNAVAILABLE_ON_PLATFORM' })
+      return plainWatch(target, opts, listener)
+    }
+
+    Watch.dir(mockReader(), subDir, { recursive: true })
+
+    assert.equal(watchCalls.length, 1)
+    assert.equal(watchCalls[0].opts.recursive, undefined)
+  })
+
+  it('watchCb tolerates a slot torn down before the sedation timer fires', function () {
+    const Watch = loadWatch()
+    const reader = mockReader({ [subDir]: dirSlot() })
+    let pending
+    global.setTimeout = (fn) => {
+      pending = fn
+      return 1
+    }
+
+    Watch.dir(reader, subDir, { recursive: true })
+    watchCalls[0].listener('change', 'host.pem')
+    delete reader._read_args[subDir]
+
+    assert.doesNotThrow(pending)
+  })
+
+  it('onEvent is inert after close()', function () {
+    const Watch = loadWatch()
+    const file = path.join(subDir, 'test.ini')
+    const reader = mockReader({ [file]: fileSlot() })
+
+    Watch.dir(reader, subDir)
+    Watch.close(reader, file)
+
+    // an fs event queued before close() still lands in the handler
+    assert.doesNotThrow(() => watchCalls[0].listener('change', 'test.ini'))
+    assert.equal(reader.load_config_calls, 0)
+    assert.equal(watchCalls.length, 1, 'a closed watcher must not be re-attached')
+  })
+
+  it('dir logs non-ENOENT watch errors', function () {
+    const Watch = loadWatch()
+    const errors = []
+    fs.watch = () => {
+      throw Object.assign(new Error('denied'), { code: 'EACCES' })
+    }
+    console.error = (msg) => errors.push(msg)
+
+    Watch.dir(mockReader(), '/no/such/dir')
+
+    assert.equal(errors.length, 1)
+    assert.match(errors[0], /Error watching directory/)
+  })
+
+  describe('enoent poller', function () {
+    let timerFn
+    let statCalls
+    let clearedIntervals
+    let intervalUnrefCalls
+
+    beforeEach(function () {
+      timerFn = undefined
+      statCalls = 0
+      clearedIntervals = 0
+      intervalUnrefCalls = 0
+      fs.stat = (target, cb) => {
+        statCalls++
+        cb(null, {})
+      }
+      global.setInterval = (fn) => {
+        timerFn = fn
+        return {
+          unref() {
+            intervalUnrefCalls++
+          },
+        }
+      }
+      global.clearInterval = () => clearedIntervals++
+    })
+
+    // the first fs.watch on `dir` fails with ENOENT; later ones succeed
+    function missingOnce() {
+      let calls = 0
+      const plainWatch = fs.watch
+      fs.watch = (...args) => {
+        if (++calls === 1) throw enoent()
+        return plainWatch(...args)
+      }
+    }
+
+    it('dir queues a missing directory quietly and attaches once it appears', function () {
+      const Watch = loadWatch()
+      const errors = []
+      console.error = (msg) => errors.push(msg)
+      missingOnce()
+      // a tracked file that exists by the time the dir is noticed
+      const file = path.join(cfgPath, 'test.ini')
+      const reader = mockReader({ [file]: fileSlot(), [cfgPath]: dirSlot() })
+
+      Watch.dir(reader, cfgPath, { recursive: true })
+
+      assert.deepEqual(errors, [])
+      assert.equal(typeof timerFn, 'function', 'a stat retry timer must be armed')
+      assert.equal(intervalUnrefCalls, 1)
+
+      timerFn()
+
+      assert.equal(watchCalls.length, 1)
+      assert.equal(watchCalls[0].target, cfgPath)
+      assert.equal(watchCalls[0].opts.recursive, true, 'the recursive request survives the wait')
+      assert.equal(reader.load_config_calls, 1, 'tracked files already in the new dir are loaded')
+      assert.equal(reader._read_args[file].cb_calls, 1)
+    })
+
+    it('tolerates a directory that vanishes between stat and watch', function () {
+      const Watch = loadWatch()
+      fs.watch = () => {
+        throw enoent()
+      }
+      const reader = mockReader()
+
+      Watch.dir(reader, subDir)
+      assert.doesNotThrow(timerFn)
+
+      timerFn()
+      assert.equal(statCalls, 2, 'the dir is re-queued for the next poll')
+    })
+
+    it('close() unqueues a pending directory so it is not resurrected', function () {
+      const Watch = loadWatch()
+      fs.watch = () => {
+        throw enoent()
+      }
+      const file = path.join(subDir, 'never.ini')
+      const reader = mockReader({ [file]: fileSlot() })
+
+      Watch.dir(reader, subDir)
+      Watch.close(reader, file)
+      timerFn()
+
+      assert.equal(statCalls, 0, 'a closed dir must not be polled')
+      assert.equal(reader.load_config_calls, 0)
+      assert.equal(clearedIntervals, 1, 'the poller must stop once nothing is pending')
+    })
+
+    it('closeAll() clears pending directories and stops the poller', function () {
+      const Watch = loadWatch()
+      fs.watch = () => {
+        throw enoent()
+      }
+
+      Watch.dir(mockReader(), subDir)
+      Watch.dir(mockReader(), cfgPath)
+      Watch.closeAll()
+      assert.equal(clearedIntervals, 1)
+
+      timerFn()
+      assert.equal(statCalls, 0)
+    })
+  })
+
+  describe('close', function () {
+    it('clears pending sedation timers under the target and removes its slot', function () {
+      const Watch = loadWatch()
+      let pendingTimer = false
+      let clearedTimers = 0
+      global.setTimeout = () => {
+        pendingTimer = true
+        return 1
+      }
+      global.clearTimeout = () => {
+        if (!pendingTimer) return
+        clearedTimers++
+        pendingTimer = false
+      }
+      const reader = mockReader({ [subDir]: dirSlot() })
+
+      Watch.dir(reader, subDir, { recursive: true })
+      watchCalls[0].listener('change', 'a.ini')
+      assert.ok(pendingTimer)
+
+      Watch.close(reader, subDir)
+
+      assert.equal(clearedTimers, 1)
+      assert.equal(reader._read_args[subDir], undefined)
+      assert.equal(watchers[0].close_calls, 1)
+
+      Watch.close(reader, subDir)
+      assert.equal(watchers[0].close_calls, 1, 'close() is idempotent')
+    })
+
+    it('a file keeps the shared directory watcher while a sibling is tracked', function () {
+      // stop_watching() on one file used to close the whole directory's
+      // watcher, silently ending live reload for every other file in it
+      const Watch = loadWatch()
+      const a = path.join(cfgPath, 'a.ini')
+      const b = path.join(cfgPath, 'b.ini')
+      const reader = mockReader({ [a]: fileSlot(), [b]: fileSlot() })
+
+      Watch.dir(reader, cfgPath)
+      Watch.close(reader, a)
+
+      assert.equal(watchers[0].close_calls, 0)
+      watchCalls[0].listener('change', 'a.ini')
+      watchCalls[0].listener('change', 'b.ini')
+      assert.equal(reader.load_config_calls, 1, 'only the still-tracked sibling reloads')
+
+      Watch.close(reader, b)
+      assert.equal(watchers[0].close_calls, 1, 'released once nothing in the dir is tracked')
+    })
+
+    it('a getDir directory keeps its watcher while a file inside it is tracked', function () {
+      const Watch = loadWatch()
+      const file = path.join(subDir, 'a.pem')
+      const reader = mockReader({ [subDir]: dirSlot(), [file]: fileSlot() })
+      const dirArgs = reader._read_args[subDir]
+
+      Watch.dir(reader, subDir, { recursive: true })
+      Watch.close(reader, subDir)
+
+      assert.equal(watchers[0].close_calls, 0)
+      watchCalls[0].listener('change', 'a.pem')
+      assert.equal(reader.load_config_calls, 1)
+      assert.equal(dirArgs.opts.watchCb_calls, 0, 'the stopped watchCb is not invoked')
+
+      Watch.close(reader, file)
+      assert.equal(watchers[0].close_calls, 1)
+    })
   })
 })
