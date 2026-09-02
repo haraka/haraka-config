@@ -8,10 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - honors the same `HARAKA_JS_CONFIG` opt-in as the `<name>.js` fallback
 - fix(security): getDir() confines its walk to the directory it was given
 - fix(security): strip prototype-polluting keys from json/hjson/yaml
+- fix(security): merged (override layer) ini objects keep their null prototype
 - fix: a watch event arriving after close() no longer throws (or re-watches)
 - fix: stop_watching()/closeAll() unqueue enoent-pending paths
 - fix: the enoent poller stops once nothing is pending
 - fix: getInt() honors the overrides layer, as get() does
+- fix: `+*.key` / `-*.key` wildcard booleans are detected
+- fix: an absolute config name is read once
+- doc: remove `no_cache`, not implemented
 
 ### [1.6.4] - 2026-09-02
 

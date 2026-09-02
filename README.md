@@ -88,7 +88,6 @@ exports.hook_connect = function (next, connection) {
 The `options` object can accepts the following keys:
 
 - `no_watch` (default: false) - prevents Haraka from watching for updates.
-- `no_cache` (default: false) - prevents Haraka from caching the file. The file will be re-read on every call to `config.get`. This is not recommended as config files are read syncronously and will slow down Haraka.
 - `booleans` (default: none) - for .ini files, this allows specifying boolean type keys. Default true or false can be specified.
 
 ## <a name="overrides">Default Config and Overrides</a>

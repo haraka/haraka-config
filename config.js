@@ -3,6 +3,7 @@
 const path = require('node:path')
 
 const reader = require('./lib/reader')
+const { UNSAFE_KEYS } = require('./lib/unsafe-keys')
 
 // Resolve a caller-supplied config name against `base`.
 // Absolute paths are an explicit, documented opt-in (e.g. /etc/services).
@@ -41,7 +42,8 @@ class Config {
 
     let results = reader.read_config(full_path, type, cb, options)
 
-    if (this.overrides_path) {
+    // an absolute name resolves to the same file in both layers
+    if (this.overrides_path && !path.isAbsolute(name)) {
       const overrides_path = safe_resolve(this.overrides_path, name)
 
       const overrides = reader.read_config(overrides_path, type, cb, options)
@@ -145,7 +147,7 @@ function merge_config(defaults, overrides, type) {
     case 'json':
     case 'js':
     case 'yaml':
-      return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides)
+      return merge_struct(clone(defaults), overrides)
   }
 
   // flat list/data: a non-empty override replaces the default; an empty
@@ -163,19 +165,19 @@ function merge_config(defaults, overrides, type) {
 
 const isObject = (v) => typeof v === 'object' && v !== null
 
+function clone(v) {
+  if (!isObject(v)) return v
+  if (Array.isArray(v)) return v.map(clone)
+  const out = Object.create(Object.getPrototypeOf(v))
+  for (const k of Object.keys(v)) out[k] = clone(v[k])
+  return out
+}
+
 function merge_struct(defaults, overrides) {
   for (const k in overrides) {
-    if (['__proto__', 'constructor'].includes(k)) continue
-    if (overrides[k] === null) continue
-    if (k in defaults) {
-      if (isObject(overrides[k]) && isObject(defaults[k])) {
-        defaults[k] = merge_struct(defaults[k], overrides[k])
-      } else {
-        defaults[k] = overrides[k]
-      }
-    } else {
-      defaults[k] = overrides[k]
-    }
+    if (UNSAFE_KEYS.has(k) || overrides[k] === null) continue
+    defaults[k] =
+      isObject(overrides[k]) && isObject(defaults[k]) ? merge_struct(defaults[k], overrides[k]) : overrides[k]
   }
   return defaults
 }

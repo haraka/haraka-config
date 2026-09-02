@@ -77,6 +77,17 @@ describe('ini', function () {
       assert.strictEqual(r['foo.com'].is_bool, true)
       assert.strictEqual(r['bar.com'].is_bool, false)
     })
+
+    it('wildcard boolean with a default prefix', function () {
+      // '+*.key' parsed as section '+*' and was dropped before detection,
+      // so its values stayed strings while bare '*.key' worked
+      const r = this.ini.load('test/config/test.ini', {
+        booleans: ['+*.is_bool'],
+      })
+      assert.strictEqual(r['*'], undefined)
+      assert.strictEqual(r['foo.com'].is_bool, true)
+      assert.strictEqual(r['bar.com'].is_bool, false)
+    })
   })
 
   describe('non-exist.ini (empty)', function () {

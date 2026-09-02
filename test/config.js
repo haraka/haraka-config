@@ -385,6 +385,33 @@ describe('merged', function () {
     assert.equal(lc.getInt('test.int'), 25)
   })
 
+  it('merged ini keeps its null prototypes', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const r = lc.get('test.ini')
+    assert.strictEqual(Object.getPrototypeOf(r), null)
+    assert.strictEqual(Object.getPrototypeOf(r.main), null)
+    assert.strictEqual(Object.getPrototypeOf(r.defaults), null)
+    assert.strictEqual(r.main.constructor, undefined)
+  })
+
+  it('an absolute name is read once, not merged with itself', function () {
+    const reader = require('../lib/reader')
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const abs = path.resolve('test', 'default', 'config', 'test.list')
+    const orig = reader.read_config
+    const seen = []
+    reader.read_config = (...args) => {
+      seen.push(args[0])
+      return orig.apply(reader, args)
+    }
+    try {
+      assert.deepEqual(lc.get(abs, 'list'), ['alpha', 'beta', 'gamma'])
+    } finally {
+      reader.read_config = orig
+    }
+    assert.deepEqual(seen, [abs])
+  })
+
   it('null override value preserves default object', function () {
     // a bare YAML key (null) should not wipe out a default object — deep key-by-key semantics
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
