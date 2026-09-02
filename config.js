@@ -3,7 +3,6 @@
 const path = require('node:path')
 
 const reader = require('./lib/reader')
-const { UNSAFE_KEYS } = require('./lib/unsafe-keys')
 
 // Resolve a caller-supplied config name against `base`.
 // Absolute paths are an explicit, documented opt-in (e.g. /etc/services).
@@ -172,9 +171,12 @@ function clone(v) {
 
 function merge_struct(defaults, overrides) {
   for (const k in overrides) {
-    if (UNSAFE_KEYS.has(k) || overrides[k] === null) continue
-    defaults[k] =
-      isObject(overrides[k]) && isObject(defaults[k]) ? merge_struct(defaults[k], overrides[k]) : overrides[k]
+    // the deny list is spelled out here (rather than lib/unsafe-keys.js) so
+    // CodeQL's js/prototype-pollution-utility check can see the guard
+    if (['__proto__', 'constructor', 'prototype'].includes(k) || overrides[k] === null) continue
+    // only an own object is merged into; an inherited one is shared with its prototype
+    const merge_into = isObject(overrides[k]) && Object.hasOwn(defaults, k) && isObject(defaults[k])
+    defaults[k] = merge_into ? merge_struct(defaults[k], overrides[k]) : overrides[k]
   }
   return defaults
 }
