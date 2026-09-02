@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix(security): strip prototype-polluting keys from json/hjson/yaml
 - fix(security): merged (override layer) ini objects keep their null prototype
 - fix(security): an unknown type throws instead of require()ing lib/readers/<type>
+- change: get() always returns a copy (object, array or Buffer)
 - fix(security): harden section reads against prototype pollution
 - fix: a watch event arriving after close() no longer throws (or re-watches)
 - fix: stop_watching()/closeAll() unqueue enoent-pending paths

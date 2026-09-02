@@ -34,27 +34,17 @@ class Config {
   }
 
   get(...args) {
-    /* eslint prefer-const: 0 */
-    let [name, type, cb, options] = this.arrange_args(args)
-    if (!type) type = 'value'
+    const [name, type, cb, options] = this.arrange_args(args)
 
     const full_path = safe_resolve(this.root_path, name)
+    const defaults = reader.read_config(full_path, type, cb, options)
 
-    let results = reader.read_config(full_path, type, cb, options)
+    // an absolute name, or an install whose defaults and overrides dirs
+    // coincide, resolves both layers to the same file
+    const overrides_path = this.overrides_path && safe_resolve(this.overrides_path, name)
+    if (!overrides_path || overrides_path === full_path) return clone(defaults)
 
-    // an absolute name resolves to the same file in both layers
-    if (this.overrides_path && !path.isAbsolute(name)) {
-      const overrides_path = safe_resolve(this.overrides_path, name)
-
-      const overrides = reader.read_config(overrides_path, type, cb, options)
-
-      results = merge_config(results, overrides, type)
-    }
-
-    // Pass arrays by value to prevent config being modified accidentally.
-    if (Array.isArray(results)) return results.slice()
-
-    return results
+    return merge_config(defaults, reader.read_config(overrides_path, type, cb, options), type)
   }
 
   getInt(filename, default_value) {
@@ -141,23 +131,21 @@ function merge_config(defaults, overrides, type) {
   if (types.is_mergeable(type)) return merge_struct(clone(defaults), overrides)
 
   // flat list/data: a non-empty override replaces the default; an empty
-  // override (e.g. a missing override file, which reads as []) leaves the
-  // default in place rather than silently wiping it
-  if (Array.isArray(overrides)) {
-    return overrides.length ? overrides : defaults
-  }
+  // override (a missing override file reads as []) leaves the default in place
+  if (Array.isArray(overrides)) return clone(overrides.length ? overrides : defaults)
 
   // flat value: only a present (non-null) override replaces the default
-  if (overrides != null) return overrides
-
-  return defaults
+  return clone(overrides ?? defaults)
 }
 
 const isObject = (v) => typeof v === 'object' && v !== null
 
+// Every get() hands the caller its own copy.
+// Prototypes are kept: ini sections are null-prototype objects.
 function clone(v) {
   if (!isObject(v)) return v
   if (Array.isArray(v)) return v.map(clone)
+  if (Buffer.isBuffer(v)) return Buffer.from(v)
   const out = Object.create(Object.getPrototypeOf(v))
   for (const k of Object.keys(v)) out[k] = clone(v[k])
   return out
@@ -170,7 +158,7 @@ function merge_struct(defaults, overrides) {
     if (['__proto__', 'constructor', 'prototype'].includes(k) || overrides[k] === null) continue
     // only an own object is merged into; an inherited one is shared with its prototype
     const merge_into = isObject(overrides[k]) && Object.hasOwn(defaults, k) && isObject(defaults[k])
-    defaults[k] = merge_into ? merge_struct(defaults[k], overrides[k]) : overrides[k]
+    defaults[k] = merge_into ? merge_struct(defaults[k], overrides[k]) : clone(overrides[k])
   }
   return defaults
 }

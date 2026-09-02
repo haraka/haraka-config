@@ -419,6 +419,64 @@ describe('merged', function () {
   })
 })
 
+describe('copies', function () {
+  beforeEach(function () {
+    testSetup.call(this)
+    // the cache must be live, or every get() would re-read the file anyway
+    process.env.WITHOUT_CONFIG_CACHE = ''
+  })
+
+  it('an ini object: mutations do not reach the next get()', function () {
+    const a = this.config.get('test.ini')
+    a.main.injected = true
+    assert.equal(this.config.get('test.ini').main.injected, undefined)
+  })
+
+  it('keeps the null prototype of ini sections', function () {
+    const r = this.config.get('test.ini')
+    assert.strictEqual(Object.getPrototypeOf(r), null)
+    assert.strictEqual(Object.getPrototypeOf(r.main), null)
+  })
+
+  it('a binary Buffer', function () {
+    const a = this.config.get('test.binary', 'binary')
+    assert.notStrictEqual(a, this.config.get('test.binary', 'binary'))
+    a[0] ^= 0xff
+    assert.notEqual(this.config.get('test.binary', 'binary')[0], a[0])
+  })
+
+  it('a list', function () {
+    const lc = this.config.module_config(path.join('test', 'default'))
+    lc.get('test.list', 'list').push('delta')
+    assert.deepEqual(lc.get('test.list', 'list'), ['alpha', 'beta', 'gamma'])
+  })
+
+  it('an override-only object inside a merged result', function () {
+    // merge_struct used to graft override sub-objects in by reference
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    lc.get('plugins.yaml').plugins.rspamd.enabled = false
+    assert.equal(lc.get('plugins.yaml').plugins.rspamd.enabled, true)
+  })
+
+  it('coincident default and override dirs read each file once', function () {
+    // the production singleton has root_path === overrides_path
+    const reader = require('../lib/reader')
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'default'))
+    const orig = reader.read_config
+    const seen = []
+    reader.read_config = (...args) => {
+      seen.push(args[0])
+      return orig.apply(reader, args)
+    }
+    try {
+      assert.deepEqual(lc.get('test.ini'), { main: {}, defaults: { one: 'one', two: 'two' } })
+    } finally {
+      reader.read_config = orig
+    }
+    assert.equal(seen.length, 1)
+  })
+})
+
 describe('getInt', function () {
   beforeEach(testSetup)
 
