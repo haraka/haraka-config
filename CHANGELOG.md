@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.6.4] - 2026-09-02
+
+- fix(security): harden section reads against prototype pollution
+
 ### [1.6.3] - 2026-06-08
 
 - fix: a missing list/data override doesn't wipe the default
@@ -209,3 +213,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.6.1]: https://github.com/haraka/haraka-config/releases/tag/v1.6.1
 [1.6.2]: https://github.com/haraka/haraka-config/releases/tag/v1.6.2
 [1.6.3]: https://github.com/haraka/haraka-config/releases/tag/v1.6.3
+[1.6.4]: https://github.com/haraka/haraka-config/releases/tag/v1.6.4
