@@ -3,6 +3,7 @@
 const path = require('node:path')
 
 const reader = require('./lib/reader')
+const types = require('./lib/types')
 
 // Resolve a caller-supplied config name against `base`.
 // Absolute paths are an explicit, documented opt-in (e.g. /etc/services).
@@ -105,7 +106,7 @@ class Config {
           options = arg
           continue
         case 'string':
-          if (/^(ini|value|list|data|h?json|js|yaml|binary)$/.test(arg)) {
+          if (types.is_type(arg)) {
             fs_type = arg
             continue
           }
@@ -115,7 +116,7 @@ class Config {
       // console.log(`unknown arg: ${arg}, typeof: ${typeof arg}`);
     }
 
-    if (!fs_type) fs_type = reader.getType(fs_name)
+    if (!fs_type) fs_type = types.type_of(fs_name)
 
     return [fs_name, fs_type, cb, options]
   }
@@ -137,14 +138,7 @@ class Config {
 module.exports = new Config()
 
 function merge_config(defaults, overrides, type) {
-  switch (type) {
-    case 'ini':
-    case 'hjson':
-    case 'json':
-    case 'js':
-    case 'yaml':
-      return merge_struct(clone(defaults), overrides)
-  }
+  if (types.is_mergeable(type)) return merge_struct(clone(defaults), overrides)
 
   // flat list/data: a non-empty override replaces the default; an empty
   // override (e.g. a missing override file, which reads as []) leaves the

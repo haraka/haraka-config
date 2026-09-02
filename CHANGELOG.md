@@ -2,13 +2,15 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-### Unreleased
+### [1.6.4] - 2026-09-02
 
 - fix(security): getDir() no longer executes .js it merely discovered
   - honors the same `HARAKA_JS_CONFIG` opt-in as the `<name>.js` fallback
 - fix(security): getDir() confines its walk to the directory it was given
 - fix(security): strip prototype-polluting keys from json/hjson/yaml
 - fix(security): merged (override layer) ini objects keep their null prototype
+- fix(security): an unknown type throws instead of require()ing lib/readers/<type>
+- fix(security): harden section reads against prototype pollution
 - fix: a watch event arriving after close() no longer throws (or re-watches)
 - fix: stop_watching()/closeAll() unqueue enoent-pending paths
 - fix: the enoent poller stops once nothing is pending
@@ -20,10 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix: stop_watching() releases a shared directory watcher only when nothing else in it is tracked
 - fix: getDir() watches recursively on Linux too (Node >= 20)
 - remove: the readers' `loadPromise`, which nothing in Haraka or its plugins called
-
-### [1.6.4] - 2026-09-02
-
-- fix(security): harden section reads against prototype pollution
+- refactor: lib/types.js is the one place config types are listed
 
 ### [1.6.3] - 2026-06-08
 

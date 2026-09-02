@@ -273,62 +273,6 @@ describe('reader', function () {
     })
   })
 
-  describe('get_filetype_reader', function () {
-    it('binary', function () {
-      const reader = this.cfreader.get_filetype_reader('binary')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-
-    it('flat', function () {
-      const reader = this.cfreader.get_filetype_reader('flat')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-
-    it('hjson', function () {
-      const reader = this.cfreader.get_filetype_reader('hjson')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-
-    it('json', function () {
-      const reader = this.cfreader.get_filetype_reader('json')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-
-    it('ini', function () {
-      const reader = this.cfreader.get_filetype_reader('ini')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-
-    it('yaml', function () {
-      const reader = this.cfreader.get_filetype_reader('yaml')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-
-    it('value', function () {
-      const reader = this.cfreader.get_filetype_reader('value')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-
-    it('list', function () {
-      const reader = this.cfreader.get_filetype_reader('list')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-
-    it('data', function () {
-      const reader = this.cfreader.get_filetype_reader('data')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
-  })
-
   describe('empty', function () {
     it('empty object for HJSON files', function () {
       const result = this.cfreader.load_config('test/config/non-existent.hjson')
