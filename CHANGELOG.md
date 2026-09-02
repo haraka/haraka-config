@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - change: one directory watcher per config dir on every platform
 - fix: stop_watching() releases a shared directory watcher only when nothing else in it is tracked
 - fix: getDir() watches recursively on Linux too (Node >= 20)
+- remove: the readers' `loadPromise`, which nothing in Haraka or its plugins called
 
 ### [1.6.4] - 2026-09-02
 

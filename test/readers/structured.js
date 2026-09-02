@@ -90,12 +90,6 @@ describe('structured', () => {
       assert.equal(target.isAdmin, undefined)
     })
 
-    it('strips unsafe keys via loadPromise too', async () => {
-      const body = '{"__proto__":{"x":1},"keep":2}'
-      const { result } = await quietly((reader) => reader.loadPromise(write('async.json', body), 'json'))
-      assert.deepEqual(result, { keep: 2 })
-    })
-
     it('terminates on a cyclic yaml graph', async () => {
       const body = 'a: &anchor\n  self: *anchor\n  __proto__:\n    x: 1\n'
       const { result } = await quietly((reader) => reader.load(write('cycle.yaml', body), 'yaml'))
@@ -138,29 +132,12 @@ describe('structured', () => {
     assert.throws(() => reader.load(testJson, 'toml'), /Unsupported structured config type: toml/)
   })
 
-  it('throws a clear error for unsupported async type', async () => {
-    const reader = loadReader()
-    await assert.rejects(() => reader.loadPromise(testJson, 'toml'), /Unsupported structured config type: toml/)
-  })
-
-  it('throws a clear error when hjson optional dependency is missing (sync)', async () => {
+  it('throws a clear error when hjson optional dependency is missing', async () => {
     clearReaderCache()
 
     await withMissingHjson(async () => {
       const reader = loadReader()
       assert.throws(() => reader.load(testHjson, 'hjson'), /HJSON support requires the optional dependency "hjson"/)
-    })
-  })
-
-  it('throws a clear error when hjson optional dependency is missing (async)', async () => {
-    clearReaderCache()
-
-    await withMissingHjson(async () => {
-      const reader = loadReader()
-      await assert.rejects(
-        () => reader.loadPromise(testHjson, 'hjson'),
-        /HJSON support requires the optional dependency "hjson"/,
-      )
     })
   })
 })
