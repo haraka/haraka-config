@@ -357,6 +357,18 @@ Haraka watches the directory containing each config file it has read, so a file 
 
 Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to read updates after they change.
 
+# Fuzzing
+
+`npm run fuzz` runs a seeded property fuzzer over the parsers, the override
+merge and copy, path confinement, and the regex patterns. Each iteration derives
+its own generator from the seed, so a failure prints a one-line replay command:
+
+```sh
+FUZZ_SEED=<seed> FUZZ_START=<iteration> FUZZ_ITERATIONS=1 FUZZ_ONLY=<target> npm run fuzz
+```
+
+`FUZZ_ITERATIONS` (default 1000), `FUZZ_ONLY=ini,flat,...`, and `FUZZ_SLOW_MS` tune a run.
+
 [ci-img]: https://github.com/haraka/haraka-config/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/haraka/haraka-config/actions/workflows/ci.yml
 [cov-img]: https://codecov.io/github/haraka/haraka-config/coverage.svg

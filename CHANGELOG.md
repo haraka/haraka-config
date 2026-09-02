@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [1.7.0] - 2026-09-02
 
+- feat: `npm run fuzz`, a seeded property fuzzer
 - fix(security): getDir() no longer executes .js it merely discovered
   - honors the same `HARAKA_JS_CONFIG` opt-in as the `<name>.js` fallback
 - fix(security): getDir() confines its walk to the directory it was given
