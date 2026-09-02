@@ -4,6 +4,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(security): getDir() no longer executes .js it merely discovered
+  - honors the same `HARAKA_JS_CONFIG` opt-in as the `<name>.js` fallback
+- fix(security): getDir() confines its walk to the directory it was given
+- fix(security): strip prototype-polluting keys from json/hjson/yaml
+- fix: a watch event arriving after close() no longer throws (or re-watches)
+- fix: stop_watching()/closeAll() unqueue enoent-pending paths
+- fix: the enoent poller stops once nothing is pending
+- fix: getInt() honors the overrides layer, as get() does
+
 ### [1.6.4] - 2026-09-02
 
 - fix(security): harden section reads against prototype pollution

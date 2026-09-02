@@ -372,6 +372,19 @@ describe('merged', function () {
     assert.deepEqual(lc.get('plugins.yaml'), { plugins: { rspamd: { enabled: true } } })
   })
 
+  it('getInt honors the overrides layer, like get()', function () {
+    // getInt() used to read root_path directly, so it silently disagreed
+    // with get() on the very same file whenever an override existed
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.equal(lc.get('test.int', 'value'), 587)
+    assert.equal(lc.getInt('test.int'), 587)
+  })
+
+  it('getInt falls back to the default layer when no override exists', function () {
+    const lc = this.config.module_config(path.join('test', 'default'))
+    assert.equal(lc.getInt('test.int'), 25)
+  })
+
   it('null override value preserves default object', function () {
     // a bare YAML key (null) should not wipe out a default object — deep key-by-key semantics
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))

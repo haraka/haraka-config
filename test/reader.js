@@ -181,6 +181,96 @@ describe('reader', function () {
         { data: { main: { two: false } }, path: path.join(dir, '2.yml') },
       ])
     })
+
+    describe('js entries', function () {
+      beforeEach(function () {
+        this.jsEnv = process.env.HARAKA_JS_CONFIG
+        delete process.env.HARAKA_JS_CONFIG
+        this.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-config-js-'))
+        fs.writeFileSync(path.join(this.dir, 'ran.js'), 'module.exports = { ran: true }\n')
+        fs.writeFileSync(path.join(this.dir, 'plain.list'), 'a\nb\n')
+      })
+
+      afterEach(function () {
+        if (this.jsEnv === undefined) {
+          delete process.env.HARAKA_JS_CONFIG
+        } else {
+          process.env.HARAKA_JS_CONFIG = this.jsEnv
+        }
+        fs.rmSync(this.dir, { recursive: true, force: true })
+      })
+
+      it('does not execute .js without HARAKA_JS_CONFIG', async function () {
+        const contents = await this.cfreader.read_dir(this.dir)
+        assert.deepEqual(
+          contents.map((c) => path.basename(c.path)),
+          ['plain.list'],
+        )
+      })
+
+      it('executes .js when HARAKA_JS_CONFIG is set', async function () {
+        process.env.HARAKA_JS_CONFIG = '1'
+        const contents = await this.cfreader.read_dir(this.dir)
+        const ran = contents.find((c) => path.basename(c.path) === 'ran.js')
+        assert.deepEqual(ran.data, { ran: true })
+      })
+
+      it('executes .js when the caller asks for type js explicitly', async function () {
+        const contents = await this.cfreader.read_dir(this.dir, { type: 'js' })
+        const ran = contents.find((c) => path.basename(c.path) === 'ran.js')
+        assert.deepEqual(ran.data, { ran: true })
+      })
+    })
+
+    describe('symlinks', function () {
+      beforeEach(function () {
+        this.root = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-config-link-'))
+        this.outside = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-config-out-'))
+        fs.writeFileSync(path.join(this.outside, 'secret.list'), 'secret\n')
+        fs.writeFileSync(path.join(this.root, 'own.list'), 'own\n')
+      })
+
+      afterEach(function () {
+        fs.rmSync(this.root, { recursive: true, force: true })
+        fs.rmSync(this.outside, { recursive: true, force: true })
+      })
+
+      it('does not follow a symlink out of the directory', async function () {
+        fs.symlinkSync(this.outside, path.join(this.root, 'escape'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(
+          contents.map((c) => path.basename(c.path)),
+          ['own.list'],
+        )
+      })
+
+      it('does not follow a symlink to a file out of the directory', async function () {
+        fs.symlinkSync(path.join(this.outside, 'secret.list'), path.join(this.root, 'linked.list'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(
+          contents.map((c) => path.basename(c.path)),
+          ['own.list'],
+        )
+      })
+
+      it('breaks a symlink cycle instead of recursing until ELOOP', async function () {
+        const sub = path.join(this.root, 'sub')
+        fs.mkdirSync(sub)
+        fs.writeFileSync(path.join(sub, 'deep.list'), 'deep\n')
+        fs.symlinkSync(this.root, path.join(sub, 'loop'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(contents.map((c) => path.basename(c.path)).sort(), ['deep.list', 'own.list'])
+      })
+
+      it('skips a dangling symlink', async function () {
+        fs.symlinkSync(path.join(this.root, 'gone.list'), path.join(this.root, 'dangling.list'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(
+          contents.map((c) => path.basename(c.path)),
+          ['own.list'],
+        )
+      })
+    })
   })
 
   describe('get_filetype_reader', function () {

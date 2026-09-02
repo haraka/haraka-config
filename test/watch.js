@@ -16,6 +16,7 @@ describe('watch', function () {
   let setTimeoutFn
   let clearTimeoutFn
   let setIntervalFn
+  let clearIntervalFn
   let consoleError
   let consoleLog
 
@@ -25,6 +26,7 @@ describe('watch', function () {
     setTimeoutFn = global.setTimeout
     clearTimeoutFn = global.clearTimeout
     setIntervalFn = global.setInterval
+    clearIntervalFn = global.clearInterval
     consoleError = console.error
     consoleLog = console.log
   })
@@ -35,6 +37,7 @@ describe('watch', function () {
     global.setTimeout = setTimeoutFn
     global.clearTimeout = clearTimeoutFn
     global.setInterval = setIntervalFn
+    global.clearInterval = clearIntervalFn
     console.error = consoleError
     console.log = consoleLog
     delete require.cache[require.resolve('../lib/watch')]
@@ -182,6 +185,158 @@ describe('watch', function () {
     assert.equal(args.cb_calls, 1)
     assert.equal(watcher.closed, 1)
     assert.equal(watchCalls, 2)
+  })
+
+  it('onEvent is inert after the watcher is closed', function () {
+    const Watch = loadWatch()
+    const name = path.join('test', 'config', 'test.ini')
+    const reader = {
+      load_config_calls: 0,
+      load_config() {
+        this.load_config_calls++
+      },
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let watchCalls = 0
+    let watchListener
+    fs.watch = (file, opts, listener) => {
+      watchCalls++
+      watchListener = listener
+      return { close() {}, unref() {} }
+    }
+    global.setTimeout = (fn) => {
+      fn()
+      return 1
+    }
+    global.clearTimeout = () => {}
+    console.log = () => {}
+
+    Watch.file(reader, name, 'ini', null, {})
+    Watch.close(reader, name)
+
+    // An fs event queued before close() still lands in the handler. It must
+    // neither throw nor resurrect a watcher the caller asked us to drop.
+    assert.doesNotThrow(() => watchListener('rename'))
+    assert.equal(reader.load_config_calls, 0, 'a closed watcher must not reload')
+    assert.equal(watchCalls, 1, 'a closed watcher must not be re-attached')
+  })
+
+  it('enoent timer tolerates a file that vanishes before it can be watched', function () {
+    const Watch = loadWatch()
+    const name = path.join('test', 'config', 'flaky-watch.ini')
+    const reader = {
+      _read_args: { [name]: { type: 'ini', options: {}, cb() {} } },
+      load_config() {},
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    const errors = []
+    console.error = (msg) => errors.push(msg)
+    console.log = () => {}
+
+    fs.watch = () => {
+      const err = new Error('missing')
+      err.code = 'ENOENT'
+      throw err
+    }
+    fs.stat = (file, cb) => cb(null, {})
+
+    let timerFn
+    global.setInterval = (fn) => {
+      timerFn = fn
+      return { unref() {} }
+    }
+
+    Watch.file(reader, name, 'ini', reader._read_args[name].cb, {})
+    // The file appeared for the stat, then vanished again before fs.watch().
+    assert.doesNotThrow(() => timerFn())
+  })
+
+  it('close() unqueues an enoent-pending file so it is not resurrected', function () {
+    const Watch = loadWatch()
+    const name = path.join('test', 'config', 'never-appears.ini')
+    const reader = {
+      _read_args: { [name]: { type: 'ini', options: {}, cb() {} } },
+      load_config_calls: 0,
+      load_config() {
+        this.load_config_calls++
+      },
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let watchCalls = 0
+    fs.watch = () => {
+      watchCalls++
+      const err = new Error('missing')
+      err.code = 'ENOENT'
+      throw err
+    }
+    let statCalls = 0
+    fs.stat = (file, cb) => {
+      statCalls++
+      cb(null, {})
+    }
+
+    let timerFn
+    let clearedIntervals = 0
+    global.setInterval = (fn) => {
+      timerFn = fn
+      return { unref() {} }
+    }
+    global.clearInterval = () => clearedIntervals++
+    console.log = () => {}
+
+    Watch.file(reader, name, 'ini', reader._read_args[name].cb, {})
+    assert.equal(watchCalls, 1)
+
+    Watch.close(reader, name)
+    timerFn()
+
+    assert.equal(statCalls, 0, 'a closed file must not be polled')
+    assert.equal(reader.load_config_calls, 0, 'a closed file must not be reloaded')
+    assert.equal(clearedIntervals, 1, 'the poller must stop once nothing is pending')
+  })
+
+  it('closeAll() clears enoent registrations and stops the poller', function () {
+    const Watch = loadWatch()
+    const file = path.join('test', 'config', 'gone.ini')
+    const dir = path.resolve('test/config/gone-dir')
+    const reader = { _read_args: {}, load_config() {}, last_load_error: () => undefined }
+
+    fs.watch = () => {
+      const err = new Error('missing')
+      err.code = 'ENOENT'
+      throw err
+    }
+    let statCalls = 0
+    fs.stat = (target, cb) => {
+      statCalls++
+      cb(null, {})
+    }
+
+    let timerFn
+    let clearedIntervals = 0
+    global.setInterval = (fn) => {
+      timerFn = fn
+      return { unref() {} }
+    }
+    global.clearInterval = () => clearedIntervals++
+
+    Watch.file(reader, file, 'ini', null, {})
+    Watch.dir(reader, dir)
+
+    Watch.closeAll()
+    assert.equal(clearedIntervals, 1, 'closeAll must stop the enoent poller')
+
+    timerFn()
+    assert.equal(statCalls, 0, 'closeAll must clear both enoent queues')
   })
 
   it('dir watches a caller-supplied path (not just reader.config_path)', function () {

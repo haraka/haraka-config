@@ -58,8 +58,7 @@ class Config {
   getInt(filename, default_value) {
     if (!filename) return NaN
 
-    const full_path = safe_resolve(this.root_path, filename)
-    const r = parseInt(reader.read_config(full_path, 'value', null, null), 10)
+    const r = parseInt(this.get(filename, 'value'), 10)
 
     if (!isNaN(r)) return r
     return parseInt(default_value, 10)
