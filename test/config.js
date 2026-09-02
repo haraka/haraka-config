@@ -385,6 +385,14 @@ describe('merged', function () {
     assert.equal(lc.getInt('test.int'), 25)
   })
 
+  it('cyclic default and override merge without overflowing', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const r = lc.get('cyclic.yaml')
+    assert.equal(r.loop.name, 'override')
+    assert.equal(r.loop.keep, 1)
+    assert.equal(r.loop.self, r.loop)
+  })
+
   it('merged ini keeps its null prototypes', function () {
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
     const r = lc.get('test.ini')
@@ -456,6 +464,14 @@ describe('copies', function () {
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
     lc.get('plugins.yaml').plugins.rspamd.enabled = false
     assert.equal(lc.get('plugins.yaml').plugins.rspamd.enabled, true)
+  })
+
+  it('a yaml alias cycle copies without overflowing, and stays a cycle', function () {
+    const r = this.config.get('cyclic.yaml')
+    assert.equal(r.loop.self, r.loop)
+    assert.equal(r.a, r.a2, 'a shared alias stays one object in the copy')
+    r.loop.name = 'mutated'
+    assert.equal(this.config.get('cyclic.yaml').loop.name, 'loop')
   })
 
   it('coincident default and override dirs read each file once', function () {

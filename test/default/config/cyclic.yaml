@@ -1,0 +1,4 @@
+loop: &y
+  name: default
+  keep: 1
+  self: *y

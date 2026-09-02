@@ -396,28 +396,24 @@ describe('watch', function () {
   })
 
   describe('close', function () {
-    it('clears pending sedation timers under the target and removes its slot', function () {
+    it("clears the target's pending debounce, removes its slot, and is idempotent", function () {
       const Watch = loadWatch()
-      let pendingTimer = false
-      let clearedTimers = 0
+      const pending = new Set()
+      let next = 0
       global.setTimeout = () => {
-        pendingTimer = true
-        return 1
+        pending.add(++next)
+        return next
       }
-      global.clearTimeout = () => {
-        if (!pendingTimer) return
-        clearedTimers++
-        pendingTimer = false
-      }
+      global.clearTimeout = (id) => pending.delete(id)
       const reader = mockReader({ [subDir]: dirSlot() })
 
       Watch.dir(reader, subDir, { recursive: true })
       watchCalls[0].listener('change', 'a.ini')
-      assert.ok(pendingTimer)
+      assert.equal(pending.size, 1)
 
       Watch.close(reader, subDir)
 
-      assert.equal(clearedTimers, 1)
+      assert.equal(pending.size, 0)
       assert.equal(reader._read_args[subDir], undefined)
       assert.equal(watchers[0].close_calls, 1)
 
@@ -425,6 +421,44 @@ describe('watch', function () {
       assert.equal(watchers[0].close_calls, 1, 'close() is idempotent')
     })
 
+    it("stopping a getDir() slot keeps a tracked child's pending reload", function () {
+      const Watch = loadWatch()
+      const timers = new Map()
+      let next = 0
+      global.setTimeout = (fn) => {
+        timers.set(++next, fn)
+        return next
+      }
+      global.clearTimeout = (id) => timers.delete(id)
+      const file = path.join(subDir, 'a.pem')
+      const reader = mockReader({ [subDir]: dirSlot(), [file]: fileSlot() })
+
+      Watch.dir(reader, subDir, { recursive: true })
+      watchCalls[0].listener('change', 'a.pem')
+      assert.equal(timers.size, 2, 'a reload and a watchCb are pending')
+
+      Watch.close(reader, subDir)
+      assert.equal(timers.size, 1, "only the dir's own debounce is cleared")
+
+      for (const fn of timers.values()) fn()
+      assert.equal(reader.load_config_calls, 1, 'the child reload still fires')
+    })
+
+    it('slots that need no watcher do not keep it open', function () {
+      const Watch = loadWatch()
+      const watched = path.join(cfgPath, 'watched.ini')
+      const reader = mockReader({
+        [path.join(cfgPath, 'quiet.ini')]: { type: 'ini', options: { no_watch: true } },
+        [cfgPath]: { opts: {} }, // getDir() without a watchCb
+        [subDir]: { opts: {} }, // a getDir() child dir has its own watcher
+        [watched]: fileSlot(),
+      })
+
+      Watch.dir(reader, cfgPath)
+      Watch.close(reader, watched)
+
+      assert.equal(watchers[0].close_calls, 1, 'nothing left relies on the watcher')
+    })
     it('a file keeps the shared directory watcher while a sibling is tracked', function () {
       // stop_watching() on one file used to close the whole directory's
       // watcher, silently ending live reload for every other file in it

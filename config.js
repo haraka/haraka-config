@@ -141,24 +141,28 @@ function merge_config(defaults, overrides, type) {
 const isObject = (v) => typeof v === 'object' && v !== null
 
 // Every get() hands the caller its own copy.
-// Prototypes are kept: ini sections are null-prototype objects.
-function clone(v) {
+// Prototypes are kept: ini sections are null-prototype objects. `seen` maps
+// source to copy, so yaml aliases stay shared and cycles stay cycles.
+function clone(v, seen = new WeakMap()) {
   if (!isObject(v)) return v
-  if (Array.isArray(v)) return v.map(clone)
   if (Buffer.isBuffer(v)) return Buffer.from(v)
-  const out = Object.create(Object.getPrototypeOf(v))
-  for (const k of Object.keys(v)) out[k] = clone(v[k])
+  if (seen.has(v)) return seen.get(v)
+  const out = Array.isArray(v) ? [] : Object.create(Object.getPrototypeOf(v))
+  seen.set(v, out)
+  for (const k of Object.keys(v)) out[k] = clone(v[k], seen)
   return out
 }
 
-function merge_struct(defaults, overrides) {
+function merge_struct(defaults, overrides, seen = new WeakMap()) {
+  if (seen.has(overrides)) return seen.get(overrides) // a yaml alias cycle in the overrides
+  seen.set(overrides, defaults)
   for (const k in overrides) {
     // the deny list is spelled out here (rather than lib/unsafe-keys.js) so
     // CodeQL's js/prototype-pollution-utility check can see the guard
     if (['__proto__', 'constructor', 'prototype'].includes(k) || overrides[k] === null) continue
     // only an own object is merged into; an inherited one is shared with its prototype
     const merge_into = isObject(overrides[k]) && Object.hasOwn(defaults, k) && isObject(defaults[k])
-    defaults[k] = merge_into ? merge_struct(defaults[k], overrides[k]) : clone(overrides[k])
+    defaults[k] = merge_into ? merge_struct(defaults[k], overrides[k], seen) : clone(overrides[k])
   }
   return defaults
 }
