@@ -320,11 +320,63 @@ describe('watch', function () {
 
       Watch.dir(reader, subDir)
       Watch.close(reader, file)
-      timerFn()
+      assert.equal(clearedIntervals, 1, 'the poller stops as soon as nothing is pending')
 
+      timerFn()
       assert.equal(statCalls, 0, 'a closed dir must not be polled')
       assert.equal(reader.load_config_calls, 0)
-      assert.equal(clearedIntervals, 1, 'the poller must stop once nothing is pending')
+    })
+
+    it('a pending recursive request survives a later plain request for the same dir', function () {
+      const Watch = loadWatch()
+      let calls = 0
+      const plainWatch = fs.watch
+      fs.watch = (...args) => {
+        if (++calls <= 2) throw enoent()
+        return plainWatch(...args)
+      }
+      const reader = mockReader()
+
+      Watch.dir(reader, subDir, { recursive: true })
+      Watch.dir(reader, subDir)
+      timerFn()
+
+      assert.equal(watchCalls.length, 1)
+      assert.equal(watchCalls[0].opts.recursive, true)
+    })
+
+    it('a later recursive request upgrades a pending plain one', function () {
+      const Watch = loadWatch()
+      let calls = 0
+      const plainWatch = fs.watch
+      fs.watch = (...args) => {
+        if (++calls <= 2) throw enoent()
+        return plainWatch(...args)
+      }
+      const reader = mockReader()
+
+      Watch.dir(reader, subDir)
+      Watch.dir(reader, subDir, { recursive: true })
+      timerFn()
+
+      assert.equal(watchCalls.length, 1)
+      assert.equal(watchCalls[0].opts.recursive, true)
+    })
+
+    it('a request that succeeds before the poll unqueues the dir and stops the poller', function () {
+      const Watch = loadWatch()
+      missingOnce()
+      const file = path.join(cfgPath, 'test.ini')
+      const reader = mockReader({ [file]: fileSlot() })
+
+      Watch.dir(reader, cfgPath)
+      Watch.dir(reader, cfgPath)
+      assert.equal(watchCalls.length, 1, 'the retry attached a watcher')
+      assert.equal(clearedIntervals, 1, 'nothing is pending, so the poller stopped')
+
+      timerFn()
+      assert.equal(statCalls, 0, 'an attached dir is not polled')
+      assert.equal(reader.load_config_calls, 0, 'and its files are not spuriously reloaded')
     })
 
     it('closeAll() clears pending directories and stops the poller', function () {
