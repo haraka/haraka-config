@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict')
 const { afterEach, beforeEach, describe, it } = require('node:test')
 const fs = require('node:fs')
+const os = require('node:os')
 const path = require('node:path')
 
 function loadWatch() {
@@ -178,20 +179,63 @@ describe('watch', function () {
     assert.equal(watchCalls[1].opts.recursive, true)
   })
 
-  it('falls back to a plain watcher where recursive is unavailable', function () {
-    const Watch = loadWatch()
-    const plainWatch = fs.watch
-    fs.watch = (target, opts, listener) => {
-      if (opts.recursive) throw Object.assign(new Error('nope'), { code: 'ERR_FEATURE_UNAVAILABLE_ON_PLATFORM' })
-      return plainWatch(target, opts, listener)
+  it('asks for recursion only where fs.watch supports it natively', function () {
+    const platform = Object.getOwnPropertyDescriptor(process, 'platform')
+    try {
+      for (const [os, expected] of [
+        ['linux', false],
+        ['darwin', true],
+        ['win32', true],
+        ['freebsd', false],
+      ]) {
+        Object.defineProperty(process, 'platform', { value: os, configurable: true })
+        const Watch = loadWatch()
+        Watch.dir(mockReader(), subDir, { recursive: true })
+        assert.equal(watchCalls.at(-1).opts.recursive, expected, os)
+        Watch.closeAll()
+      }
+    } finally {
+      Object.defineProperty(process, 'platform', platform)
     }
-
-    Watch.dir(mockReader(), subDir, { recursive: true })
-
-    assert.equal(watchCalls.length, 1)
-    assert.equal(watchCalls[0].opts.recursive, undefined)
   })
 
+  it("logs a watcher's 'error' event instead of letting it throw", function () {
+    const Watch = loadWatch()
+    const handlers = {}
+    fs.watch = () => ({ close() {}, on: (ev, fn) => (handlers[ev] = fn) })
+    const errors = []
+    console.error = (msg) => errors.push(msg)
+
+    Watch.dir(mockReader(), subDir)
+    assert.equal(typeof handlers.error, 'function')
+    assert.doesNotThrow(() => handlers.error(new Error('EACCES')))
+    assert.match(errors[0], /Error watching directory/)
+  })
+
+  it('keeps the existing watcher when the recursive upgrade fails to open', function () {
+    const Watch = loadWatch()
+    const reader = mockReader()
+    Watch.dir(reader, subDir)
+    const plainWatch = fs.watch
+    fs.watch = (target, opts, listener) => {
+      if (opts.recursive) throw Object.assign(new Error('too many open files'), { code: 'EMFILE' })
+      return plainWatch(target, opts, listener)
+    }
+    console.error = () => {}
+
+    Watch.dir(reader, subDir, { recursive: true })
+
+    assert.equal(watchers[0].close_calls, 0, 'the plain watcher survives')
+    Watch.dir(reader, subDir)
+    assert.equal(watchCalls.length, 1, 'and is still registered')
+  })
+
+  it('ignores a watchCb that is not a function', function () {
+    const Watch = loadWatch()
+    const reader = mockReader({ [subDir]: { opts: { watchCb: true } } })
+    Watch.dir(reader, subDir, { recursive: true })
+    assert.doesNotThrow(() => watchCalls[0].listener('change', 'a.pem'))
+  })
   it('watchCb tolerates a slot torn down before the sedation timer fires', function () {
     const Watch = loadWatch()
     const reader = mockReader({ [subDir]: dirSlot() })
@@ -220,6 +264,46 @@ describe('watch', function () {
     assert.doesNotThrow(() => watchCalls[0].listener('change', 'test.ini'))
     assert.equal(reader.load_config_calls, 0)
     assert.equal(watchCalls.length, 1, 'a closed watcher must not be re-attached')
+  })
+
+  describe('a symlinked config', function () {
+    let tmp
+    beforeEach(function () {
+      tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'hc-link-')))
+      fs.mkdirSync(path.join(tmp, 'config'))
+      fs.mkdirSync(path.join(tmp, 'real'))
+      fs.writeFileSync(path.join(tmp, 'real', 'cert.pem'), 'v1')
+      fs.symlinkSync(path.join(tmp, 'real', 'cert.pem'), path.join(tmp, 'config', 'cert.pem'))
+    })
+    afterEach(function () {
+      fs.rmSync(tmp, { recursive: true, force: true })
+    })
+
+    it('reloads when the link target changes', function () {
+      const Watch = loadWatch()
+      const link = path.join(tmp, 'config', 'cert.pem')
+      const reader = mockReader({ [link]: fileSlot() })
+
+      Watch.file(reader, link)
+      assert.deepEqual(watchCalls.map((c) => c.target).sort(), [path.join(tmp, 'config'), path.join(tmp, 'real')])
+
+      watchCalls.find((c) => c.target === path.join(tmp, 'real')).listener('change', 'cert.pem')
+      assert.equal(reader.load_config_calls, 1)
+      assert.equal(reader._read_args[link].cb_calls, 1)
+    })
+
+    it('close() releases the target directory watcher too', function () {
+      const Watch = loadWatch()
+      const link = path.join(tmp, 'config', 'cert.pem')
+      const reader = mockReader({ [link]: fileSlot() })
+
+      Watch.file(reader, link)
+      Watch.close(reader, link)
+      assert.deepEqual(
+        watchers.map((w) => w.close_calls),
+        [1, 1],
+      )
+    })
   })
 
   it('dir logs non-ENOENT watch errors', function () {
