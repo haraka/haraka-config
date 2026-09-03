@@ -680,6 +680,60 @@ describe('watch', function () {
       assert.equal(reader._read_args[dir].opts.watchCb_calls, 1)
     })
 
+    it('a reload made by the pass cancels the same reload an event had queued', function () {
+      const Watch = loadWatch()
+      const timers = new Map()
+      let next = 0
+      global.setTimeout = (fn) => {
+        timers.set(++next, fn)
+        return next
+      }
+      global.clearTimeout = (id) => timers.delete(id)
+      const dir = files('a.ini')
+      const a = path.join(dir, 'a.ini')
+      const reader = mockReader({ [a]: fileSlot() })
+      Watch.file(reader, a)
+
+      grow(a)
+      watchCalls[0].listener('change', 'a.ini')
+      assert.equal(timers.size, 1, 'a reload is queued')
+
+      tick()
+      assert.equal(reader.load_config_calls, 1)
+      assert.equal(timers.size, 0, 'and the queued one is cancelled')
+    })
+
+    it('a getDir tree is fingerprinted when its watcher attaches, so nothing before the first pass is lost', function () {
+      const Watch = loadWatch()
+      const dir = files('a.ini')
+      const reader = mockReader({ [dir]: dirSlot() })
+      Watch.dir(reader, dir, { recursive: true })
+
+      fs.writeFileSync(path.join(dir, 'b.ini'), 'b') // its event was missed
+      tick()
+
+      assert.equal(reader._read_args[dir].opts.watchCb_calls, 1)
+    })
+
+    it('the fingerprint follows a symlinked subdirectory, once', function () {
+      const Watch = loadWatch()
+      const dir = files('a.ini')
+      fs.mkdirSync(path.join(tmp, 'linked'))
+      fs.writeFileSync(path.join(tmp, 'linked', 'k.pem'), 'k v1')
+      fs.symlinkSync(path.join(tmp, 'linked'), path.join(dir, 'sub'))
+      fs.symlinkSync(dir, path.join(dir, 'loop'))
+      const reader = mockReader({ [dir]: dirSlot() })
+      Watch.dir(reader, dir, { recursive: true })
+      const told = () => reader._read_args[dir].opts.watchCb_calls
+
+      tick()
+      assert.equal(told(), 0)
+
+      grow(path.join(tmp, 'linked', 'k.pem'))
+      tick()
+      assert.equal(told(), 1)
+    })
+
     it('tells a getDir consumer about a change anywhere in its tree that produced no event', function () {
       const Watch = loadWatch()
       const dir = files('a.ini')
