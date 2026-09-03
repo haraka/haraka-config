@@ -583,8 +583,9 @@ describe('watch', function () {
       assert.deepEqual(watchCalls.map((c) => c.target).sort(), [cfg, path.join(cfg, '..v1')])
 
       version('..v2')
-      fs.symlinkSync('..v2', path.join(cfg, '..data_tmp'))
-      fs.renameSync(path.join(cfg, '..data_tmp'), path.join(cfg, '..data'))
+      // Windows cannot rename a link over an existing directory link
+      fs.rmSync(path.join(cfg, '..data'))
+      fs.symlinkSync('..v2', path.join(cfg, '..data'))
       watchCalls[0].listener('rename', '..data')
 
       assert.equal(reader._read_args[link].cb_calls, 1)
