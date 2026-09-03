@@ -161,6 +161,29 @@ describe('watch', function () {
     assert.equal(reader._read_args[json].cb_calls, 1)
   })
 
+  it('a directory watched by a relative path reloads its relative slots', function () {
+    const Watch = loadWatch()
+    const dir = path.join('test', 'config')
+    const file = path.join(dir, 'test.ini')
+    const reader = mockReader({ [file]: fileSlot() })
+
+    Watch.dir(reader, dir)
+    watchCalls[0].listener('change', 'test.ini')
+
+    assert.equal(reader.load_config_calls, 1)
+  })
+
+  it('uses an absolute filename from a recursive watcher as is', function () {
+    const Watch = loadWatch()
+    const nested = path.join(subDir, 'sub', 'x.ini')
+    const reader = mockReader({ [nested]: fileSlot() })
+
+    Watch.dir(reader, subDir, { recursive: true })
+    watchCalls[0].listener('change', nested)
+
+    assert.equal(reader.load_config_calls, 1)
+  })
+
   it('reloads with the read args current when the timer fires', function () {
     const Watch = loadWatch()
     const file = path.join(subDir, 'test.ini')
@@ -717,6 +740,27 @@ describe('watch', function () {
       Watch.dir(reader, subDir)
       Watch.dir(reader, subDir, { recursive: true })
       timerFn()
+
+      assert.equal(watchCalls.length, 1)
+      assert.equal(watchCalls[0].opts.recursive, true)
+    })
+
+    it('a recursive request made while the stat is in flight wins', function () {
+      const Watch = loadWatch()
+      let calls = 0
+      const plainWatch = fs.watch
+      fs.watch = (...args) => {
+        if (++calls <= 2) throw enoent()
+        return plainWatch(...args)
+      }
+      let pendingStat
+      fs.stat = (target, cb) => (pendingStat = cb)
+      const reader = mockReader()
+
+      Watch.dir(reader, subDir)
+      timerFn()
+      Watch.dir(reader, subDir, { recursive: true })
+      pendingStat(null, {})
 
       assert.equal(watchCalls.length, 1)
       assert.equal(watchCalls[0].opts.recursive, true)
