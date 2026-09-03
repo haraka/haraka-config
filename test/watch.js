@@ -680,31 +680,33 @@ describe('watch', function () {
       assert.equal(reader._read_args[dir].opts.watchCb_calls, 1)
     })
 
-    it('tells a getDir consumer about entries that changed without an event', function () {
+    it('tells a getDir consumer about a change anywhere in its tree that produced no event', function () {
       const Watch = loadWatch()
       const dir = files('a.ini')
+      fs.mkdirSync(path.join(dir, 'sub'))
+      fs.writeFileSync(path.join(dir, 'sub', 'b.ini'), 'b v1')
       const reader = mockReader({ [dir]: dirSlot() })
       Watch.dir(reader, dir, { recursive: true })
       const told = () => reader._read_args[dir].opts.watchCb_calls
-      // coarse filesystem timestamps must not hide an entry change from the test
-      const touch = () => fs.utimesSync(dir, new Date(), new Date(Date.now() + 5000))
 
       tick()
       assert.equal(told(), 0, 'nothing changed')
 
-      fs.writeFileSync(path.join(dir, 'b.ini'), 'b')
-      touch()
+      fs.writeFileSync(path.join(dir, 'sub', 'c.ini'), 'c') // nested: the root's own mtime does not move
       tick()
       assert.equal(told(), 1)
       tick()
       assert.equal(told(), 1, 'told once')
 
-      fs.writeFileSync(path.join(dir, 'c.ini'), 'c')
-      touch()
-      watchCalls[0].listener('rename', 'c.ini')
-      assert.equal(told(), 2, 'an event still tells it at once')
+      grow(path.join(dir, 'sub', 'b.ini')) // an in-place edit, which kqueue never reports
       tick()
-      assert.equal(told(), 2, 'and the pass does not repeat it')
+      assert.equal(told(), 2)
+
+      fs.writeFileSync(path.join(dir, 'd.ini'), 'd')
+      watchCalls[0].listener('rename', 'd.ini')
+      assert.equal(told(), 3, 'an event still tells it at once')
+      tick()
+      assert.equal(told(), 3, 'and the pass does not repeat it')
     })
 
     it('retries a failed recursive upgrade, keeping the plain watcher meanwhile', function () {
