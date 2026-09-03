@@ -180,8 +180,7 @@ function mutate(rng, text) {
   return chance(rng, 0.5) ? text.slice(0, at) + text.slice(at + 1) : text.slice(0, at) + junk(rng, 3) + text.slice(at)
 }
 
-function genStructured(rng) {
-  const type = pick(rng, ['json', 'yaml', 'yaml'])
+function genStructured(rng, type = pick(rng, ['json', 'yaml', 'yaml'])) {
   // documents that are not a mapping at all
   if (chance(rng, 0.08))
     return {
@@ -318,7 +317,7 @@ const targets = {
       if (type === 'ini') return genIni(rng)
       if (type === 'binary') return Buffer.from(times(rng, 64, () => int(rng, 256)))
       if (types.is_mergeable(type)) {
-        const { text } = genStructured(rng)
+        const { text } = genStructured(rng, type)
         if (!chance(rng, 0.2)) return text
         const override = `"!${word(rng)}.ini": {"main": {"x": 1}}`
         return text.startsWith('{') ? `{${override}, ${text.slice(1)}` : `${override}\n${text}`

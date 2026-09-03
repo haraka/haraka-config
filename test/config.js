@@ -450,6 +450,16 @@ describe('merged', function () {
     assert.equal(r.loop.self, r.loop)
   })
 
+  it("a missing override ini does not impose declared boolean defaults on the default's values", function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.equal(lc.get('bool-default.ini', { booleans: ['+main.reject'] }).main.reject, false)
+    assert.equal(
+      lc.get('bool-default.ini', { booleans: ['+main.other'] }).main.other,
+      true,
+      'an undefined key still gets its default',
+    )
+  })
+
   it('cyclic default and override merge without overflowing', function () {
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
     const r = lc.get('cyclic.yaml')
@@ -560,6 +570,24 @@ describe('copies', function () {
     assert.deepEqual(this.config.get('ovr-target.ini'), { main: { x: 1 } })
     this.config.get('ovr-source.json', 'value')
     assert.deepEqual(this.config.get('ovr-target.ini'), { main: {} })
+  })
+
+  it('drops !file overrides when the source is re-typed under different options', function () {
+    this.config.get('ovr-source.json', { booleans: ['main.a'] })
+    assert.deepEqual(this.config.get('ovr-target.ini'), { main: { x: 1 } })
+    this.config.get('ovr-source.json', 'value', { booleans: ['b'] })
+    assert.deepEqual(this.config.get('ovr-target.ini'), { main: {} })
+  })
+
+  it('drops !file overrides on re-type even without the cache', function () {
+    process.env.WITHOUT_CONFIG_CACHE = '1'
+    const reader = require('../lib/reader')
+    const target = path.resolve('test', 'config', 'ovr-target.ini')
+    this.config.get('ovr-source.json')
+    assert.equal(reader._overrides[target], true)
+    this.config.get('ovr-source.json', 'value')
+    assert.equal(reader._overrides[target], undefined)
+    assert.equal(reader._config_cache[target], undefined)
   })
 
   it('passes through what a .js config exports that is not plain data', function () {

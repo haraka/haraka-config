@@ -3,6 +3,7 @@
 const path = require('node:path')
 
 const reader = require('./lib/reader')
+const { MISSING } = require('./lib/missing')
 const types = require('./lib/types')
 
 // Resolve a caller-supplied config name against `base`.
@@ -128,7 +129,7 @@ module.exports = new Config()
 
 function merge_config(defaults, overrides, type) {
   if (types.is_mergeable(type)) {
-    if (overrides == null) return clone(defaults)
+    if (overrides == null || overrides[MISSING]) return clone(defaults)
     if (isMapping(overrides) && isMapping(defaults)) return merge_struct(clone(defaults), overrides)
     if (isMapping(overrides) && !Object.keys(overrides).length) return clone(defaults)
     return clone(overrides)

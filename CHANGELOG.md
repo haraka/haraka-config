@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix: re-typing a source drops its `!` overrides
 - fix: empty `me` means hostname on Windows too
 - fix: override replaces a non-mapping default
+- fix: missing override ini keeps default booleans
 - fix: non-mapping overrides replace, never merge
 - fix: merging keeps non-plain .js exports intact
 - fix: get() handles yaml alias cycles
