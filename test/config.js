@@ -810,7 +810,7 @@ describe('reload failure', function () {
     delete require.cache[`${path.resolve(__dirname, '..', 'lib', 'watch')}.js`]
     reader = require('../lib/reader')
     Watch = require('../lib/watch')
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hc-c1-'))
+    tmpDir = await fs.mkdtemp(path.join(realpathSync.native(os.tmpdir()), 'hc-c1-'))
     file = path.join(tmpDir, 'a.json')
     await fs.writeFile(file, '{"k":"good"}')
     calls = []

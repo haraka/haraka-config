@@ -6,9 +6,15 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
-function loadWatch() {
-  delete require.cache[require.resolve('../lib/watch')]
-  return require('../lib/watch')
+function loadWatch(platform = process.platform) {
+  const saved = Object.getOwnPropertyDescriptor(process, 'platform')
+  Object.defineProperty(process, 'platform', { value: platform, configurable: true })
+  try {
+    delete require.cache[require.resolve('../lib/watch')]
+    return require('../lib/watch')
+  } finally {
+    Object.defineProperty(process, 'platform', saved)
+  }
 }
 
 const enoent = () => Object.assign(new Error('missing'), { code: 'ENOENT' })
@@ -190,7 +196,7 @@ describe('watch', function () {
   })
 
   it('a recursive request upgrades an existing watcher, once', function () {
-    const Watch = loadWatch()
+    const Watch = loadWatch('darwin')
     const reader = mockReader()
 
     Watch.dir(reader, subDir)
@@ -204,22 +210,16 @@ describe('watch', function () {
   })
 
   it('asks for recursion only where fs.watch supports it natively', function () {
-    const platform = Object.getOwnPropertyDescriptor(process, 'platform')
-    try {
-      for (const [os, expected] of [
-        ['linux', false],
-        ['darwin', true],
-        ['win32', true],
-        ['freebsd', false],
-      ]) {
-        Object.defineProperty(process, 'platform', { value: os, configurable: true })
-        const Watch = loadWatch()
-        Watch.dir(mockReader(), subDir, { recursive: true })
-        assert.equal(watchCalls.at(-1).opts.recursive, expected, os)
-        Watch.closeAll()
-      }
-    } finally {
-      Object.defineProperty(process, 'platform', platform)
+    for (const [os, expected] of [
+      ['linux', false],
+      ['darwin', true],
+      ['win32', true],
+      ['freebsd', false],
+    ]) {
+      const Watch = loadWatch(os)
+      Watch.dir(mockReader(), subDir, { recursive: true })
+      assert.equal(watchCalls.at(-1).opts.recursive, expected, os)
+      Watch.closeAll()
     }
   })
 
@@ -237,7 +237,7 @@ describe('watch', function () {
   })
 
   it('keeps the existing watcher when the recursive upgrade fails to open', function () {
-    const Watch = loadWatch()
+    const Watch = loadWatch('darwin')
     const reader = mockReader()
     Watch.dir(reader, subDir)
     const plainWatch = fs.watch
@@ -381,7 +381,7 @@ describe('watch', function () {
     }
 
     it('dir queues a missing directory quietly and attaches once it appears', function () {
-      const Watch = loadWatch()
+      const Watch = loadWatch('darwin')
       const errors = []
       console.error = (msg) => errors.push(msg)
       missingOnce()
@@ -436,7 +436,7 @@ describe('watch', function () {
     })
 
     it('a pending recursive request survives a later plain request for the same dir', function () {
-      const Watch = loadWatch()
+      const Watch = loadWatch('darwin')
       let calls = 0
       const plainWatch = fs.watch
       fs.watch = (...args) => {
@@ -454,7 +454,7 @@ describe('watch', function () {
     })
 
     it('a later recursive request upgrades a pending plain one', function () {
-      const Watch = loadWatch()
+      const Watch = loadWatch('darwin')
       let calls = 0
       const plainWatch = fs.watch
       fs.watch = (...args) => {
