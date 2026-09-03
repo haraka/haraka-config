@@ -375,6 +375,20 @@ describe('watch', function () {
     assert.equal(watchCalls.length, 1, 'a closed watcher must not be re-attached')
   })
 
+  it('a slot re-read with no_watch releases what only it needed', function () {
+    const Watch = loadWatch()
+    const file = path.join(subDir, 'test.ini')
+    const reader = mockReader({ [file]: fileSlot() })
+    Watch.file(reader, file)
+    assert.equal(watchCalls.length, 1)
+
+    reader._read_args[file].options = { no_watch: true }
+    Watch.file(reader, file)
+
+    assert.equal(watchers[0].close_calls, 1)
+    assert.equal(intervalsCleared, 1)
+  })
+
   describe('where directory events do not report writes', function () {
     const file = path.join(subDir, 'test.ini')
 
@@ -802,6 +816,53 @@ describe('watch', function () {
 
       for (const fn of timers.values()) fn()
       assert.equal(reader.load_config_calls, 1, 'the child reload still fires')
+    })
+
+    it("closing a directory's last slot clears its pending check", function () {
+      const Watch = loadWatch()
+      const timers = new Map()
+      let next = 0
+      global.setTimeout = (fn) => {
+        timers.set(++next, fn)
+        return next
+      }
+      global.clearTimeout = (id) => timers.delete(id)
+      const file = path.join(subDir, 'test.ini')
+      const reader = mockReader({ [file]: fileSlot() })
+
+      Watch.dir(reader, subDir)
+      watchCalls[0].listener('change')
+      assert.equal(timers.size, 1, 'a check of the directory is pending')
+
+      Watch.close(reader, file)
+      assert.equal(timers.size, 0)
+      assert.equal(watchers[0].close_calls, 1)
+    })
+
+    it('stopping a getDir() slot keeps a pending check for the children sharing its watcher', function () {
+      const Watch = loadWatch()
+      const timers = new Map()
+      let next = 0
+      global.setTimeout = (fn) => {
+        timers.set(++next, fn)
+        return next
+      }
+      global.clearTimeout = (id) => timers.delete(id)
+      const dir = files('a.ini')
+      const a = path.join(dir, 'a.ini')
+      const reader = mockReader({ [dir]: dirSlot(), [a]: fileSlot() })
+      Watch.file(reader, a)
+      Watch.dir(reader, dir, { recursive: true })
+
+      grow(a)
+      watchCalls.at(-1).listener('change')
+      assert.equal(timers.size, 2, 'a check and a watchCb are pending')
+
+      Watch.close(reader, dir)
+      assert.equal(timers.size, 1, 'only the watchCb is cleared')
+
+      for (const fn of timers.values()) fn()
+      assert.equal(reader.load_config_calls, 1, 'the changed child still reloads')
     })
 
     it('slots that need no watcher do not keep it open', function () {
