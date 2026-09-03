@@ -489,38 +489,28 @@ describe('reader', function () {
     })
   })
 
-  describe('fallback source', function () {
-    it('read_config records the file a fallback was read from', function () {
-      const name = path.resolve('test/config/missing.json')
-      this.cfreader.read_config(name, 'json')
-      assert.equal(this.cfreader._read_args[name].source, path.resolve('test/config/missing.yaml'))
+  describe('fallbacks', function () {
+    it('a json or hjson name may be read from its yaml twin', function () {
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.json'), ['/etc/haraka/x.yaml'])
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.hjson'), ['/etc/haraka/x.yaml'])
     })
 
-    it('keeps the last source while the fallback file is missing', function () {
-      const dir = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'hc-src-'))
-      const json = path.join(dir, 'x.json')
-      const yaml = path.join(dir, 'x.yaml')
-      fs.writeFileSync(yaml, 'k: v')
+    it('other names fall back to a .js twin only with HARAKA_JS_CONFIG', function () {
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/me'), [])
+      process.env.HARAKA_JS_CONFIG = '1'
       try {
-        this.cfreader.read_config(json, 'json')
-        assert.equal(this.cfreader._read_args[json].source, yaml)
-
-        fs.unlinkSync(yaml)
-        this.cfreader.load_config(json, 'json')
-        assert.equal(this.cfreader._read_args[json].source, yaml)
-
-        this.cfreader.read_config(json, 'json')
-        assert.equal(this.cfreader._read_args[json].source, yaml, 'survives the slot being replaced')
+        assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/me'), ['/etc/haraka/me.js'])
+        assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.js'), [])
       } finally {
-        this.cfreader.stop_watching(json)
-        fs.rmSync(dir, { recursive: true, force: true })
+        delete process.env.HARAKA_JS_CONFIG
       }
     })
 
-    it('a file read under its own name is its own source', function () {
-      const name = path.resolve('test/config/test.yaml')
-      this.cfreader.read_config(name, 'yaml')
-      assert.equal(this.cfreader._read_args[name].source, name)
+    it('read_config records them on the slot, even before any file exists', function () {
+      const name = path.resolve('test/config/never.json')
+      this.cfreader.read_config(name, 'json')
+      assert.deepEqual(this.cfreader._read_args[name].fallbacks, [path.resolve('test/config/never.yaml')])
+      this.cfreader.stop_watching(name)
     })
   })
 

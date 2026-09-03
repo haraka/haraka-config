@@ -152,7 +152,7 @@ describe('watch', function () {
     const Watch = loadWatch()
     const json = path.join(subDir, 'x.json')
     const yaml = path.join(subDir, 'x.yaml')
-    const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', source: yaml } })
+    const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', fallbacks: [yaml] } })
 
     Watch.file(reader, json)
     watchCalls[0].listener('change', 'x.yaml')
@@ -274,24 +274,6 @@ describe('watch', function () {
 
     Watch.dir(reader, subDir, { recursive: true })
     assert.equal(watchCalls.length, 1, 'the fallback is not retried')
-  })
-
-  it('keeps the existing watcher when the recursive upgrade fails to open', function () {
-    const Watch = loadWatch()
-    const reader = mockReader()
-    Watch.dir(reader, subDir)
-    const plainWatch = fs.watch
-    fs.watch = (target, opts, listener) => {
-      if (opts.recursive) throw Object.assign(new Error('too many open files'), { code: 'EMFILE' })
-      return plainWatch(target, opts, listener)
-    }
-    console.error = () => {}
-
-    Watch.dir(reader, subDir, { recursive: true })
-
-    assert.equal(watchers[0].close_calls, 0, 'the plain watcher survives')
-    Watch.dir(reader, subDir)
-    assert.equal(watchCalls.length, 1, 'and is still registered')
   })
 
   it('ignores a watchCb that is not a function', function () {
@@ -429,7 +411,7 @@ describe('watch', function () {
       const Watch = loadWatch('freebsd')
       const json = path.join(subDir, 'x.json')
       const yaml = path.join(subDir, 'x.yaml')
-      const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', source: yaml } })
+      const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', fallbacks: [yaml] } })
 
       Watch.file(reader, json)
       assert.deepEqual(
@@ -537,7 +519,7 @@ describe('watch', function () {
       const yaml = path.join(tmp, 'config', 'x.yaml')
       fs.writeFileSync(path.join(tmp, 'real', 'x.yaml'), 'k: v')
       fs.symlinkSync(path.join(tmp, 'real', 'x.yaml'), yaml)
-      const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', source: yaml } })
+      const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', fallbacks: [yaml] } })
 
       Watch.file(reader, json)
       assert.deepEqual(watchCalls.map((c) => c.target).sort(), [path.join(tmp, 'config'), path.join(tmp, 'real')])
@@ -605,20 +587,6 @@ describe('watch', function () {
         [1, 1],
       )
     })
-  })
-
-  it('dir logs non-ENOENT watch errors', function () {
-    const Watch = loadWatch()
-    const errors = []
-    fs.watch = () => {
-      throw Object.assign(new Error('denied'), { code: 'EACCES' })
-    }
-    console.error = (msg) => errors.push(msg)
-
-    Watch.dir(mockReader(), '/no/such/dir')
-
-    assert.equal(errors.length, 1)
-    assert.match(errors[0], /Error watching directory/)
   })
 
   describe('enoent poller', function () {
@@ -817,6 +785,54 @@ describe('watch', function () {
       assert.equal(watchCalls.length, 1, 'the next poll opens it')
       Watch.dir(reader, subDir)
       assert.equal(watchCalls.length, 1, 'and it is registered')
+    })
+
+    it('a directory whose watcher fails to open is logged, then retried', function () {
+      const Watch = loadWatch()
+      let calls = 0
+      const plainWatch = fs.watch
+      fs.watch = (...args) => {
+        if (++calls === 1) throw Object.assign(new Error('denied'), { code: 'EACCES' })
+        return plainWatch(...args)
+      }
+      const errors = []
+      console.error = (msg) => errors.push(msg)
+      const reader = mockReader()
+
+      Watch.dir(reader, subDir)
+      assert.equal(errors.length, 1)
+      assert.match(errors[0], /Error watching directory/)
+      assert.equal(watchCalls.length, 0)
+
+      timerFn()
+      assert.equal(watchCalls.length, 1)
+      Watch.dir(reader, subDir)
+      assert.equal(watchCalls.length, 1, 'and it is registered')
+    })
+
+    it('a failed recursive upgrade keeps the plain watcher, then retries', function () {
+      const Watch = loadWatch()
+      const plainWatch = fs.watch
+      let refuse = true
+      fs.watch = (target, opts, listener) => {
+        if (opts.recursive && refuse) throw Object.assign(new Error('too many open files'), { code: 'EMFILE' })
+        return plainWatch(target, opts, listener)
+      }
+      console.error = () => {}
+      const reader = mockReader({ [path.join(subDir, '1.ext')]: fileSlot() })
+      Watch.dir(reader, subDir)
+
+      Watch.dir(reader, subDir, { recursive: true })
+      assert.equal(watchers[0].close_calls, 0, 'the plain watcher survives')
+      Watch.dir(reader, subDir)
+      assert.equal(watchCalls.length, 1, 'and is still registered')
+
+      refuse = false
+      timerFn()
+      assert.equal(watchCalls.length, 2)
+      assert.equal(watchCalls[1].opts.recursive, true)
+      assert.equal(watchers[0].close_calls, 1)
+      assert.equal(reader.load_config_calls, 0, 'an upgrade is not a reappearance: nothing is reloaded')
     })
 
     it('a request that succeeds before the poll unqueues the dir and stops the poller', function () {
