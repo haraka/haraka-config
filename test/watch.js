@@ -626,6 +626,23 @@ describe('watch', function () {
       assert.equal(reader.load_config_calls, 1, 'a reload records what it read')
     })
 
+    it("a reload's callback may stop a sibling before the pass reaches it", function () {
+      const Watch = loadWatch()
+      const dir = files('a.ini', 'b.ini')
+      const a = path.join(dir, 'a.ini')
+      const b = path.join(dir, 'b.ini')
+      const reader = mockReader({ [a]: { ...fileSlot(), cb: () => Watch.close(reader, b) }, [b]: fileSlot() })
+      Watch.file(reader, a)
+      Watch.file(reader, b)
+
+      grow(a)
+      grow(b)
+      tick()
+
+      assert.equal(reader.load_config_calls, 1, "b was stopped by a's callback")
+      assert.equal(reader._read_args[b], undefined)
+    })
+
     it('follows the fallback as the requested file comes and goes', function () {
       const Watch = loadWatch()
       const dir = files('x.json')
