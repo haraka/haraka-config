@@ -927,6 +927,32 @@ describe('watch', function () {
       }
     })
 
+    it('a reappearing directory reloads a config present without its fallback', function () {
+      const Watch = loadWatch()
+      const plainWatch = fs.watch
+      fs.watch = (target, ...rest) => {
+        if (!fs.existsSync(target)) throw enoent()
+        return plainWatch(target, ...rest)
+      }
+      const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'hc-back-')))
+      const dir = path.join(tmp, 'config')
+      const json = path.join(dir, 'x.json')
+      try {
+        const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', fallbacks: [path.join(dir, 'x.yaml')] } })
+        Watch.file(reader, json)
+        assert.equal(watchCalls.length, 0)
+
+        fs.mkdirSync(dir)
+        fs.writeFileSync(json, '{}')
+        timerFn()
+
+        assert.equal(watchCalls.length, 1)
+        assert.equal(reader.load_config_calls, 1)
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true })
+      }
+    })
+
     it('a request that succeeds before the poll unqueues the dir and stops the poller', function () {
       const Watch = loadWatch()
       missingOnce()
