@@ -489,6 +489,31 @@ describe('reader', function () {
     })
   })
 
+  describe('fallbacks', function () {
+    it('a json or hjson name may be read from its yaml twin', function () {
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.json'), ['/etc/haraka/x.yaml'])
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.hjson'), ['/etc/haraka/x.yaml'])
+    })
+
+    it('other names fall back to a .js twin only with HARAKA_JS_CONFIG', function () {
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/me'), [])
+      process.env.HARAKA_JS_CONFIG = '1'
+      try {
+        assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/me'), ['/etc/haraka/me.js'])
+        assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.js'), [])
+      } finally {
+        delete process.env.HARAKA_JS_CONFIG
+      }
+    })
+
+    it('read_config records them on the slot, even before any file exists', function () {
+      const name = path.resolve('test/config/never.json')
+      this.cfreader.read_config(name, 'json')
+      assert.deepEqual(this.cfreader._read_args[name].fallbacks, [path.resolve('test/config/never.yaml')])
+      this.cfreader.stop_watching(name)
+    })
+  })
+
   describe('get_path_to_config_dir', function () {
     it('Haraka runtime (env.HARAKA=*)', function () {
       process.env.HARAKA = '/etc/'
