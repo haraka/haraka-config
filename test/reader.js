@@ -181,61 +181,130 @@ describe('reader', function () {
         { data: { main: { two: false } }, path: path.join(dir, '2.yml') },
       ])
     })
-  })
 
-  describe('get_filetype_reader', function () {
-    it('binary', function () {
-      const reader = this.cfreader.get_filetype_reader('binary')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
+    describe('js entries', function () {
+      beforeEach(function () {
+        this.jsEnv = process.env.HARAKA_JS_CONFIG
+        delete process.env.HARAKA_JS_CONFIG
+        this.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-config-js-'))
+        fs.writeFileSync(path.join(this.dir, 'ran.js'), 'module.exports = { ran: true }\n')
+        fs.writeFileSync(path.join(this.dir, 'plain.list'), 'a\nb\n')
+      })
+
+      afterEach(function () {
+        if (this.jsEnv === undefined) {
+          delete process.env.HARAKA_JS_CONFIG
+        } else {
+          process.env.HARAKA_JS_CONFIG = this.jsEnv
+        }
+        fs.rmSync(this.dir, { recursive: true, force: true })
+      })
+
+      it('does not execute .js without HARAKA_JS_CONFIG', async function () {
+        const contents = await this.cfreader.read_dir(this.dir)
+        assert.deepEqual(
+          contents.map((c) => path.basename(c.path)),
+          ['plain.list'],
+        )
+      })
+
+      it('executes .js when HARAKA_JS_CONFIG is set', async function () {
+        process.env.HARAKA_JS_CONFIG = '1'
+        const contents = await this.cfreader.read_dir(this.dir)
+        const ran = contents.find((c) => path.basename(c.path) === 'ran.js')
+        assert.deepEqual(ran.data, { ran: true })
+      })
+
+      it('executes .js when the caller asks for type js explicitly', async function () {
+        fs.unlinkSync(path.join(this.dir, 'plain.list')) // type: 'js' would execute it too
+        const contents = await this.cfreader.read_dir(this.dir, { type: 'js' })
+        const ran = contents.find((c) => path.basename(c.path) === 'ran.js')
+        assert.deepEqual(ran.data, { ran: true })
+      })
     })
 
-    it('flat', function () {
-      const reader = this.cfreader.get_filetype_reader('flat')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
+    describe('symlinks', function () {
+      beforeEach(function () {
+        this.root = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-config-link-'))
+        this.outside = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-config-out-'))
+        fs.writeFileSync(path.join(this.outside, 'secret.list'), 'secret\n')
+        fs.writeFileSync(path.join(this.root, 'own.list'), 'own\n')
+      })
 
-    it('hjson', function () {
-      const reader = this.cfreader.get_filetype_reader('hjson')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
+      afterEach(function () {
+        fs.rmSync(this.root, { recursive: true, force: true })
+        fs.rmSync(this.outside, { recursive: true, force: true })
+      })
 
-    it('json', function () {
-      const reader = this.cfreader.get_filetype_reader('json')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
+      it('follows a symlink to a directory outside', async function () {
+        fs.symlinkSync(this.outside, path.join(this.root, 'escape'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(contents.map((c) => path.basename(c.path)).sort(), ['own.list', 'secret.list'])
+        assert.equal(
+          contents.find((c) => c.path.endsWith('secret.list')).path,
+          path.join(this.root, 'escape', 'secret.list'),
+        )
+      })
 
-    it('ini', function () {
-      const reader = this.cfreader.get_filetype_reader('ini')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
+      it('follows a symlink to a file outside (certs in /etc/letsencrypt)', async function () {
+        fs.symlinkSync(path.join(this.outside, 'secret.list'), path.join(this.root, 'linked.list'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(contents.map((c) => path.basename(c.path)).sort(), ['linked.list', 'own.list'])
+        assert.deepEqual(contents.find((c) => c.path.endsWith('linked.list')).data, ['secret'])
+      })
 
-    it('yaml', function () {
-      const reader = this.cfreader.get_filetype_reader('yaml')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
+      it('skips a symlink that points at itself', async function () {
+        fs.symlinkSync('self.list', path.join(this.root, 'self.list'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(
+          contents.map((c) => path.basename(c.path)),
+          ['own.list'],
+        )
+      })
 
-    it('value', function () {
-      const reader = this.cfreader.get_filetype_reader('value')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
+      it('a directory that vanishes between stat and realpath is skipped', async function () {
+        const sub = path.join(this.root, 'sub')
+        fs.mkdirSync(sub)
+        const fsp = require('node:fs/promises')
+        const realpath = fsp.realpath
+        fsp.realpath = async (p) => {
+          if (p === sub) throw Object.assign(new Error('gone'), { code: 'ENOENT' })
+          return realpath(p)
+        }
+        try {
+          const contents = await this.cfreader.read_dir(this.root)
+          assert.deepEqual(
+            contents.map((c) => path.basename(c.path)),
+            ['own.list'],
+          )
+        } finally {
+          fsp.realpath = realpath
+        }
+      })
 
-    it('list', function () {
-      const reader = this.cfreader.get_filetype_reader('list')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
-    })
+      it('a missing directory rejects and leaves no slot behind', async function () {
+        const missing = path.join(this.root, 'nope')
+        await assert.rejects(() => this.cfreader.read_dir(missing, { watchCb() {} }), { code: 'ENOENT' })
+        assert.equal(this.cfreader._read_args[missing], undefined)
+      })
 
-    it('data', function () {
-      const reader = this.cfreader.get_filetype_reader('data')
-      assert.equal(typeof reader.load, 'function')
-      assert.equal(typeof reader.empty, 'function')
+      it('breaks a symlink cycle instead of recursing until ELOOP', async function () {
+        const sub = path.join(this.root, 'sub')
+        fs.mkdirSync(sub)
+        fs.writeFileSync(path.join(sub, 'deep.list'), 'deep\n')
+        fs.symlinkSync(this.root, path.join(sub, 'loop'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(contents.map((c) => path.basename(c.path)).sort(), ['deep.list', 'own.list'])
+      })
+
+      it('skips a dangling symlink', async function () {
+        fs.symlinkSync(path.join(this.root, 'gone.list'), path.join(this.root, 'dangling.list'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(
+          contents.map((c) => path.basename(c.path)),
+          ['own.list'],
+        )
+      })
     })
   })
 

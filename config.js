@@ -3,6 +3,7 @@
 const path = require('node:path')
 
 const reader = require('./lib/reader')
+const types = require('./lib/types')
 
 // Resolve a caller-supplied config name against `base`.
 // Absolute paths are an explicit, documented opt-in (e.g. /etc/services).
@@ -33,33 +34,21 @@ class Config {
   }
 
   get(...args) {
-    /* eslint prefer-const: 0 */
-    let [name, type, cb, options] = this.arrange_args(args)
-    if (!type) type = 'value'
+    const [name, type, cb, options] = this.arrange_args(args)
 
     const full_path = safe_resolve(this.root_path, name)
+    const defaults = reader.read_config(full_path, type, cb, options)
 
-    let results = reader.read_config(full_path, type, cb, options)
+    const overrides_path = this.overrides_path && safe_resolve(this.overrides_path, name)
+    if (!overrides_path || overrides_path === full_path) return clone(defaults)
 
-    if (this.overrides_path) {
-      const overrides_path = safe_resolve(this.overrides_path, name)
-
-      const overrides = reader.read_config(overrides_path, type, cb, options)
-
-      results = merge_config(results, overrides, type)
-    }
-
-    // Pass arrays by value to prevent config being modified accidentally.
-    if (Array.isArray(results)) return results.slice()
-
-    return results
+    return merge_config(defaults, reader.read_config(overrides_path, type, cb, options), type)
   }
 
   getInt(filename, default_value) {
     if (!filename) return NaN
 
-    const full_path = safe_resolve(this.root_path, filename)
-    const r = parseInt(reader.read_config(full_path, 'value', null, null), 10)
+    const r = parseInt(this.get(filename, 'value'), 10)
 
     if (!isNaN(r)) return r
     return parseInt(default_value, 10)
@@ -105,22 +94,20 @@ class Config {
           options = arg
           continue
         case 'string':
-          if (/^(ini|value|list|data|h?json|js|yaml|binary)$/.test(arg)) {
+          if (types.is_type(arg)) {
             fs_type = arg
             continue
           }
-          console.log(`unknown string: ${arg}`)
-          continue
+          throw new Error(`unknown config type: ${arg}`)
       }
       // console.log(`unknown arg: ${arg}, typeof: ${typeof arg}`);
     }
 
-    if (!fs_type) fs_type = reader.getType(fs_name)
+    if (!fs_type) fs_type = types.type_of(fs_name)
 
     return [fs_name, fs_type, cb, options]
   }
 
-  // Stop watching `name`. Idempotent.
   stop_watching(name) {
     const full_path = safe_resolve(this.root_path, name)
     // close both the path itself (getDir target) and its parent (get target)
@@ -140,44 +127,57 @@ class Config {
 module.exports = new Config()
 
 function merge_config(defaults, overrides, type) {
-  switch (type) {
-    case 'ini':
-    case 'hjson':
-    case 'json':
-    case 'js':
-    case 'yaml':
-      return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides)
+  if (types.is_mergeable(type)) {
+    if (overrides == null) return clone(defaults)
+    if (isMapping(overrides) && isMapping(defaults)) return merge_struct(clone(defaults), overrides)
+    if (isMapping(overrides) && !Object.keys(overrides).length) return clone(defaults)
+    return clone(overrides)
   }
 
   // flat list/data: a non-empty override replaces the default; an empty
   // override (e.g. a missing override file, which reads as []) leaves the
   // default in place rather than silently wiping it
-  if (Array.isArray(overrides)) {
-    return overrides.length ? overrides : defaults
-  }
+  if (Array.isArray(overrides)) return clone(overrides.length ? overrides : defaults)
 
   // flat value: only a present (non-null) override replaces the default
-  if (overrides != null) return overrides
-
-  return defaults
+  return clone(overrides ?? defaults)
 }
 
 const isObject = (v) => typeof v === 'object' && v !== null
+const isPlain = (v) => [null, Object.prototype].includes(Object.getPrototypeOf(v))
+const isMapping = (v) => isObject(v) && isPlain(v)
+const isPlainData = (v) => isObject(v) && (Array.isArray(v) || Buffer.isBuffer(v) || isPlain(v))
 
-function merge_struct(defaults, overrides) {
-  for (const k in overrides) {
-    if (['__proto__', 'constructor'].includes(k)) continue
-    if (overrides[k] === null) continue
-    if (k in defaults) {
-      if (isObject(overrides[k]) && isObject(defaults[k])) {
-        defaults[k] = merge_struct(defaults[k], overrides[k])
-      } else {
-        defaults[k] = overrides[k]
-      }
-    } else {
-      defaults[k] = overrides[k]
-    }
+function clone(v, seen = new WeakMap()) {
+  if (!isPlainData(v)) return v
+  if (Buffer.isBuffer(v)) return Buffer.from(v)
+  if (seen.has(v)) return seen.get(v)
+  if (Array.isArray(v) && v.every((x) => !isObject(x))) {
+    const out = v.slice()
+    seen.set(v, out)
+    return out
   }
+  const out = Array.isArray(v) ? [] : Object.create(Object.getPrototypeOf(v))
+  seen.set(v, out)
+  for (const k of Object.keys(v)) {
+    if (['__proto__', 'constructor', 'prototype'].includes(k)) continue
+    out[k] = clone(v[k], seen)
+  }
+  return out
+}
+
+const shallow = (v) => Object.assign(Object.create(Object.getPrototypeOf(v)), v)
+
+function merge_struct(defaults, overrides, merging = new Map()) {
+  if (merging.has(overrides)) return merging.get(overrides)
+  merging.set(overrides, defaults)
+  for (const k in overrides) {
+    if (['__proto__', 'constructor', 'prototype'].includes(k) || overrides[k] === null) continue
+    const target = Object.hasOwn(defaults, k) ? defaults[k] : undefined
+    const merge_into = isMapping(overrides[k]) && isMapping(target)
+    defaults[k] = merge_into ? merge_struct(shallow(target), overrides[k], merging) : clone(overrides[k])
+  }
+  merging.delete(overrides)
   return defaults
 }
 

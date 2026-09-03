@@ -36,6 +36,10 @@ describe('config', function () {
     assert.equal(path.resolve('test', 'config'), this.config.root_path)
   })
 
+  it('rejects an unknown type instead of guessing from the extension', function () {
+    assert.throws(() => this.config.get('test.ini', 'bogus'), /unknown config type: bogus/)
+  })
+
   it('module_config', function () {
     const c = this.config.module_config('foo', 'bar')
     assert.equal(c.root_path, path.join('foo', 'config'))
@@ -372,10 +376,209 @@ describe('merged', function () {
     assert.deepEqual(lc.get('plugins.yaml'), { plugins: { rspamd: { enabled: true } } })
   })
 
+  it('getInt honors the overrides layer, like get()', function () {
+    // getInt() used to read root_path directly, so it silently disagreed
+    // with get() on the very same file whenever an override existed
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.equal(lc.get('test.int', 'value'), 587)
+    assert.equal(lc.getInt('test.int'), 587)
+  })
+
+  it('getInt falls back to the default layer when no override exists', function () {
+    const lc = this.config.module_config(path.join('test', 'default'))
+    assert.equal(lc.getInt('test.int'), 25)
+  })
+
+  it('an override file that is not a mapping leaves the defaults alone', function () {
+    // an empty or comment-only yaml file parses to null
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(lc.get('nullover.yaml'), { a: 1 })
+  })
+
+  it('a default file that is not a mapping is replaced by its override', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(lc.get('nulldef.yaml'), { b: 2 })
+  })
+
+  it('a yaml alias reused under two override keys merges into each', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const r = lc.get('alias-over.yaml')
+    assert.deepEqual(r, { a: { v: 1, w: 1 }, b: { z: 2, v: 1 } })
+    assert.notEqual(r.a, r.b)
+  })
+
+  it('an override reaches only the key it names, not every alias of that default', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(lc.get('alias-def.yaml'), { a: { x: 1, z: 3 }, b: { x: 1 } })
+  })
+
+  it('a .js default that exports a function is replaced, not merged into', function () {
+    const both = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(both.get('fn.js'), { b: 2 })
+    const only = this.config.module_config(path.join('test', 'default'))
+    const fn = only.get('fn.js')
+    assert.equal(typeof fn, 'function')
+    assert.equal(fn.a, 1)
+    assert.equal(fn.b, undefined, 'the cached default was not written to')
+  })
+
+  it('a sequence on either side replaces rather than merges', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(lc.get('seq-both.yaml'), ['c'])
+    assert.deepEqual(lc.get('seq-over.yaml'), ['c'])
+    assert.deepEqual(lc.get('seq-def.yaml'), { x: 1 })
+  })
+
+  it('nested values of different shapes replace rather than merge', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    assert.deepEqual(lc.get('shapes.yaml'), { list: ['c'], obj: [1], arr: { k: 1 }, keep: { a: 1, b: 2 } })
+  })
+
+  it('a root-level yaml alias still points at the returned object after a merge', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const r = lc.get('root-alias.yaml')
+    assert.equal(r.self, r)
+    assert.equal(r.name, 'a')
+    assert.equal(r.z, 1)
+  })
+
+  it('cyclic default and override merge without overflowing', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const r = lc.get('cyclic.yaml')
+    assert.equal(r.loop.name, 'override')
+    assert.equal(r.loop.keep, 1)
+    assert.equal(r.loop.self, r.loop)
+  })
+
+  it('merged ini keeps its null prototypes', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const r = lc.get('test.ini')
+    assert.strictEqual(Object.getPrototypeOf(r), null)
+    assert.strictEqual(Object.getPrototypeOf(r.main), null)
+    assert.strictEqual(Object.getPrototypeOf(r.defaults), null)
+    assert.strictEqual(r.main.constructor, undefined)
+  })
+
+  it('an absolute name is read once, not merged with itself', function () {
+    const reader = require('../lib/reader')
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const abs = path.resolve('test', 'default', 'config', 'test.list')
+    const orig = reader.read_config
+    const seen = []
+    reader.read_config = (...args) => {
+      seen.push(args[0])
+      return orig.apply(reader, args)
+    }
+    try {
+      assert.deepEqual(lc.get(abs, 'list'), ['alpha', 'beta', 'gamma'])
+    } finally {
+      reader.read_config = orig
+    }
+    assert.deepEqual(seen, [abs])
+  })
+
   it('null override value preserves default object', function () {
     // a bare YAML key (null) should not wipe out a default object — deep key-by-key semantics
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
     assert.deepEqual(lc.get('tls.yaml'), { tls: { key: '/etc/ssl/key.pem', cert: '/etc/ssl/cert.pem' } })
+  })
+})
+
+describe('copies', function () {
+  beforeEach(function () {
+    testSetup.call(this)
+    // the cache must be live, or every get() would re-read the file anyway
+    process.env.WITHOUT_CONFIG_CACHE = ''
+  })
+
+  it('an ini object: mutations do not reach the next get()', function () {
+    const a = this.config.get('test.ini')
+    a.main.injected = true
+    assert.equal(this.config.get('test.ini').main.injected, undefined)
+  })
+
+  it('keeps the null prototype of ini sections', function () {
+    const r = this.config.get('test.ini')
+    assert.strictEqual(Object.getPrototypeOf(r), null)
+    assert.strictEqual(Object.getPrototypeOf(r.main), null)
+  })
+
+  it('a binary Buffer', function () {
+    const a = this.config.get('test.binary', 'binary')
+    assert.notStrictEqual(a, this.config.get('test.binary', 'binary'))
+    a[0] ^= 0xff
+    assert.notEqual(this.config.get('test.binary', 'binary')[0], a[0])
+  })
+
+  it('a list', function () {
+    const lc = this.config.module_config(path.join('test', 'default'))
+    lc.get('test.list', 'list').push('delta')
+    assert.deepEqual(lc.get('test.list', 'list'), ['alpha', 'beta', 'gamma'])
+  })
+
+  it('an override-only object inside a merged result', function () {
+    // merge_struct used to graft override sub-objects in by reference
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    lc.get('plugins.yaml').plugins.rspamd.enabled = false
+    assert.equal(lc.get('plugins.yaml').plugins.rspamd.enabled, true)
+  })
+
+  it('a yaml alias cycle copies without overflowing, and stays a cycle', function () {
+    const r = this.config.get('cyclic.yaml')
+    assert.equal(r.loop.self, r.loop)
+    assert.equal(r.a, r.a2, 'a shared alias stays one object in the copy')
+    r.loop.name = 'mutated'
+    assert.equal(this.config.get('cyclic.yaml').loop.name, 'loop')
+  })
+
+  it('a file read under a second type is re-read, not served as the first', function () {
+    // the cache slot ignored type, so getInt() on an ini got the ini object and threw
+    assert.equal(typeof this.config.get('test.ini'), 'object')
+    assert.ok(Number.isNaN(this.config.getInt('test.ini')))
+    assert.deepEqual(this.config.get('test.list', 'list'), ['line1', 'line2', 'line3', 'line5'])
+    assert.equal(this.config.get('test.list', 'value'), 'line1')
+    assert.deepEqual(this.config.get('test.list', 'list'), ['line1', 'line2', 'line3', 'line5'])
+  })
+
+  it('a parse failure under a second type does not fall back to the first shape', function () {
+    assert.equal(typeof this.config.get('test.ini').main, 'object')
+    assert.deepEqual(this.config.get('test.ini', 'json'), {}, 'an ini file is not json; the json empty value')
+    assert.deepEqual(this.config.get('test.ini', 'json'), {}, 'and stays that way on the next read')
+    assert.equal(typeof this.config.get('test.ini').main, 'object', 'reading as ini again recovers')
+  })
+
+  it('passes through what a .js config exports that is not plain data', function () {
+    const r = this.config.get('exotic.js')
+    assert.equal(r.when.getTime(), 0)
+    assert.equal(r.m.get(1), 2)
+    assert.ok(r.re.test('x'))
+    r.plain.n = 2
+    assert.equal(this.config.get('exotic.js').plain.n, 1, 'plain parts are still copies')
+  })
+
+  it("drops an own '__proto__' key while copying", function () {
+    const r = this.config.get('proto.js')
+    assert.equal(r.a.polluted, undefined)
+    assert.equal(r.polluted, undefined)
+    assert.equal(Object.getPrototypeOf(r.a), Object.prototype)
+  })
+
+  it('coincident default and override dirs read each file once', function () {
+    // the production singleton has root_path === overrides_path
+    const reader = require('../lib/reader')
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'default'))
+    const orig = reader.read_config
+    const seen = []
+    reader.read_config = (...args) => {
+      seen.push(args[0])
+      return orig.apply(reader, args)
+    }
+    try {
+      assert.deepEqual(lc.get('test.ini'), { main: {}, defaults: { one: 'one', two: 'two' } })
+    } finally {
+      reader.read_config = orig
+    }
+    assert.equal(seen.length, 1)
   })
 })
 
@@ -436,7 +639,7 @@ describe('getDir', function () {
     }
   })
 
-  it('reloads when file in dir is touched', { timeout: 5000 }, async (t) => {
+  it('reloads when file in dir is touched', { timeout: 15000 }, async (t) => {
     // due to differences in fs.watch, this test is unreliable on macOS with Node < 24
     const nodeMajorVersion = parseInt(process.versions.node.split('.')[0])
     if (/darwin/.test(process.platform) && nodeMajorVersion < 24) return
@@ -455,6 +658,8 @@ describe('getDir', function () {
                 assert.equal(files.length, 4)
                 assert.equal(files[0].data, `contents1${os.EOL}`)
                 assert.equal(files[2].data, `contents3${os.EOL}`)
+                // a write that lands before the new FSEvents stream is live is never reported
+                await new Promise((resolve) => setTimeout(resolve, 250))
                 await fs.writeFile(tmpFile, 'contents4\n')
               } else if (callCount === 2) {
                 assert.equal(files[3].data, 'contents4\n')
@@ -473,6 +678,7 @@ describe('getDir', function () {
     } finally {
       // unlink fires fs.watch post-resolve; close the watcher so Windows can exit
       this.config.stop_watching('dir')
+      await fs.unlink(tmpFile).catch(() => {}) // a timed-out run must not leave a 5th fixture behind
     }
   })
 })

@@ -1,0 +1,4 @@
+list: [a, b]
+obj: { x: 1 }
+arr: [1]
+keep: { a: 1 }

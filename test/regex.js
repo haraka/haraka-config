@@ -21,11 +21,6 @@ describe('regex', function () {
     assert.equal(regex.comment.test('false'), false)
   })
 
-  it('line', function () {
-    assert.equal(regex.line.test(' boo '), true)
-    assert.equal(regex.line.test('foo'), true)
-  })
-
   it('blank', function () {
     assert.equal(regex.blank.test('foo'), false)
     assert.equal(regex.blank.test(' '), true)

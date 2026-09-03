@@ -1,0 +1,3 @@
+&x
+name: a
+self: *x
