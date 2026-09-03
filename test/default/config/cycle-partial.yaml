@@ -1,0 +1,3 @@
+loop: &y
+  name: default
+  self: *y

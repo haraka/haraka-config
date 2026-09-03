@@ -166,8 +166,6 @@ function clone(v, seen = new WeakMap()) {
   return out
 }
 
-const shallow = (v) => Object.assign(Object.create(Object.getPrototypeOf(v)), v)
-
 function merge_struct(defaults, overrides, merging = new Map()) {
   if (merging.has(overrides)) return merging.get(overrides)
   merging.set(overrides, defaults)
@@ -175,7 +173,7 @@ function merge_struct(defaults, overrides, merging = new Map()) {
     if (['__proto__', 'constructor', 'prototype'].includes(k) || overrides[k] === null) continue
     const target = Object.hasOwn(defaults, k) ? defaults[k] : undefined
     const merge_into = isMapping(overrides[k]) && isMapping(target)
-    defaults[k] = merge_into ? merge_struct(shallow(target), overrides[k], merging) : clone(overrides[k])
+    defaults[k] = merge_into ? merge_struct(clone(target), overrides[k], merging) : clone(overrides[k])
   }
   merging.delete(overrides)
   return defaults

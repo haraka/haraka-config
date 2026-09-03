@@ -282,6 +282,26 @@ describe('reader', function () {
         }
       })
 
+      it('a subdirectory that vanishes before it is listed is skipped', async function () {
+        const sub = path.join(this.root, 'sub')
+        fs.mkdirSync(sub)
+        const fsp = require('node:fs/promises')
+        const readdir = fsp.readdir
+        fsp.readdir = async (p, ...rest) => {
+          if (p === sub) throw Object.assign(new Error('gone'), { code: 'ENOENT' })
+          return readdir(p, ...rest)
+        }
+        try {
+          const contents = await this.cfreader.read_dir(this.root)
+          assert.deepEqual(
+            contents.map((c) => path.basename(c.path)),
+            ['own.list'],
+          )
+        } finally {
+          fsp.readdir = readdir
+        }
+      })
+
       it('a missing directory rejects and leaves no slot behind', async function () {
         const missing = path.join(this.root, 'nope')
         await assert.rejects(() => this.cfreader.read_dir(missing, { watchCb() {} }), { code: 'ENOENT' })

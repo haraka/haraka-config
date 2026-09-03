@@ -15,12 +15,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix: detect `+*.key` / `-*.key` wildcard booleans
 - fix: read a file once when both layers share it
 - fix: re-read a file requested under another type
+- fix: re-typing a source drops its `!` overrides
 - fix: empty `me` means hostname on Windows too
 - fix: override replaces a non-mapping default
 - fix: non-mapping overrides replace, never merge
 - fix: merging keeps non-plain .js exports intact
 - fix: get() handles yaml alias cycles
 - fix: merging keeps a root-level yaml alias intact
+- fix: a default-only yaml cycle survives a merge
 - fix: stop_watching() unqueues a pending directory
 - fix: stop the enoent poller when idle
 - fix: a watch event after close() no longer throws

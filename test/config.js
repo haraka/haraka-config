@@ -442,6 +442,13 @@ describe('merged', function () {
     assert.equal(r.z, 1)
   })
 
+  it('a cycle that exists only in the defaults survives a partial override', function () {
+    const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    const r = lc.get('cycle-partial.yaml')
+    assert.equal(r.loop.name, 'override')
+    assert.equal(r.loop.self, r.loop)
+  })
+
   it('cyclic default and override merge without overflowing', function () {
     const lc = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
     const r = lc.get('cyclic.yaml')
@@ -547,6 +554,13 @@ describe('copies', function () {
     assert.equal(typeof this.config.get('test.ini').main, 'object', 'reading as ini again recovers')
   })
 
+  it('re-reading a source under another type drops the !file overrides it injected', function () {
+    this.config.get('ovr-source.json')
+    assert.deepEqual(this.config.get('ovr-target.ini'), { main: { x: 1 } })
+    this.config.get('ovr-source.json', 'value')
+    assert.deepEqual(this.config.get('ovr-target.ini'), { main: {} })
+  })
+
   it('passes through what a .js config exports that is not plain data', function () {
     const r = this.config.get('exotic.js')
     assert.equal(r.when.getTime(), 0)
@@ -611,16 +625,13 @@ describe('getInt', function () {
   })
 })
 
-const tmpFile = path.resolve('test', 'config', 'dir', '4.ext')
-
 describe('getDir', function () {
-  beforeEach(async () => {
+  beforeEach(() => {
     process.env.NODE_ENV = 'test'
     process.env.HARAKA = ''
     process.env.WITHOUT_CONFIG_CACHE = '1'
     clearRequireCache()
     this.config = require('../config')
-    await fs.unlink(tmpFile).catch(() => {})
   })
 
   it('loads all files in dir', async () => {
@@ -644,6 +655,12 @@ describe('getDir', function () {
     const nodeMajorVersion = parseInt(process.versions.node.split('.')[0])
     if (/darwin/.test(process.platform) && nodeMajorVersion < 24) return
 
+    // a private copy of the fixture dir: test/reader.js lists the shared one concurrently
+    const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'hc-getdir-'))
+    await fs.cp(path.resolve('test', 'config', 'dir'), path.join(tmpRoot, 'config', 'dir'), { recursive: true })
+    const cfg = this.config.module_config(tmpRoot)
+    const tmpFile = path.join(tmpRoot, 'config', 'dir', '4.ext')
+
     try {
       await t.test('waits for watch event', async () => {
         return new Promise((resolve) => {
@@ -652,7 +669,7 @@ describe('getDir', function () {
           const getDir = async () => {
             try {
               const opts2 = { type: 'binary', watchCb: getDir }
-              const files = await this.config.getDir('dir', opts2)
+              const files = await cfg.getDir('dir', opts2)
               callCount++
               if (callCount === 1) {
                 assert.equal(files.length, 4)
@@ -677,8 +694,8 @@ describe('getDir', function () {
       })
     } finally {
       // unlink fires fs.watch post-resolve; close the watcher so Windows can exit
-      this.config.stop_watching('dir')
-      await fs.unlink(tmpFile).catch(() => {}) // a timed-out run must not leave a 5th fixture behind
+      cfg.stop_watching('dir')
+      await fs.rm(tmpRoot, { recursive: true, force: true })
     }
   })
 })
