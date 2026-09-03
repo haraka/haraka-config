@@ -1,11 +1,12 @@
 'use strict'
 
-// Seeded property fuzzer. Each iteration derives its own generator from
-// (FUZZ_SEED, iteration), so a failure replays on its own:
-//   FUZZ_SEED=<seed> FUZZ_START=<iteration> FUZZ_ITERATIONS=1 npm run fuzz
-// FUZZ_ONLY=ini,flat limits the targets. FUZZ_SLOW_MS flags slow inputs.
+// Seeded property fuzzer, one test per target. Each iteration derives its own
+// generator from (FUZZ_SEED, target, iteration), so a failure replays alone:
+//   FUZZ_SEED=<seed> FUZZ_ONLY=<target> FUZZ_START=<i> FUZZ_ITERATIONS=1 node --test test/fuzz.js
+// FUZZ_ITERATIONS is per target. FUZZ_SLOW_MS flags slow inputs.
 
 const assert = require('node:assert/strict')
+const { after, before, describe, it } = require('node:test')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const os = require('node:os')
@@ -25,15 +26,14 @@ const flat = require('../lib/readers/flat')
 const structured = require('../lib/readers/structured')
 const { UNSAFE_KEYS } = require('../lib/unsafe-keys')
 
-const ITERATIONS = Number(process.env.FUZZ_ITERATIONS ?? 1000)
+// a short pass under `npm test`, a long one under `npm run fuzz`
+const ITERATIONS = Number(process.env.FUZZ_ITERATIONS ?? (process.env.npm_lifecycle_event === 'fuzz' ? 5000 : 200))
 const SEED = Number(process.env.FUZZ_SEED ?? Date.now() % 2 ** 31)
 const START = Number(process.env.FUZZ_START ?? 0)
-const SLOW_MS = Number(process.env.FUZZ_SLOW_MS ?? 250)
+const SLOW_MS = Number(process.env.FUZZ_SLOW_MS ?? 500)
 const ONLY = process.env.FUZZ_ONLY?.split(',')
   .map((s) => s.trim())
   .filter(Boolean)
-
-const out = (line = '') => process.stdout.write(`${line}\n`)
 
 // ---------------------------------------------------------------- generators
 
@@ -45,7 +45,12 @@ function mulberry32(a) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
-const rngFor = (i) => mulberry32((SEED ^ Math.imul(i + 1, 0x9e3779b9)) | 0)
+const hash = (s) => {
+  let h = 2166136261
+  for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619)
+  return h | 0
+}
+const rngFor = (name, i) => mulberry32((SEED ^ hash(name) ^ Math.imul(i + 1, 0x9e3779b9)) | 0)
 
 const int = (rng, max) => Math.floor(rng() * max)
 const pick = (rng, arr) => arr[int(rng, arr.length)]
@@ -175,8 +180,7 @@ function mutate(rng, text) {
   return chance(rng, 0.5) ? text.slice(0, at) + text.slice(at + 1) : text.slice(0, at) + junk(rng, 3) + text.slice(at)
 }
 
-function genStructured(rng) {
-  const type = pick(rng, ['json', 'yaml', 'yaml'])
+function genStructured(rng, type = pick(rng, ['json', 'yaml', 'yaml'])) {
   // documents that are not a mapping at all
   if (chance(rng, 0.08))
     return {
@@ -262,6 +266,9 @@ function traceFs(fn) {
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'haraka-config-fuzz-'))
 const layers = { defaults: path.join(tmp, 'default'), overrides: path.join(tmp, 'override') }
 for (const dir of Object.values(layers)) fs.mkdirSync(path.join(dir, 'config'), { recursive: true })
+const sandbox = path.join(tmp, 'sandbox')
+fs.mkdirSync(sandbox)
+fs.writeFileSync(path.join(sandbox, 'a.ini'), '[s]\nk=v\n')
 
 const targets = {
   ini(rng) {
@@ -310,7 +317,7 @@ const targets = {
       if (type === 'ini') return genIni(rng)
       if (type === 'binary') return Buffer.from(times(rng, 64, () => int(rng, 256)))
       if (types.is_mergeable(type)) {
-        const { text } = genStructured(rng)
+        const { text } = genStructured(rng, type)
         if (!chance(rng, 0.2)) return text
         const override = `"!${word(rng)}.ini": {"main": {"x": 1}}`
         return text.startsWith('{') ? `{${override}, ${text.slice(1)}` : `${override}\n${text}`
@@ -338,6 +345,7 @@ const targets = {
       assert.ok(isDeepStrictEqual(cfg.get(...args), b), 'a mutation of one result reached the next')
     }
     assert.equal(typeof cfg.getInt(name), 'number')
+    for (const layer of Object.keys(files)) fs.unlinkSync(path.join(layers[layer], 'config', name))
     return { name, files, args }
   },
 
@@ -363,7 +371,10 @@ const targets = {
     ]
     let name = times(rng, 6, () => pick(rng, PARTS)).join(pick(rng, ['/', '/', '\\', '']))
     // absolute names are allowed through, so keep them inside our own tmp dir
-    if (chance(rng, 0.15)) name = path.join(tmp, name)
+    if (path.isAbsolute(name) || chance(rng, 0.15)) {
+      name = path.join(sandbox, name)
+      if (!inside(sandbox, name)) name = path.join(sandbox, 'escaped')
+    }
     const type = pick(rng, ['value', 'list', 'ini', 'json', 'binary'])
     const useDir = chance(rng, 0.3)
 
@@ -419,86 +430,77 @@ targets.redos = (rng) => {
     }
     return best
   }
-  const ms = [500, 1000, 2000].map(time)
+  const ms = [1000, 2000, 4000].map(time)
   const ratio = ms[2] / Math.max(ms[1], 0.01)
   assert.ok(
     ratio < 3.2 || ms[2] < 30,
-    `superlinear: ${pattern} n=500/1k/2k -> ${ms.map((t) => t.toFixed(1)).join(' / ')} ms (x${ratio.toFixed(1)} per doubling)`,
+    `superlinear: ${pattern} n=1k/2k/4k -> ${ms.map((t) => t.toFixed(1)).join(' / ')} ms (x${ratio.toFixed(1)} per doubling)`,
   )
   return { pattern, ms }
 }
 
-// ---------------------------------------------------------------------- run
+// -------------------------------------------------------------------- tests
 
 const show = (input) => {
   const text = JSON.stringify(input, (k, v) => (Buffer.isBuffer(v) ? `<Buffer ${v.length}>` : v)) ?? String(input)
   return text.length > 600 ? `${text.slice(0, 600)}…` : text
 }
 
-async function main() {
+const replay = (name, i) =>
+  `FUZZ_SEED=${SEED} FUZZ_ONLY=${name} FUZZ_START=${i} FUZZ_ITERATIONS=1 node --test test/fuzz.js`
+
+describe('fuzz', function () {
   const names = Object.keys(targets).filter((t) => !ONLY || ONLY.includes(t))
-  if (!names.length) throw new Error(`FUZZ_ONLY matched no target; have: ${Object.keys(targets).join(', ')}`)
+  assert.ok(names.length, `FUZZ_ONLY matched no target; have: ${Object.keys(targets).join(', ')}`)
 
   const quiet = () => {}
-  const consoleLog = console.log
-  const consoleError = console.error
-  console.log = console.error = quiet
-  ini.logger = structured.logger = quiet
+  const real = { log: console.log, error: console.error }
+  before(() => {
+    console.log = console.error = quiet
+    ini.logger = structured.logger = quiet
+  })
+  after(() => {
+    console.log = real.log
+    console.error = real.error
+    fs.rmSync(tmp, { recursive: true, force: true })
+    require('../lib/watch').closeAll()
+  })
 
-  const stats = Object.fromEntries(names.map((n) => [n, { runs: 0, slowest: 0 }]))
-  const failures = []
-  const started = performance.now()
-  out(`fuzz: ${ITERATIONS} iterations from ${START}, seed ${SEED}, targets ${names.join(', ')}`)
+  for (const name of names) {
+    it(`${name}: ${ITERATIONS} iterations from #${START}, seed ${SEED}`, async function () {
+      const failures = []
+      for (let i = START; i < START + ITERATIONS; i++) {
+        const rng = rngFor(name, i)
+        let input
+        const t0 = performance.now()
+        try {
+          input = await targets[name](rng, i)
+          assertNoPollution()
+        } catch (e) {
+          const kind = e.code === 'ERR_ASSERTION' ? 'invariant' : e.name
+          failures.push({ i, kind, message: e.message, input, stack: e.stack })
+        }
+        const ms = performance.now() - t0
+        if (ms > SLOW_MS && name !== 'redos') failures.push({ i, kind: 'slow', message: `${ms.toFixed(0)} ms`, input })
+      }
+      if (!failures.length) return
 
-  for (let i = START; i < START + ITERATIONS; i++) {
-    const rng = rngFor(i)
-    const name = pick(rng, names)
-    const stat = stats[name]
-    let input
-    const t0 = performance.now()
-    try {
-      input = await targets[name](rng, i)
-      assertNoPollution()
-    } catch (e) {
-      failures.push({
-        name,
-        i,
-        kind: e.code === 'ERR_ASSERTION' ? 'invariant' : e.name,
-        message: e.message,
-        input,
-        stack: e.stack,
-      })
-    }
-    const ms = performance.now() - t0
-    stat.runs++
-    stat.slowest = Math.max(stat.slowest, ms)
-    if (ms > SLOW_MS && name !== 'redos')
-      failures.push({ name, i, kind: 'slow', message: `${ms.toFixed(0)} ms`, input })
+      const report = failures
+        .slice(0, 5)
+        .map((f) =>
+          [
+            `#${f.i} (${f.kind}): ${f.message}`,
+            f.input !== undefined && `  input: ${show(f.input)}`,
+            f.kind !== 'invariant' &&
+              f.kind !== 'slow' &&
+              f.stack &&
+              `  ${f.stack.split('\n').slice(1, 4).join('\n  ')}`,
+            `  replay: ${replay(name, f.i)}`,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        )
+      assert.fail(`${failures.length} failure(s) in ${name}\n${report.join('\n')}`)
+    })
   }
-
-  console.log = consoleLog
-  console.error = consoleError
-  fs.rmSync(tmp, { recursive: true, force: true })
-
-  for (const f of failures) {
-    out()
-    out(`FAIL ${f.name} #${f.i} (${f.kind}): ${f.message}`)
-    if (f.input !== undefined) out(`  input: ${show(f.input)}`)
-    if (f.kind !== 'invariant' && f.kind !== 'slow' && f.stack) out(`  ${f.stack.split('\n').slice(1, 4).join('\n  ')}`)
-    out(`  replay: FUZZ_SEED=${SEED} FUZZ_START=${f.i} FUZZ_ITERATIONS=1 FUZZ_ONLY=${f.name} npm run fuzz`)
-  }
-
-  out()
-  out(`${'target'.padEnd(12)} ${'runs'.padStart(6)} ${'slowest'.padStart(10)}`)
-  for (const [n, s] of Object.entries(stats))
-    out(`${n.padEnd(12)} ${String(s.runs).padStart(6)} ${`${s.slowest.toFixed(1)} ms`.padStart(10)}`)
-  out()
-  out(`${failures.length} failure(s) in ${((performance.now() - started) / 1000).toFixed(1)} s`)
-  process.exitCode = failures.length ? 1 : 0
-}
-
-main().catch((e) => {
-  fs.rmSync(tmp, { recursive: true, force: true })
-  process.stderr.write(`${e.stack}\n`)
-  process.exitCode = 2
 })

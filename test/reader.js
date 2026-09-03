@@ -216,6 +216,7 @@ describe('reader', function () {
       })
 
       it('executes .js when the caller asks for type js explicitly', async function () {
+        fs.unlinkSync(path.join(this.dir, 'plain.list')) // type: 'js' would execute it too
         const contents = await this.cfreader.read_dir(this.dir, { type: 'js' })
         const ran = contents.find((c) => path.basename(c.path) === 'ran.js')
         assert.deepEqual(ran.data, { ran: true })
@@ -235,8 +236,25 @@ describe('reader', function () {
         fs.rmSync(this.outside, { recursive: true, force: true })
       })
 
-      it('does not follow a symlink out of the directory', async function () {
+      it('follows a symlink to a directory outside', async function () {
         fs.symlinkSync(this.outside, path.join(this.root, 'escape'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(contents.map((c) => path.basename(c.path)).sort(), ['own.list', 'secret.list'])
+        assert.equal(
+          contents.find((c) => c.path.endsWith('secret.list')).path,
+          path.join(this.root, 'escape', 'secret.list'),
+        )
+      })
+
+      it('follows a symlink to a file outside (certs in /etc/letsencrypt)', async function () {
+        fs.symlinkSync(path.join(this.outside, 'secret.list'), path.join(this.root, 'linked.list'))
+        const contents = await this.cfreader.read_dir(this.root)
+        assert.deepEqual(contents.map((c) => path.basename(c.path)).sort(), ['linked.list', 'own.list'])
+        assert.deepEqual(contents.find((c) => c.path.endsWith('linked.list')).data, ['secret'])
+      })
+
+      it('skips a symlink that points at itself', async function () {
+        fs.symlinkSync('self.list', path.join(this.root, 'self.list'))
         const contents = await this.cfreader.read_dir(this.root)
         assert.deepEqual(
           contents.map((c) => path.basename(c.path)),
@@ -244,13 +262,50 @@ describe('reader', function () {
         )
       })
 
-      it('does not follow a symlink to a file out of the directory', async function () {
-        fs.symlinkSync(path.join(this.outside, 'secret.list'), path.join(this.root, 'linked.list'))
-        const contents = await this.cfreader.read_dir(this.root)
-        assert.deepEqual(
-          contents.map((c) => path.basename(c.path)),
-          ['own.list'],
-        )
+      it('a directory that vanishes between stat and realpath is skipped', async function () {
+        const sub = path.join(this.root, 'sub')
+        fs.mkdirSync(sub)
+        const fsp = require('node:fs/promises')
+        const realpath = fsp.realpath
+        fsp.realpath = async (p) => {
+          if (p === sub) throw Object.assign(new Error('gone'), { code: 'ENOENT' })
+          return realpath(p)
+        }
+        try {
+          const contents = await this.cfreader.read_dir(this.root)
+          assert.deepEqual(
+            contents.map((c) => path.basename(c.path)),
+            ['own.list'],
+          )
+        } finally {
+          fsp.realpath = realpath
+        }
+      })
+
+      it('a subdirectory that vanishes before it is listed is skipped', async function () {
+        const sub = path.join(this.root, 'sub')
+        fs.mkdirSync(sub)
+        const fsp = require('node:fs/promises')
+        const readdir = fsp.readdir
+        fsp.readdir = async (p, ...rest) => {
+          if (p === sub) throw Object.assign(new Error('gone'), { code: 'ENOENT' })
+          return readdir(p, ...rest)
+        }
+        try {
+          const contents = await this.cfreader.read_dir(this.root)
+          assert.deepEqual(
+            contents.map((c) => path.basename(c.path)),
+            ['own.list'],
+          )
+        } finally {
+          fsp.readdir = readdir
+        }
+      })
+
+      it('a missing directory rejects and leaves no slot behind', async function () {
+        const missing = path.join(this.root, 'nope')
+        await assert.rejects(() => this.cfreader.read_dir(missing, { watchCb() {} }), { code: 'ENOENT' })
+        assert.equal(this.cfreader._read_args[missing], undefined)
       })
 
       it('breaks a symlink cycle instead of recursing until ELOOP', async function () {

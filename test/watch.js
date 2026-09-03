@@ -128,6 +128,30 @@ describe('watch', function () {
     assert.equal(reader._read_args[file].cb_calls, 1)
   })
 
+  it('reloads with the read args current when the timer fires', function () {
+    const Watch = loadWatch()
+    const file = path.join(subDir, 'test.ini')
+    const reader = mockReader({ [file]: fileSlot() })
+    const types = []
+    reader.load_config = (name, type) => types.push(type)
+    let pending
+    global.setTimeout = (fn) => {
+      pending = fn
+      return 1
+    }
+
+    Watch.dir(reader, subDir)
+    watchCalls[0].listener('change', 'test.ini')
+    reader._read_args[file] = { ...fileSlot(), type: 'value' } // read again during the debounce
+    pending()
+    assert.deepEqual(types, ['value'])
+
+    watchCalls[0].listener('change', 'test.ini')
+    delete reader._read_args[file] // stopped during the debounce
+    pending()
+    assert.deepEqual(types, ['value'], 'a stopped file is not reloaded')
+  })
+
   it('dir skips no_watch slots', function () {
     const Watch = loadWatch()
     const file = path.join(cfgPath, 'quiet.ini')

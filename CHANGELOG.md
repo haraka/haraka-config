@@ -2,31 +2,49 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+### Unreleased
+
+- change: watch config dirs, not files, on every OS
+- fix: macOS notices a new config file immediately
+- fix: stop_watching() keeps a shared dir watcher
+- fix: get() and getDir() share a dir's watcher
+- fix: reload a symlinked config on target change
+- fix: log a watcher error event instead of throwing
+
 ### [1.7.0] - 2026-09-02
 
-- feat: `npm run fuzz`, a seeded property fuzzer
-- fix(security): getDir() no longer executes .js it merely discovered
-  - honors the same `HARAKA_JS_CONFIG` opt-in as the `<name>.js` fallback
-- fix(security): getDir() confines its walk to the directory it was given
-- fix(security): strip prototype-polluting keys from json/hjson/yaml
-- fix(security): merged (override layer) ini objects keep their null prototype
-- fix(security): an unknown type throws instead of require()ing lib/readers/<type>
-- change: get() always returns a copy (object, array or Buffer)
-- refactor: the flat reader's value/list/data parsing is a few lines each
-- fix: an empty `me` defaults to the hostname on Windows too
-- fix(security): harden section reads against prototype pollution
-- fix: a watch event arriving after close() no longer throws (or re-watches)
-- fix: stop_watching()/closeAll() unqueue enoent-pending paths
-- fix: the enoent poller stops once nothing is pending
-- fix: getInt() honors the overrides layer, as get() does
-- fix: `+*.key` / `-*.key` wildcard booleans are detected
-- fix: an absolute config name is read once
-- doc: remove `no_cache`, not implemented
-- change: one directory watcher per config dir on every platform
-- fix: stop_watching() releases a shared directory watcher only when nothing else in it is tracked
-- fix: getDir() watches recursively on Linux too (Node >= 20)
-- remove: the readers' `loadPromise`, which nothing in Haraka or its plugins called
-- refactor: lib/types.js is the one place config types are listed
+- feat: a seeded property fuzzer in the test suite
+- fix(security): give ini sections a null prototype
+- fix(security): strip unsafe json/hjson/yaml keys
+- fix(security): getDir() runs .js only if opted in
+- fix(security): unknown config type throws
+- fix(security): make the ini section regex linear
+- change: get() returns a copy of plain data
+- fix: getInt() honors the overrides layer
+- fix: detect `+*.key` / `-*.key` wildcard booleans
+- fix: read a file once when both layers share it
+- fix: re-read a file requested under another type
+- fix: re-typing a source drops its `!` overrides
+- fix: empty `me` means hostname on Windows too
+- fix: override replaces a non-mapping default
+- fix: missing override ini keeps default booleans
+- fix: non-mapping overrides replace, never merge
+- fix: merging keeps non-plain .js exports intact
+- fix: get() handles yaml alias cycles
+- fix: merging keeps a root-level yaml alias intact
+- fix: a default-only yaml cycle survives a merge
+- fix: stop_watching() unqueues a pending directory
+- fix: stop the enoent poller when idle
+- fix: a watch event after close() no longer throws
+- fix: the enoent poller ignores stale stat results
+- fix: file watcher reloads with current read args
+- fix: getDir() skips dangling links, breaks cycles
+- fix: getDir() tolerates a dir vanishing mid-walk
+- fix: getDir() on a missing dir leaves no slot
+- doc: remove `no_cache`, never implemented
+- remove: the readers' unused loadPromise
+- refactor: list config types once in lib/types.js
+- refactor: simplify the flat reader
 
 ### [1.6.3] - 2026-06-08
 

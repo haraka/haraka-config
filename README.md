@@ -359,15 +359,16 @@ Haraka reads a number of configuration files at startup. Any files read in a plu
 
 # Fuzzing
 
-`npm run fuzz` runs a seeded property fuzzer over the parsers, the override
-merge and copy, path confinement, and the regex patterns. Each iteration derives
-its own generator from the seed, so a failure prints a one-line replay command:
+`test/fuzz.js` is a seeded property fuzzer over the parsers, the override merge
+and copy, path confinement, and the regex patterns. `npm test` runs a short pass
+of it; `npm run fuzz` runs a long one. A failure prints a command that replays
+that single iteration:
 
 ```sh
-FUZZ_SEED=<seed> FUZZ_START=<iteration> FUZZ_ITERATIONS=1 FUZZ_ONLY=<target> npm run fuzz
+FUZZ_SEED=<seed> FUZZ_ONLY=<target> FUZZ_START=<iteration> FUZZ_ITERATIONS=1 node --test test/fuzz.js
 ```
 
-`FUZZ_ITERATIONS` (default 1000), `FUZZ_ONLY=ini,flat,...`, and `FUZZ_SLOW_MS` tune a run.
+`FUZZ_ITERATIONS` (per target), `FUZZ_ONLY=ini,flat,...`, and `FUZZ_SLOW_MS` tune a run.
 
 [ci-img]: https://github.com/haraka/haraka-config/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/haraka/haraka-config/actions/workflows/ci.yml

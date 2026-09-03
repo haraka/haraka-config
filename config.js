@@ -3,6 +3,7 @@
 const path = require('node:path')
 
 const reader = require('./lib/reader')
+const { MISSING } = require('./lib/missing')
 const types = require('./lib/types')
 
 // Resolve a caller-supplied config name against `base`.
@@ -39,8 +40,6 @@ class Config {
     const full_path = safe_resolve(this.root_path, name)
     const defaults = reader.read_config(full_path, type, cb, options)
 
-    // an absolute name, or an install whose defaults and overrides dirs
-    // coincide, resolves both layers to the same file
     const overrides_path = this.overrides_path && safe_resolve(this.overrides_path, name)
     if (!overrides_path || overrides_path === full_path) return clone(defaults)
 
@@ -100,8 +99,7 @@ class Config {
             fs_type = arg
             continue
           }
-          console.log(`unknown string: ${arg}`)
-          continue
+          throw new Error(`unknown config type: ${arg}`)
       }
       // console.log(`unknown arg: ${arg}, typeof: ${typeof arg}`);
     }
@@ -111,7 +109,6 @@ class Config {
     return [fs_name, fs_type, cb, options]
   }
 
-  // Stop watching `name`, a file or a getDir() directory. Idempotent.
   stop_watching(name) {
     reader.stop_watching(safe_resolve(this.root_path, name))
   }
@@ -128,10 +125,16 @@ class Config {
 module.exports = new Config()
 
 function merge_config(defaults, overrides, type) {
-  if (types.is_mergeable(type)) return merge_struct(clone(defaults), overrides)
+  if (types.is_mergeable(type)) {
+    if (overrides == null || overrides[MISSING]) return clone(defaults)
+    if (isMapping(overrides) && isMapping(defaults)) return merge_struct(clone(defaults), overrides)
+    if (isMapping(overrides) && !Object.keys(overrides).length) return clone(defaults)
+    return clone(overrides)
+  }
 
   // flat list/data: a non-empty override replaces the default; an empty
-  // override (a missing override file reads as []) leaves the default in place
+  // override (e.g. a missing override file, which reads as []) leaves the
+  // default in place rather than silently wiping it
   if (Array.isArray(overrides)) return clone(overrides.length ? overrides : defaults)
 
   // flat value: only a present (non-null) override replaces the default
@@ -139,31 +142,38 @@ function merge_config(defaults, overrides, type) {
 }
 
 const isObject = (v) => typeof v === 'object' && v !== null
+const isPlain = (v) => [null, Object.prototype].includes(Object.getPrototypeOf(v))
+const isMapping = (v) => isObject(v) && isPlain(v)
+const isPlainData = (v) => isObject(v) && (Array.isArray(v) || Buffer.isBuffer(v) || isPlain(v))
 
-// Every get() hands the caller its own copy.
-// Prototypes are kept: ini sections are null-prototype objects. `seen` maps
-// source to copy, so yaml aliases stay shared and cycles stay cycles.
 function clone(v, seen = new WeakMap()) {
-  if (!isObject(v)) return v
+  if (!isPlainData(v)) return v
   if (Buffer.isBuffer(v)) return Buffer.from(v)
   if (seen.has(v)) return seen.get(v)
+  if (Array.isArray(v) && v.every((x) => !isObject(x))) {
+    const out = v.slice()
+    seen.set(v, out)
+    return out
+  }
   const out = Array.isArray(v) ? [] : Object.create(Object.getPrototypeOf(v))
   seen.set(v, out)
-  for (const k of Object.keys(v)) out[k] = clone(v[k], seen)
+  for (const k of Object.keys(v)) {
+    if (['__proto__', 'constructor', 'prototype'].includes(k)) continue
+    out[k] = clone(v[k], seen)
+  }
   return out
 }
 
-function merge_struct(defaults, overrides, seen = new WeakMap()) {
-  if (seen.has(overrides)) return seen.get(overrides) // a yaml alias cycle in the overrides
-  seen.set(overrides, defaults)
+function merge_struct(defaults, overrides, merging = new Map()) {
+  if (merging.has(overrides)) return merging.get(overrides)
+  merging.set(overrides, defaults)
   for (const k in overrides) {
-    // the deny list is spelled out here (rather than lib/unsafe-keys.js) so
-    // CodeQL's js/prototype-pollution-utility check can see the guard
     if (['__proto__', 'constructor', 'prototype'].includes(k) || overrides[k] === null) continue
-    // only an own object is merged into; an inherited one is shared with its prototype
-    const merge_into = isObject(overrides[k]) && Object.hasOwn(defaults, k) && isObject(defaults[k])
-    defaults[k] = merge_into ? merge_struct(defaults[k], overrides[k], seen) : clone(overrides[k])
+    const target = Object.hasOwn(defaults, k) ? defaults[k] : undefined
+    const merge_into = isMapping(overrides[k]) && isMapping(target)
+    defaults[k] = merge_into ? merge_struct(clone(target), overrides[k], merging) : clone(overrides[k])
   }
+  merging.delete(overrides)
   return defaults
 }
 

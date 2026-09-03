@@ -78,6 +78,12 @@ describe('ini', function () {
       assert.strictEqual(r['bar.com'].is_bool, false)
     })
 
+    it('a header padded with 20k spaces parses in linear time', { timeout: 2000 }, function () {
+      // the section regex had three overlapping \s* and was cubic in line length
+      const r = this.ini.parseIni('x', {}, `[${' '.repeat(20000)}ok${' '.repeat(20000)}]\nk=v\n[${' '.repeat(20000)}\n`)
+      assert.equal(r.ok.k, 'v')
+    })
+
     it('wildcard boolean with a default prefix', function () {
       // '+*.key' parsed as section '+*' and was dropped before detection,
       // so its values stayed strings while bare '*.key' worked
