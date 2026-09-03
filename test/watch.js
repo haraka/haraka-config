@@ -565,6 +565,33 @@ describe('watch', function () {
       })
     }
 
+    it('reloads when an intermediate link is retargeted (cert.pem -> ..data/cert.pem)', function () {
+      const Watch = loadWatch()
+      const cfg = path.join(tmp, 'config')
+      const link = path.join(cfg, 'cert.pem')
+      const version = (v) => {
+        fs.mkdirSync(path.join(cfg, v))
+        fs.writeFileSync(path.join(cfg, v, 'cert.pem'), v)
+      }
+      version('..v1')
+      fs.symlinkSync('..v1', path.join(cfg, '..data'))
+      fs.unlinkSync(link)
+      fs.symlinkSync(path.join('..data', 'cert.pem'), link)
+      const reader = mockReader({ [link]: fileSlot() })
+
+      Watch.file(reader, link)
+      assert.deepEqual(watchCalls.map((c) => c.target).sort(), [cfg, path.join(cfg, '..v1')])
+
+      version('..v2')
+      fs.symlinkSync('..v2', path.join(cfg, '..data_tmp'))
+      fs.renameSync(path.join(cfg, '..data_tmp'), path.join(cfg, '..data'))
+      watchCalls[0].listener('rename', '..data')
+
+      assert.equal(reader._read_args[link].cb_calls, 1)
+      assert.equal(watchers[1].close_calls, 1, 'the old version directory is released')
+      assert.deepEqual(watchCalls.map((c) => c.target).sort(), [cfg, path.join(cfg, '..v1'), path.join(cfg, '..v2')])
+    })
+
     it('close() releases the target directory watcher too', function () {
       const Watch = loadWatch()
       const link = path.join(tmp, 'config', 'cert.pem')
@@ -764,6 +791,31 @@ describe('watch', function () {
 
       assert.equal(watchCalls.length, 1)
       assert.equal(watchCalls[0].opts.recursive, true)
+    })
+
+    it('keeps polling a directory whose watcher fails to open for another reason', function () {
+      const Watch = loadWatch()
+      let calls = 0
+      const plainWatch = fs.watch
+      fs.watch = (...args) => {
+        calls++
+        if (calls === 1) throw enoent()
+        if (calls === 2) throw Object.assign(new Error('too many open files'), { code: 'EMFILE' })
+        return plainWatch(...args)
+      }
+      const errors = []
+      console.error = (msg) => errors.push(msg)
+      const reader = mockReader()
+
+      Watch.dir(reader, subDir)
+      timerFn()
+      assert.equal(watchCalls.length, 0)
+      assert.equal(errors.length, 1)
+
+      timerFn()
+      assert.equal(watchCalls.length, 1, 'the next poll opens it')
+      Watch.dir(reader, subDir)
+      assert.equal(watchCalls.length, 1, 'and it is registered')
     })
 
     it('a request that succeeds before the poll unqueues the dir and stops the poller', function () {

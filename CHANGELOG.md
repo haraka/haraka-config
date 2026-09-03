@@ -4,25 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [1.8.0] - 2026-09-02
 
-- change: watch config dirs, not files, on every OS
-- fix: macOS notices a new config file immediately
+- change: watch config dirs, plus files on the BSDs
+- change: getDir() watches recursively on Linux too
+- fix: macOS and the BSDs notice new files at once
+- fix: reload configs when a missing dir appears
+- fix: retry a dir watcher that failed to open
 - fix: stop_watching() keeps a shared dir watcher
+- fix: stop_watching() covers the overrides layer
 - fix: get() and getDir() share a dir's watcher
 - fix: reload a symlinked config on target change
-- fix: log a watcher error event instead of throwing
-- fix: reopen a directory watcher after an error
-- fix: keep watching a dangling symlink's target
-- fix: release a retargeted link's old dir watcher
-- fix: two links to one target both reload
-- fix: reload on watch events lacking a filename
 - fix: reload a config read via its fallback file
-- change: getDir() watches recursively on Linux too
-- fix: the BSDs reload a config edited in place
-- fix: stop_watching() covers the overrides layer
-- fix: keep a fallback alias while its file is gone
-- fix: watch a fallback source's symlink target
-- fix: reattach a file watcher after an error
-- fix: keep a file watcher another config still uses
+- fix: reload on watch events lacking a filename
+- fix: log a watcher error, then reopen the watcher
 
 ### [1.7.0] - 2026-09-02
 
