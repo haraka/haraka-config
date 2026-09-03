@@ -148,6 +148,44 @@ describe('watch', function () {
     assert.equal(reader._read_args[subDir].opts.watchCb_calls, 1)
   })
 
+  it('an event naming the directory itself (kqueue) reloads every tracked file in it', function () {
+    const Watch = loadWatch()
+    const a = path.join(subDir, 'a.ini')
+    const b = path.join(subDir, 'b.ini')
+    const reader = mockReader({ [a]: fileSlot(), [b]: fileSlot() })
+
+    Watch.dir(reader, subDir)
+    watchCalls[0].listener('rename', path.basename(subDir))
+
+    assert.equal(reader.load_config_calls, 2)
+    assert.equal(watchCalls.length, 1, 'the directory is unchanged, so its watcher is kept')
+  })
+
+  it('a directory swapped under its watcher is rewatched, and its configs reloaded', function () {
+    const Watch = loadWatch()
+    const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'hc-swap-')))
+    const dir = path.join(tmp, 'config')
+    const file = path.join(dir, 'a.ini')
+    try {
+      fs.mkdirSync(dir)
+      fs.writeFileSync(file, 'v1')
+      const reader = mockReader({ [file]: fileSlot() })
+      Watch.dir(reader, dir)
+
+      fs.mkdirSync(path.join(tmp, 'config.new'))
+      fs.writeFileSync(path.join(tmp, 'config.new', 'a.ini'), 'v2')
+      fs.rmSync(dir, { recursive: true })
+      fs.renameSync(path.join(tmp, 'config.new'), dir)
+      watchCalls[0].listener('rename', 'config')
+
+      assert.equal(watchers[0].close_calls, 1)
+      assert.equal(watchCalls.length, 2)
+      assert.equal(reader.load_config_calls, 1)
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
+  })
+
   it('reloads a config read from a fallback file when that file changes', function () {
     const Watch = loadWatch()
     const json = path.join(subDir, 'x.json')
@@ -575,6 +613,32 @@ describe('watch', function () {
       assert.deepEqual(watchCalls.map((c) => c.target).sort(), [cfg, path.join(cfg, '..v1'), path.join(cfg, '..v2')])
     })
 
+    it('reloads when a linked parent directory outside the config dir is retargeted', function () {
+      const Watch = loadWatch()
+      const cfg = path.join(tmp, 'config')
+      const link = path.join(cfg, 'cert.pem')
+      const srv = path.join(tmp, 'srv')
+      for (const v of ['v1', 'v2']) {
+        fs.mkdirSync(path.join(srv, v), { recursive: true })
+        fs.writeFileSync(path.join(srv, v, 'cert.pem'), v)
+      }
+      fs.symlinkSync(path.join(srv, 'v1'), path.join(srv, 'current'))
+      fs.unlinkSync(link)
+      fs.symlinkSync(path.join(srv, 'current', 'cert.pem'), link)
+      const reader = mockReader({ [link]: fileSlot() })
+
+      Watch.file(reader, link)
+      assert.deepEqual(watchCalls.map((c) => c.target).sort(), [cfg, srv, path.join(srv, 'v1')])
+
+      fs.rmSync(path.join(srv, 'current'))
+      fs.symlinkSync(path.join(srv, 'v2'), path.join(srv, 'current'))
+      watchCalls.find((c) => c.target === srv).listener('rename', 'current')
+
+      assert.equal(reader._read_args[link].cb_calls, 1)
+      assert.deepEqual(watchCalls.map((c) => c.target).sort(), [cfg, srv, path.join(srv, 'v1'), path.join(srv, 'v2')])
+      assert.equal(watchers[watchCalls.findIndex((c) => c.target === path.join(srv, 'v1'))].close_calls, 1)
+    })
+
     it('close() releases the target directory watcher too', function () {
       const Watch = loadWatch()
       const link = path.join(tmp, 'config', 'cert.pem')
@@ -833,6 +897,34 @@ describe('watch', function () {
       assert.equal(watchCalls[1].opts.recursive, true)
       assert.equal(watchers[0].close_calls, 1)
       assert.equal(reader.load_config_calls, 0, 'an upgrade is not a reappearance: nothing is reloaded')
+    })
+
+    it('a watched directory that disappears goes back to the poller', function () {
+      const Watch = loadWatch()
+      const plainWatch = fs.watch
+      fs.watch = (target, ...rest) => {
+        if (!fs.existsSync(target)) throw enoent()
+        return plainWatch(target, ...rest)
+      }
+      const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'hc-gone-')))
+      const dir = path.join(tmp, 'config')
+      try {
+        fs.mkdirSync(dir)
+        const reader = mockReader()
+        Watch.dir(reader, dir)
+
+        fs.rmdirSync(dir)
+        watchCalls[0].listener('rename', 'config')
+        assert.equal(watchers[0].close_calls, 1)
+        assert.equal(watchCalls.length, 1)
+        assert.equal(typeof timerFn, 'function', 'queued for the poller')
+
+        fs.mkdirSync(dir)
+        timerFn()
+        assert.equal(watchCalls.length, 2)
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true })
+      }
     })
 
     it('a request that succeeds before the poll unqueues the dir and stops the poller', function () {
