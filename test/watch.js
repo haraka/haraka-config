@@ -6,7 +6,9 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
-function loadWatch(platform = process.platform) {
+// fs.watch is mocked here; the platform only decides whether files get their
+// own watchers, so default to one where they do not and counts stay deterministic
+function loadWatch(platform = 'linux') {
   const saved = Object.getOwnPropertyDescriptor(process, 'platform')
   Object.defineProperty(process, 'platform', { value: platform, configurable: true })
   try {
@@ -221,7 +223,7 @@ describe('watch', function () {
   })
 
   it('a recursive request upgrades an existing watcher, once', function () {
-    const Watch = loadWatch('darwin')
+    const Watch = loadWatch()
     const reader = mockReader()
 
     Watch.dir(reader, subDir)
@@ -234,22 +236,25 @@ describe('watch', function () {
     assert.equal(watchCalls[1].opts.recursive, true)
   })
 
-  it('asks for recursion only where fs.watch supports it natively', function () {
-    for (const [os, expected] of [
-      ['linux', false],
-      ['darwin', true],
-      ['win32', true],
-      ['freebsd', false],
-    ]) {
-      const Watch = loadWatch(os)
-      Watch.dir(mockReader(), subDir, { recursive: true })
-      assert.equal(watchCalls.at(-1).opts.recursive, expected, os)
-      Watch.closeAll()
+  it('falls back to a plain watcher where fs.watch cannot recurse', function () {
+    const Watch = loadWatch()
+    const plainWatch = fs.watch
+    fs.watch = (target, opts, listener) => {
+      if (opts.recursive) throw Object.assign(new Error('unsupported'), { code: 'ERR_FEATURE_UNAVAILABLE_ON_PLATFORM' })
+      return plainWatch(target, opts, listener)
     }
+    const reader = mockReader()
+
+    Watch.dir(reader, subDir, { recursive: true })
+    assert.equal(watchCalls.length, 1)
+    assert.equal(watchCalls[0].opts.recursive, undefined)
+
+    Watch.dir(reader, subDir, { recursive: true })
+    assert.equal(watchCalls.length, 1, 'the fallback is not retried')
   })
 
   it('keeps the existing watcher when the recursive upgrade fails to open', function () {
-    const Watch = loadWatch('darwin')
+    const Watch = loadWatch()
     const reader = mockReader()
     Watch.dir(reader, subDir)
     const plainWatch = fs.watch
@@ -300,6 +305,104 @@ describe('watch', function () {
     assert.doesNotThrow(() => watchCalls[0].listener('change', 'test.ini'))
     assert.equal(reader.load_config_calls, 0)
     assert.equal(watchCalls.length, 1, 'a closed watcher must not be re-attached')
+  })
+
+  describe('where directory events do not report writes', function () {
+    const file = path.join(subDir, 'test.ini')
+
+    it('linux, darwin and win32 rely on the directory watcher alone', function () {
+      for (const os of ['linux', 'darwin', 'win32']) {
+        const Watch = loadWatch(os)
+        Watch.file(mockReader({ [file]: fileSlot() }), file)
+        assert.deepEqual(
+          watchCalls.map((c) => c.target),
+          [subDir],
+          os,
+        )
+        Watch.closeAll()
+        watchCalls.length = 0
+      }
+    })
+
+    it('each tracked file gets its own watcher, and its change event reloads it', function () {
+      const Watch = loadWatch('freebsd')
+      const reader = mockReader({ [file]: fileSlot() })
+
+      Watch.file(reader, file)
+      Watch.file(reader, file)
+      assert.deepEqual(
+        watchCalls.map((c) => c.target),
+        [subDir, file],
+      )
+
+      watchCalls[1].listener('change')
+      assert.equal(reader.load_config_calls, 1)
+      assert.equal(reader._read_args[file].cb_calls, 1)
+    })
+
+    it('a rename event drops the file watcher, and the reload re-attaches it', function () {
+      const Watch = loadWatch('freebsd')
+      const reader = mockReader({ [file]: fileSlot() })
+      Watch.file(reader, file)
+
+      watchCalls[1].listener('rename')
+
+      assert.equal(reader.load_config_calls, 1)
+      assert.equal(watchers[1].close_calls, 1)
+      assert.deepEqual(
+        watchCalls.map((c) => c.target),
+        [subDir, file, file],
+      )
+    })
+
+    it('a missing file is left to its directory watcher', function () {
+      const Watch = loadWatch('freebsd')
+      const plainWatch = fs.watch
+      let exists = false
+      fs.watch = (target, ...rest) => {
+        if (target === file && !exists) throw enoent()
+        return plainWatch(target, ...rest)
+      }
+      const errors = []
+      console.error = (msg) => errors.push(msg)
+      const reader = mockReader({ [file]: fileSlot() })
+
+      Watch.file(reader, file)
+      assert.deepEqual(
+        watchCalls.map((c) => c.target),
+        [subDir],
+      )
+      assert.deepEqual(errors, [])
+
+      exists = true
+      watchCalls[0].listener('rename', 'test.ini')
+      assert.equal(reader.load_config_calls, 1)
+      assert.deepEqual(
+        watchCalls.map((c) => c.target),
+        [subDir, file],
+      )
+    })
+
+    it('a fallback source is watched directly too, and released with its config', function () {
+      const Watch = loadWatch('freebsd')
+      const json = path.join(subDir, 'x.json')
+      const yaml = path.join(subDir, 'x.yaml')
+      const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', source: yaml } })
+
+      Watch.file(reader, json)
+      assert.deepEqual(
+        watchCalls.map((c) => c.target),
+        [subDir, json, yaml],
+      )
+      watchCalls[2].listener('change')
+      assert.equal(reader._read_args[json].cb_calls, 1)
+
+      Watch.close(reader, json)
+      assert.deepEqual(
+        watchers.map((w) => w.close_calls),
+        [1, 1, 1],
+      )
+    })
   })
 
   describe('a symlinked config', function () {
@@ -476,7 +579,7 @@ describe('watch', function () {
     })
 
     it('dir queues a missing directory quietly and attaches once it appears', function () {
-      const Watch = loadWatch('darwin')
+      const Watch = loadWatch()
       const errors = []
       console.error = (msg) => errors.push(msg)
       missingOnce()
@@ -531,7 +634,7 @@ describe('watch', function () {
     })
 
     it('a pending recursive request survives a later plain request for the same dir', function () {
-      const Watch = loadWatch('darwin')
+      const Watch = loadWatch()
       let calls = 0
       const plainWatch = fs.watch
       fs.watch = (...args) => {
@@ -549,7 +652,7 @@ describe('watch', function () {
     })
 
     it('a later recursive request upgrades a pending plain one', function () {
-      const Watch = loadWatch('darwin')
+      const Watch = loadWatch()
       let calls = 0
       const plainWatch = fs.watch
       fs.watch = (...args) => {

@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix: two links to one target both reload
 - fix: reload on watch events lacking a filename
 - fix: reload a config read via its fallback file
+- change: getDir() watches recursively on Linux too
+- fix: the BSDs reload a config edited in place
 
 ### [1.7.0] - 2026-09-02
 
