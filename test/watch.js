@@ -680,6 +680,33 @@ describe('watch', function () {
       assert.equal(reader._read_args[dir].opts.watchCb_calls, 1)
     })
 
+    it('tells a getDir consumer about entries that changed without an event', function () {
+      const Watch = loadWatch()
+      const dir = files('a.ini')
+      const reader = mockReader({ [dir]: dirSlot() })
+      Watch.dir(reader, dir, { recursive: true })
+      const told = () => reader._read_args[dir].opts.watchCb_calls
+      // coarse filesystem timestamps must not hide an entry change from the test
+      const touch = () => fs.utimesSync(dir, new Date(), new Date(Date.now() + 5000))
+
+      tick()
+      assert.equal(told(), 0, 'nothing changed')
+
+      fs.writeFileSync(path.join(dir, 'b.ini'), 'b')
+      touch()
+      tick()
+      assert.equal(told(), 1)
+      tick()
+      assert.equal(told(), 1, 'told once')
+
+      fs.writeFileSync(path.join(dir, 'c.ini'), 'c')
+      touch()
+      watchCalls[0].listener('rename', 'c.ini')
+      assert.equal(told(), 2, 'an event still tells it at once')
+      tick()
+      assert.equal(told(), 2, 'and the pass does not repeat it')
+    })
+
     it('retries a failed recursive upgrade, keeping the plain watcher meanwhile', function () {
       const Watch = loadWatch()
       let refuse = true
