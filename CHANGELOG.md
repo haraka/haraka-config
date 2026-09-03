@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - change: watch config dirs, plus files on the BSDs
 - change: getDir() watches recursively on Linux too
+- feat: a minutely pass reloads what events missed
 - fix: macOS and the BSDs notice new files at once
 - fix: reload configs when a missing dir appears
 - fix: retry a watcher that failed to open
