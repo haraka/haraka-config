@@ -496,6 +496,27 @@ describe('reader', function () {
       assert.equal(this.cfreader._read_args[name].source, path.resolve('test/config/missing.yaml'))
     })
 
+    it('keeps the last source while the fallback file is missing', function () {
+      const dir = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'hc-src-'))
+      const json = path.join(dir, 'x.json')
+      const yaml = path.join(dir, 'x.yaml')
+      fs.writeFileSync(yaml, 'k: v')
+      try {
+        this.cfreader.read_config(json, 'json')
+        assert.equal(this.cfreader._read_args[json].source, yaml)
+
+        fs.unlinkSync(yaml)
+        this.cfreader.load_config(json, 'json')
+        assert.equal(this.cfreader._read_args[json].source, yaml)
+
+        this.cfreader.read_config(json, 'json')
+        assert.equal(this.cfreader._read_args[json].source, yaml, 'survives the slot being replaced')
+      } finally {
+        this.cfreader.stop_watching(json)
+        fs.rmSync(dir, { recursive: true, force: true })
+      }
+    })
+
     it('a file read under its own name is its own source', function () {
       const name = path.resolve('test/config/test.yaml')
       this.cfreader.read_config(name, 'yaml')

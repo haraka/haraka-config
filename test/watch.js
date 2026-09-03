@@ -383,6 +383,25 @@ describe('watch', function () {
       )
     })
 
+    it('an error on a file watcher drops it, and the reload re-attaches it', function () {
+      const Watch = loadWatch('freebsd')
+      const handlers = {}
+      const plainWatch = fs.watch
+      fs.watch = (...args) => Object.assign(plainWatch(...args), { on: (ev, fn) => (handlers[ev] = fn) })
+      console.error = () => {}
+      const reader = mockReader({ [file]: fileSlot() })
+      Watch.file(reader, file)
+
+      handlers.error(new Error('EIO'))
+
+      assert.equal(watchers[1].close_calls, 1)
+      assert.equal(reader.load_config_calls, 1)
+      assert.deepEqual(
+        watchCalls.map((c) => c.target),
+        [subDir, file, file],
+      )
+    })
+
     it('a fallback source is watched directly too, and released with its config', function () {
       const Watch = loadWatch('freebsd')
       const json = path.join(subDir, 'x.json')
@@ -488,6 +507,40 @@ describe('watch', function () {
         [1, 1, 1],
       )
     })
+
+    it('a fallback source that is a symlink registers its target too', function () {
+      const Watch = loadWatch()
+      const json = path.join(tmp, 'config', 'x.json')
+      const yaml = path.join(tmp, 'config', 'x.yaml')
+      fs.writeFileSync(path.join(tmp, 'real', 'x.yaml'), 'k: v')
+      fs.symlinkSync(path.join(tmp, 'real', 'x.yaml'), yaml)
+      const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', source: yaml } })
+
+      Watch.file(reader, json)
+      assert.deepEqual(watchCalls.map((c) => c.target).sort(), [path.join(tmp, 'config'), path.join(tmp, 'real')])
+
+      watchCalls.find((c) => c.target === path.join(tmp, 'real')).listener('change', 'x.yaml')
+      assert.equal(reader._read_args[json].cb_calls, 1)
+    })
+
+    for (const [first, second] of [
+      ['link', 'target'],
+      ['target', 'link'],
+    ]) {
+      it(`on the BSDs the target's file watcher outlives closing the ${first}`, function () {
+        const Watch = loadWatch('freebsd')
+        const paths = { link: path.join(tmp, 'config', 'cert.pem'), target: path.join(tmp, 'real', 'cert.pem') }
+        const reader = mockReader({ [paths.link]: fileSlot(), [paths.target]: fileSlot() })
+        Watch.file(reader, paths.link)
+        Watch.file(reader, paths.target)
+        const targetWatcher = watchers[watchCalls.findIndex((c) => c.target === paths.target)]
+
+        Watch.close(reader, paths[first])
+        assert.equal(targetWatcher.close_calls, 0)
+        Watch.close(reader, paths[second])
+        assert.equal(targetWatcher.close_calls, 1)
+      })
+    }
 
     it('close() releases the target directory watcher too', function () {
       const Watch = loadWatch()

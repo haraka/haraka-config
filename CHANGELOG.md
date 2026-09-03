@@ -18,6 +18,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix: reload a config read via its fallback file
 - change: getDir() watches recursively on Linux too
 - fix: the BSDs reload a config edited in place
+- fix: stop_watching() covers the overrides layer
+- fix: keep a fallback alias while its file is gone
+- fix: watch a fallback source's symlink target
+- fix: reattach a file watcher after an error
+- fix: keep a file watcher another config still uses
 
 ### [1.7.0] - 2026-09-02
 

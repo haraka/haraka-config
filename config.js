@@ -111,6 +111,7 @@ class Config {
 
   stop_watching(name) {
     reader.stop_watching(safe_resolve(this.root_path, name))
+    if (this.overrides_path) reader.stop_watching(safe_resolve(this.overrides_path, name))
   }
 
   module_config(defaults_path, overrides_path) {

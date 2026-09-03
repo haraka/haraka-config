@@ -796,6 +796,28 @@ describe('path containment', function () {
   })
 })
 
+describe('stop_watching', function () {
+  beforeEach(testSetup)
+
+  it('stops both layers of a module config', function () {
+    const cfg = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    cfg.get('test.int')
+    const reader = require('../lib/reader')
+    const layers = [path.resolve('test/default/config/test.int'), path.resolve('test/override/config/test.int')]
+    assert.deepEqual(
+      layers.map((p) => p in reader._read_args),
+      [true, true],
+    )
+
+    cfg.stop_watching('test.int')
+
+    assert.deepEqual(
+      layers.map((p) => p in reader._read_args),
+      [false, false],
+    )
+  })
+})
+
 describe('reload failure', function () {
   let tmpDir
   let reader
