@@ -2,7 +2,40 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-### Unreleased
+### [1.7.0] - 2026-09-02
+
+- feat: a seeded property fuzzer in the test suite
+- fix(security): give ini sections a null prototype
+- fix(security): strip unsafe json/hjson/yaml keys
+- fix(security): getDir() runs .js only if opted in
+- fix(security): unknown config type throws
+- fix(security): make the ini section regex linear
+- change: get() returns a copy of plain data
+- fix: getInt() honors the overrides layer
+- fix: detect `+*.key` / `-*.key` wildcard booleans
+- fix: read a file once when both layers share it
+- fix: re-read a file requested under another type
+- fix: re-typing a source drops its `!` overrides
+- fix: empty `me` means hostname on Windows too
+- fix: override replaces a non-mapping default
+- fix: missing override ini keeps default booleans
+- fix: non-mapping overrides replace, never merge
+- fix: merging keeps non-plain .js exports intact
+- fix: get() handles yaml alias cycles
+- fix: merging keeps a root-level yaml alias intact
+- fix: a default-only yaml cycle survives a merge
+- fix: stop_watching() unqueues a pending directory
+- fix: stop the enoent poller when idle
+- fix: a watch event after close() no longer throws
+- fix: the enoent poller ignores stale stat results
+- fix: file watcher reloads with current read args
+- fix: getDir() skips dangling links, breaks cycles
+- fix: getDir() tolerates a dir vanishing mid-walk
+- fix: getDir() on a missing dir leaves no slot
+- doc: remove `no_cache`, never implemented
+- remove: the readers' unused loadPromise
+- refactor: list config types once in lib/types.js
+- refactor: simplify the flat reader
 
 ### [1.6.3] - 2026-06-08
 
@@ -209,3 +242,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.6.1]: https://github.com/haraka/haraka-config/releases/tag/v1.6.1
 [1.6.2]: https://github.com/haraka/haraka-config/releases/tag/v1.6.2
 [1.6.3]: https://github.com/haraka/haraka-config/releases/tag/v1.6.3
+[1.7.0]: https://github.com/haraka/haraka-config/releases/tag/v1.7.0

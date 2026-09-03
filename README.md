@@ -88,7 +88,6 @@ exports.hook_connect = function (next, connection) {
 The `options` object can accepts the following keys:
 
 - `no_watch` (default: false) - prevents Haraka from watching for updates.
-- `no_cache` (default: false) - prevents Haraka from caching the file. The file will be re-read on every call to `config.get`. This is not recommended as config files are read syncronously and will slow down Haraka.
 - `booleans` (default: none) - for .ini files, this allows specifying boolean type keys. Default true or false can be specified.
 
 ## <a name="overrides">Default Config and Overrides</a>
@@ -357,6 +356,19 @@ Configuration files are watched for changes using filesystem events which are in
 On Linux/Windows, newly created files that Haraka has tried to read in the past will be noticed immediately and loaded. For other operating systems, it may take up to 60 seconds to load, due to differences between in the kernel APIs for watching files or directories.
 
 Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to read updates after they change.
+
+# Fuzzing
+
+`test/fuzz.js` is a seeded property fuzzer over the parsers, the override merge
+and copy, path confinement, and the regex patterns. `npm test` runs a short pass
+of it; `npm run fuzz` runs a long one. A failure prints a command that replays
+that single iteration:
+
+```sh
+FUZZ_SEED=<seed> FUZZ_ONLY=<target> FUZZ_START=<iteration> FUZZ_ITERATIONS=1 node --test test/fuzz.js
+```
+
+`FUZZ_ITERATIONS` (per target), `FUZZ_ONLY=ini,flat,...`, and `FUZZ_SLOW_MS` tune a run.
 
 [ci-img]: https://github.com/haraka/haraka-config/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/haraka/haraka-config/actions/workflows/ci.yml

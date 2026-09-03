@@ -77,6 +77,23 @@ describe('ini', function () {
       assert.strictEqual(r['foo.com'].is_bool, true)
       assert.strictEqual(r['bar.com'].is_bool, false)
     })
+
+    it('a header padded with 20k spaces parses in linear time', { timeout: 2000 }, function () {
+      // the section regex had three overlapping \s* and was cubic in line length
+      const r = this.ini.parseIni('x', {}, `[${' '.repeat(20000)}ok${' '.repeat(20000)}]\nk=v\n[${' '.repeat(20000)}\n`)
+      assert.equal(r.ok.k, 'v')
+    })
+
+    it('wildcard boolean with a default prefix', function () {
+      // '+*.key' parsed as section '+*' and was dropped before detection,
+      // so its values stayed strings while bare '*.key' worked
+      const r = this.ini.load('test/config/test.ini', {
+        booleans: ['+*.is_bool'],
+      })
+      assert.strictEqual(r['*'], undefined)
+      assert.strictEqual(r['foo.com'].is_bool, true)
+      assert.strictEqual(r['bar.com'].is_bool, false)
+    })
   })
 
   describe('non-exist.ini (empty)', function () {
@@ -179,6 +196,73 @@ describe('ini', function () {
       const r = this.ini.parseIni('x', {}, '[toString]\nx=1\n')
       assert.deepEqual(r.toString, { x: 1 })
       assert.strictEqual(typeof {}.toString, 'function')
+    })
+  })
+
+  describe('prototype chain reads', function () {
+    const INHERITED = [
+      '__proto__',
+      'constructor',
+      'valueOf',
+      'toString',
+      'hasOwnProperty',
+      'isPrototypeOf',
+      'propertyIsEnumerable',
+      'toLocaleString',
+    ]
+
+    it('result object has a null prototype', function () {
+      const r = this.ini.parseIni('x', {}, 'foo=bar\n')
+      assert.strictEqual(Object.getPrototypeOf(r), null)
+    })
+
+    it('sections have a null prototype', function () {
+      const r = this.ini.parseIni('x', {}, '[users]\nmatt=test\n')
+      assert.strictEqual(Object.getPrototypeOf(r.main), null)
+      assert.strictEqual(Object.getPrototypeOf(r.users), null)
+    })
+
+    it('empty() has a null prototype', function () {
+      const r = this.ini.empty({})
+      assert.strictEqual(Object.getPrototypeOf(r), null)
+      assert.strictEqual(Object.getPrototypeOf(r.main), null)
+    })
+
+    it('boolean-declared sections have a null prototype', function () {
+      const r = this.ini.parseIni('x', { booleans: ['+core.constrain_sender'] }, '')
+      assert.strictEqual(Object.getPrototypeOf(r.core), null)
+      assert.strictEqual(r.core.constrain_sender, true)
+    })
+
+    for (const name of INHERITED) {
+      it(`an unconfigured key named '${name}' reads as undefined`, function () {
+        const r = this.ini.parseIni('x', {}, '[users]\nmatt=test\n')
+        assert.strictEqual(r.users[name], undefined)
+      })
+
+      it(`an unconfigured section named '${name}' reads as undefined`, function () {
+        const r = this.ini.parseIni('x', {}, 'foo=bar\n')
+        assert.strictEqual(r[name], undefined)
+      })
+    }
+
+    it('an empty section resolves no inherited members', function () {
+      const r = this.ini.parseIni('x', {}, '[users]\n')
+      for (const name of INHERITED) assert.strictEqual(r.users[name], undefined)
+    })
+
+    it('still supports the usual object operations', function () {
+      const r = this.ini.parseIni('x', {}, '[users]\nmatt=test\nbob=hunter2\n')
+
+      assert.ok(Object.prototype.hasOwnProperty.call(r.users, 'matt'))
+      assert.deepEqual(Object.keys(r.users), ['matt', 'bob'])
+      assert.ok('matt' in r.users)
+      assert.deepEqual({ ...r.users }, { matt: 'test', bob: 'hunter2' })
+      assert.strictEqual(JSON.stringify(r.users), '{"matt":"test","bob":"hunter2"}')
+
+      const seen = []
+      for (const k in r.users) seen.push(k)
+      assert.deepEqual(seen, ['matt', 'bob'])
     })
   })
 })

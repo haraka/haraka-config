@@ -1,0 +1,6 @@
+a: &x
+  name: shared
+a2: *x
+loop: &y
+  name: loop
+  self: *y
