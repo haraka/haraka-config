@@ -126,12 +126,37 @@ describe('watch', function () {
     const reader = mockReader({ [file]: fileSlot() })
 
     Watch.dir(reader, subDir)
-    watchCalls[0].listener('change')
     watchCalls[0].listener('change', 'untracked.ini')
     watchCalls[0].listener('change', 'test.ini')
 
     assert.equal(reader.load_config_calls, 1)
     assert.equal(reader._read_args[file].cb_calls, 1)
+  })
+
+  it('an event without a filename reloads every tracked file in the directory', function () {
+    const Watch = loadWatch()
+    const a = path.join(subDir, 'a.ini')
+    const b = path.join(subDir, 'b.ini')
+    const reader = mockReader({ [a]: fileSlot(), [b]: fileSlot(), [subDir]: dirSlot() })
+
+    Watch.dir(reader, subDir)
+    watchCalls[0].listener('change')
+
+    assert.equal(reader.load_config_calls, 2)
+    assert.equal(reader._read_args[subDir].opts.watchCb_calls, 1)
+  })
+
+  it('reloads a config read from a fallback file when that file changes', function () {
+    const Watch = loadWatch()
+    const json = path.join(subDir, 'x.json')
+    const yaml = path.join(subDir, 'x.yaml')
+    const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', source: yaml } })
+
+    Watch.file(reader, json)
+    watchCalls[0].listener('change', 'x.yaml')
+
+    assert.equal(reader.load_config_calls, 1)
+    assert.equal(reader._read_args[json].cb_calls, 1)
   })
 
   it('reloads with the read args current when the timer fires', function () {
@@ -223,19 +248,6 @@ describe('watch', function () {
     }
   })
 
-  it("logs a watcher's 'error' event instead of letting it throw", function () {
-    const Watch = loadWatch()
-    const handlers = {}
-    fs.watch = () => ({ close() {}, on: (ev, fn) => (handlers[ev] = fn) })
-    const errors = []
-    console.error = (msg) => errors.push(msg)
-
-    Watch.dir(mockReader(), subDir)
-    assert.equal(typeof handlers.error, 'function')
-    assert.doesNotThrow(() => handlers.error(new Error('EACCES')))
-    assert.match(errors[0], /Error watching directory/)
-  })
-
   it('keeps the existing watcher when the recursive upgrade fails to open', function () {
     const Watch = loadWatch('darwin')
     const reader = mockReader()
@@ -316,6 +328,64 @@ describe('watch', function () {
       assert.equal(reader._read_args[link].cb_calls, 1)
     })
 
+    it('reloads once a deleted target is recreated', function () {
+      const Watch = loadWatch()
+      const link = path.join(tmp, 'config', 'cert.pem')
+      const target = path.join(tmp, 'real', 'cert.pem')
+      const reader = mockReader({ [link]: fileSlot() })
+      Watch.file(reader, link)
+      const real = watchCalls.find((c) => c.target === path.join(tmp, 'real'))
+
+      fs.unlinkSync(target)
+      real.listener('rename', 'cert.pem')
+      assert.equal(reader.load_config_calls, 1)
+
+      fs.writeFileSync(target, 'v2')
+      real.listener('rename', 'cert.pem')
+      assert.equal(reader.load_config_calls, 2)
+      assert.equal(watchCalls.length, 2, 'the target directory watcher is kept throughout')
+    })
+
+    it('two links to one target both reload when it changes', function () {
+      const Watch = loadWatch()
+      const a = path.join(tmp, 'config', 'cert.pem')
+      const b = path.join(tmp, 'config', 'chain.pem')
+      fs.symlinkSync(path.join(tmp, 'real', 'cert.pem'), b)
+      const reader = mockReader({ [a]: fileSlot(), [b]: fileSlot() })
+      Watch.file(reader, a)
+      Watch.file(reader, b)
+
+      watchCalls.find((c) => c.target === path.join(tmp, 'real')).listener('change', 'cert.pem')
+      assert.equal(reader._read_args[a].cb_calls, 1)
+      assert.equal(reader._read_args[b].cb_calls, 1)
+    })
+
+    it('retargeting a link releases the old target directory watcher', function () {
+      const Watch = loadWatch()
+      const link = path.join(tmp, 'config', 'cert.pem')
+      const reader = mockReader({ [link]: fileSlot() })
+      Watch.file(reader, link)
+      const real = watchers[watchCalls.findIndex((c) => c.target === path.join(tmp, 'real'))]
+
+      fs.mkdirSync(path.join(tmp, 'other'))
+      fs.writeFileSync(path.join(tmp, 'other', 'cert.pem'), 'v2')
+      fs.unlinkSync(link)
+      fs.symlinkSync(path.join(tmp, 'other', 'cert.pem'), link)
+      Watch.file(reader, link)
+
+      assert.equal(real.close_calls, 1)
+      assert.deepEqual(watchCalls.map((c) => c.target).sort(), [
+        path.join(tmp, 'config'),
+        path.join(tmp, 'other'),
+        path.join(tmp, 'real'),
+      ])
+      Watch.close(reader, link)
+      assert.deepEqual(
+        watchers.map((w) => w.close_calls),
+        [1, 1, 1],
+      )
+    })
+
     it('close() releases the target directory watcher too', function () {
       const Watch = loadWatch()
       const link = path.join(tmp, 'config', 'cert.pem')
@@ -379,6 +449,31 @@ describe('watch', function () {
         return plainWatch(...args)
       }
     }
+
+    it("a watcher's 'error' event drops it, and the poller reopens the directory", function () {
+      const Watch = loadWatch()
+      const handlers = {}
+      const plainWatch = fs.watch
+      fs.watch = (...args) => Object.assign(plainWatch(...args), { on: (ev, fn) => (handlers[ev] = fn) })
+      const errors = []
+      console.error = (msg) => errors.push(msg)
+      const reader = mockReader()
+
+      Watch.dir(reader, subDir)
+      const stale = handlers.error
+      assert.doesNotThrow(() => stale(new Error('EPERM')))
+      assert.match(errors[0], /Error watching directory/)
+      assert.equal(watchers[0].close_calls, 1)
+
+      timerFn()
+      assert.equal(watchCalls.length, 2, 'the poller reopened the directory')
+      Watch.dir(reader, subDir)
+      assert.equal(watchCalls.length, 2, 'and registered it')
+
+      stale(new Error('late'))
+      Watch.dir(reader, subDir)
+      assert.equal(watchCalls.length, 2, 'an error from the replaced watcher is ignored')
+    })
 
     it('dir queues a missing directory quietly and attaches once it appears', function () {
       const Watch = loadWatch('darwin')

@@ -489,6 +489,20 @@ describe('reader', function () {
     })
   })
 
+  describe('fallback source', function () {
+    it('read_config records the file a fallback was read from', function () {
+      const name = path.resolve('test/config/missing.json')
+      this.cfreader.read_config(name, 'json')
+      assert.equal(this.cfreader._read_args[name].source, path.resolve('test/config/missing.yaml'))
+    })
+
+    it('a file read under its own name is its own source', function () {
+      const name = path.resolve('test/config/test.yaml')
+      this.cfreader.read_config(name, 'yaml')
+      assert.equal(this.cfreader._read_args[name].source, name)
+    })
+  })
+
   describe('get_path_to_config_dir', function () {
     it('Haraka runtime (env.HARAKA=*)', function () {
       process.env.HARAKA = '/etc/'

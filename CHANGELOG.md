@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix: get() and getDir() share a dir's watcher
 - fix: reload a symlinked config on target change
 - fix: log a watcher error event instead of throwing
+- fix: reopen a directory watcher after an error
+- fix: keep watching a dangling symlink's target
+- fix: release a retargeted link's old dir watcher
+- fix: two links to one target both reload
+- fix: reload on watch events lacking a filename
+- fix: reload a config read via its fallback file
 
 ### [1.7.0] - 2026-09-02
 
