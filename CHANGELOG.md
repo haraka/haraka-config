@@ -2,7 +2,7 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-### Unreleased
+### [1.8.0] - 2026-09-02
 
 - change: watch config dirs, not files, on every OS
 - fix: macOS notices a new config file immediately
@@ -252,3 +252,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.6.2]: https://github.com/haraka/haraka-config/releases/tag/v1.6.2
 [1.6.3]: https://github.com/haraka/haraka-config/releases/tag/v1.6.3
 [1.7.0]: https://github.com/haraka/haraka-config/releases/tag/v1.7.0
+[1.8.0]: https://github.com/haraka/haraka-config/releases/tag/v1.8.0
