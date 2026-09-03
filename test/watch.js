@@ -835,14 +835,15 @@ describe('watch', function () {
       fs.watch = (...args) => Object.assign(plainWatch(...args), { on: (ev, fn) => (handlers[ev] = fn) })
       const errors = []
       console.error = (msg) => errors.push(msg)
-      const reader = mockReader()
+      const reader = mockReader({ [subDir]: dirSlot() })
 
-      Watch.dir(reader, subDir)
+      Watch.dir(reader, subDir, { recursive: true })
       const stale = handlers.error
       stale(new Error('EPERM'))
       assert.equal(errors.length, 1)
       assert.equal(watchers[0].close_calls, 1)
       assert.equal(watchCalls.length, 2, 'reopened')
+      assert.equal(reader._read_args[subDir].opts.watchCb_calls, 1, 'and the getDir consumer re-reads')
 
       stale(new Error('late'))
       assert.equal(watchCalls.length, 2, 'an error from the replaced watcher is ignored')
