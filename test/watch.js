@@ -222,6 +222,27 @@ describe('watch', function () {
     assert.equal(reader.load_config_calls, 1)
   })
 
+  it('a fallback is an alias only while the requested file is missing', function () {
+    const Watch = loadWatch()
+    const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'hc-fb-')))
+    const json = path.join(tmp, 'x.json')
+    const yaml = path.join(tmp, 'x.yaml')
+    try {
+      fs.writeFileSync(json, '{}')
+      const reader = mockReader({ [json]: { ...fileSlot(), type: 'json', fallbacks: [yaml] } })
+      Watch.file(reader, json)
+      watchCalls[0].listener('change', 'x.yaml')
+      assert.equal(reader.load_config_calls, 0, 'an inactive fallback is not an alias')
+
+      fs.unlinkSync(json)
+      Watch.file(reader, json)
+      watchCalls[0].listener('change', 'x.yaml')
+      assert.equal(reader.load_config_calls, 1)
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
+  })
+
   it('reloads with the read args current when the timer fires', function () {
     const Watch = loadWatch()
     const file = path.join(subDir, 'test.ini')
@@ -656,6 +677,31 @@ describe('watch', function () {
 
       assert.equal(watchers[first].close_calls, 1)
       assert.equal(watchCalls.filter((c) => c.target === link).length, 2)
+    })
+
+    it('reloads when a link two levels above the target is retargeted', function () {
+      const Watch = loadWatch()
+      const cfg = path.join(tmp, 'config')
+      const link = path.join(cfg, 'cert.pem')
+      const tls = path.join(tmp, 'srv', 'tls')
+      for (const v of ['v1', 'v2']) {
+        fs.mkdirSync(path.join(tls, v, 'files'), { recursive: true })
+        fs.writeFileSync(path.join(tls, v, 'files', 'cert.pem'), v)
+      }
+      fs.symlinkSync(path.join(tls, 'v1'), path.join(tls, 'current'))
+      fs.unlinkSync(link)
+      fs.symlinkSync(path.join(tls, 'current', 'files', 'cert.pem'), link)
+      const reader = mockReader({ [link]: fileSlot() })
+
+      Watch.file(reader, link)
+      assert.deepEqual(watchCalls.map((c) => c.target).sort(), [cfg, tls, path.join(tls, 'v1', 'files')])
+
+      fs.rmSync(path.join(tls, 'current'))
+      fs.symlinkSync(path.join(tls, 'v2'), path.join(tls, 'current'))
+      watchCalls.find((c) => c.target === tls).listener('rename', 'current')
+
+      assert.equal(reader._read_args[link].cb_calls, 1)
+      assert.ok(watchCalls.some((c) => c.target === path.join(tls, 'v2', 'files')))
     })
 
     it('close() releases the target directory watcher too', function () {
