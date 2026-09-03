@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - change: getDir() watches recursively on Linux too
 - fix: macOS and the BSDs notice new files at once
 - fix: reload configs when a missing dir appears
-- fix: retry a dir watcher that failed to open
+- fix: retry a watcher that failed to open
 - fix: rewatch a config dir that was replaced
 - fix: stop_watching() keeps a shared dir watcher
 - fix: stop_watching() covers the overrides layer

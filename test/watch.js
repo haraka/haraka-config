@@ -639,6 +639,25 @@ describe('watch', function () {
       assert.equal(watchers[watchCalls.findIndex((c) => c.target === path.join(srv, 'v1'))].close_calls, 1)
     })
 
+    it('on the BSDs a retargeted link gets a fresh file watcher', function () {
+      const Watch = loadWatch('freebsd')
+      const link = path.join(tmp, 'config', 'cert.pem')
+      const reader = mockReader({ [link]: fileSlot() })
+      Watch.file(reader, link)
+      Watch.file(reader, link)
+      const first = watchCalls.findIndex((c) => c.target === link)
+      assert.equal(watchCalls.filter((c) => c.target === link).length, 1, 'an unchanged link keeps its watcher')
+
+      fs.mkdirSync(path.join(tmp, 'other'))
+      fs.writeFileSync(path.join(tmp, 'other', 'cert.pem'), 'v2')
+      fs.unlinkSync(link)
+      fs.symlinkSync(path.join(tmp, 'other', 'cert.pem'), link)
+      Watch.file(reader, link)
+
+      assert.equal(watchers[first].close_calls, 1)
+      assert.equal(watchCalls.filter((c) => c.target === link).length, 2)
+    })
+
     it('close() releases the target directory watcher too', function () {
       const Watch = loadWatch()
       const link = path.join(tmp, 'config', 'cert.pem')
@@ -712,6 +731,84 @@ describe('watch', function () {
       stale(new Error('late'))
       Watch.dir(reader, subDir)
       assert.equal(watchCalls.length, 2, 'an error from the replaced watcher is ignored')
+      assert.equal(errors.length, 1, 'and not logged')
+    })
+
+    it('a queued getDir watcher notifies its callback once attached', function () {
+      const Watch = loadWatch()
+      missingOnce()
+      const reader = mockReader({ [subDir]: dirSlot() })
+
+      Watch.dir(reader, subDir, { recursive: true })
+      assert.equal(reader._read_args[subDir].opts.watchCb_calls, 0)
+
+      timerFn()
+      assert.equal(watchCalls.length, 1)
+      assert.equal(reader._read_args[subDir].opts.watchCb_calls, 1)
+    })
+
+    it('closing the getDir slot drops its pending recursive upgrade', function () {
+      const Watch = loadWatch()
+      const plainWatch = fs.watch
+      fs.watch = (target, opts, listener) => {
+        if (opts.recursive) throw Object.assign(new Error('too many open files'), { code: 'EMFILE' })
+        return plainWatch(target, opts, listener)
+      }
+      const errors = []
+      console.error = (msg) => errors.push(msg)
+      const reader = mockReader({ [path.join(subDir, '1.ext')]: fileSlot(), [subDir]: dirSlot() })
+      Watch.dir(reader, subDir)
+      Watch.dir(reader, subDir, { recursive: true })
+      assert.equal(errors.length, 1)
+
+      Watch.close(reader, subDir)
+      timerFn()
+
+      assert.equal(errors.length, 1, 'the obsolete upgrade is not retried')
+      assert.equal(watchCalls.length, 1)
+      assert.equal(watchers[0].close_calls, 0, 'the plain watcher the file needs stays')
+    })
+
+    it('a missing dir wanted recursively is requested plain once the getDir slot closes', function () {
+      const Watch = loadWatch()
+      missingOnce()
+      const reader = mockReader({ [path.join(subDir, '1.ext')]: fileSlot(), [subDir]: dirSlot() })
+      Watch.dir(reader, subDir, { recursive: true })
+
+      Watch.close(reader, subDir)
+      timerFn()
+
+      assert.equal(watchCalls.length, 1)
+      assert.equal(watchCalls[0].opts.recursive, false)
+    })
+
+    it('on the BSDs a file watcher that fails to open is retried', function () {
+      const Watch = loadWatch('freebsd')
+      const file = path.join(subDir, '1.ext')
+      let refuse = true
+      const plainWatch = fs.watch
+      fs.watch = (target, ...rest) => {
+        if (target === file && refuse) throw Object.assign(new Error('too many open files'), { code: 'EMFILE' })
+        return plainWatch(target, ...rest)
+      }
+      const errors = []
+      console.error = (msg) => errors.push(msg)
+      const reader = mockReader({ [file]: fileSlot() })
+
+      Watch.file(reader, file)
+      assert.equal(errors.length, 1)
+      assert.deepEqual(
+        watchCalls.map((c) => c.target),
+        [subDir],
+      )
+
+      refuse = false
+      timerFn()
+      assert.deepEqual(
+        watchCalls.map((c) => c.target),
+        [subDir, file],
+      )
+      assert.equal(clearedIntervals, 1, 'nothing is left pending')
     })
 
     it('dir queues a missing directory quietly and attaches once it appears', function () {
@@ -883,7 +980,7 @@ describe('watch', function () {
         return plainWatch(target, opts, listener)
       }
       console.error = () => {}
-      const reader = mockReader({ [path.join(subDir, '1.ext')]: fileSlot() })
+      const reader = mockReader({ [path.join(subDir, '1.ext')]: fileSlot(), [subDir]: dirSlot() })
       Watch.dir(reader, subDir)
 
       Watch.dir(reader, subDir, { recursive: true })
@@ -897,6 +994,7 @@ describe('watch', function () {
       assert.equal(watchCalls[1].opts.recursive, true)
       assert.equal(watchers[0].close_calls, 1)
       assert.equal(reader.load_config_calls, 0, 'an upgrade is not a reappearance: nothing is reloaded')
+      assert.equal(reader._read_args[subDir].opts.watchCb_calls, 1, 'but the getDir consumer is told to re-read')
     })
 
     it('a watched directory that disappears goes back to the poller', function () {
