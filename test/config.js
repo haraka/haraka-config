@@ -1,6 +1,7 @@
 const assert = require('node:assert')
 const { after, afterEach, beforeEach, describe, it } = require('node:test')
 const fs = require('node:fs/promises')
+const { realpathSync } = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
@@ -655,8 +656,9 @@ describe('getDir', function () {
     const nodeMajorVersion = parseInt(process.versions.node.split('.')[0])
     if (/darwin/.test(process.platform) && nodeMajorVersion < 24) return
 
-    // a private copy of the fixture dir: test/reader.js lists the shared one concurrently
-    const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'hc-getdir-'))
+    // a private copy of the fixture dir: test/reader.js lists the shared one concurrently.
+    // realpath.native expands Windows 8.3 names (RUNNER~1), which libuv's fs.watch asserts on
+    const tmpRoot = await fs.mkdtemp(path.join(realpathSync.native(os.tmpdir()), 'hc-getdir-'))
     await fs.cp(path.resolve('test', 'config', 'dir'), path.join(tmpRoot, 'config', 'dir'), { recursive: true })
     const cfg = this.config.module_config(tmpRoot)
     const tmpFile = path.join(tmpRoot, 'config', 'dir', '4.ext')
