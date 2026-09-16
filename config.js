@@ -38,12 +38,12 @@ class Config {
     const [name, type, cb, options] = this.arrange_args(args)
 
     const full_path = safe_resolve(this.root_path, name)
-    const defaults = reader.read_config(full_path, type, cb, options)
+    const defaults = reader.read_config(full_path, type, cb, options, this)
 
     const overrides_path = this.overrides_path && safe_resolve(this.overrides_path, name)
     if (!overrides_path || overrides_path === full_path) return clone(defaults)
 
-    return merge_config(defaults, reader.read_config(overrides_path, type, cb, options), type)
+    return merge_config(defaults, reader.read_config(overrides_path, type, cb, options, this), type)
   }
 
   getInt(filename, default_value) {

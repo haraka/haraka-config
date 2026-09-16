@@ -2,6 +2,14 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+### Unreleased
+
+- fix: reload every reader of a config file
+- fix: key the config cache by type
+- fix: apply no_watch per reader
+- fix: parse a reloaded file once per slot
+- fix: isolate a throwing reload callback
+
 ### [1.7.0] - 2026-09-02
 
 - feat: a seeded property fuzzer in the test suite

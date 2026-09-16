@@ -117,6 +117,48 @@ describe('watch', function () {
     assert.equal(watchCalls, 3)
   })
 
+  it('the enoent poller leaves a file no reader watches alone', function () {
+    const Watch = loadWatch()
+    const name = path.join('test', 'config', 'missing-nowatch.ini')
+    const reader = {
+      _read_args: {
+        [name]: { readers: [{ type: 'ini', options: { no_watch: true }, cb() {} }] },
+      },
+      load_config_calls: 0,
+      load_config() {
+        this.load_config_calls++
+      },
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let watchCalls = 0
+    let timerFn
+
+    fs.watch = () => {
+      watchCalls++
+      const err = new Error('missing')
+      err.code = 'ENOENT'
+      throw err
+    }
+    fs.stat = (file, cb) => cb(null, {})
+    global.setInterval = (fn) => {
+      timerFn = fn
+      return { unref() {} }
+    }
+    console.log = () => {}
+
+    // a watching reader queued it; only an opted-out one is left
+    Watch.attach(reader, name, reader._read_args[name])
+    assert.equal(watchCalls, 1)
+
+    timerFn()
+
+    assert.equal(reader.load_config_calls, 0, 'an opted-out reader is not reloaded')
+    assert.equal(watchCalls, 1, 'and no watcher is attached for it')
+  })
+
   it('file logs non-ENOENT watch errors', function () {
     const Watch = loadWatch()
     const errors = []
@@ -554,6 +596,93 @@ describe('watch', function () {
     assert.equal(reader.load_config_calls, 0, 'getDir directory slot must not be reloaded as a file')
   })
 
+  it('dir reloads a watching reader though a no_watch reader registered last', function () {
+    const Watch = loadWatch()
+    const cfgPath = path.resolve('test/config')
+    const fullPath = path.join(cfgPath, 'test.ini')
+    const loads = []
+    const reader = {
+      config_path: cfgPath,
+      _read_args: {
+        // the last reader to register supplies the top-level type/options
+        [fullPath]: {
+          type: 'ini',
+          options: { no_watch: true },
+          readers: [
+            { type: 'ini', options: undefined, cb() {} },
+            { type: 'ini', options: { no_watch: true }, cb() {} },
+          ],
+        },
+      },
+      load_config(file, type, options) {
+        loads.push(options)
+      },
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let listener
+    fs.watch = (target, opts, l) => {
+      listener = l
+      return { close() {}, unref() {} }
+    }
+    global.setTimeout = (fn) => {
+      fn()
+      return 1
+    }
+    global.clearTimeout = () => {}
+    console.log = () => {}
+
+    Watch.dir(reader, cfgPath)
+    listener('change', 'test.ini')
+
+    assert.deepEqual(loads, [undefined], 'only the reader that wanted watching reloads')
+  })
+
+  it('dir skips a slot no reader watches', function () {
+    const Watch = loadWatch()
+    const cfgPath = path.resolve('test/config')
+    const fullPath = path.join(cfgPath, 'test.ini')
+    let scheduled = 0
+    let loads = 0
+    const reader = {
+      config_path: cfgPath,
+      _read_args: {
+        [fullPath]: {
+          type: 'ini',
+          options: { no_watch: true },
+          readers: [{ type: 'ini', options: { no_watch: true }, cb() {} }],
+        },
+      },
+      load_config() {
+        loads++
+      },
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let listener
+    fs.watch = (target, opts, l) => {
+      listener = l
+      return { close() {}, unref() {} }
+    }
+    global.setTimeout = (fn) => {
+      scheduled++
+      fn()
+      return 1
+    }
+    global.clearTimeout = () => {}
+    console.log = () => {}
+
+    Watch.dir(reader, cfgPath)
+    listener('change', 'test.ini')
+
+    assert.equal(scheduled, 0)
+    assert.equal(loads, 0)
+  })
+
   it('dir handles ENOENT and recovers via stat timer', function () {
     const Watch = loadWatch()
     const dirPath = path.resolve('test/config/missing-watch-dir')
@@ -776,5 +905,233 @@ describe('watch', function () {
     assert.equal(watchCalls[1].opts.persistent, false)
     assert.equal(watchCalls[1].opts.recursive, /win|darwin/.test(process.platform))
     assert.equal(watchers[1].unref_calls, 1)
+  })
+
+  describe('reload with several readers', function () {
+    it('reload calls the callback of every reader of a file', function () {
+      const Watch = loadWatch()
+      const called = []
+      const reader = {
+        load_config() {},
+        last_load_error() {},
+      }
+      const one = { type: 'list', options: undefined, cb: () => called.push('one') }
+      const two = { type: 'list', options: undefined, cb: () => called.push('two') }
+
+      console.log = () => {}
+      Watch.reload(reader, 'test/config/host_list', { ...two, readers: [one, two] })
+
+      assert.deepEqual(called, ['one', 'two'])
+    })
+
+    it('reload refreshes the cache entry each reader reads', function () {
+      const Watch = loadWatch()
+      const loaded = []
+      const reader = {
+        load_config(name, type, options) {
+          loaded.push([type, options])
+        },
+        last_load_error() {},
+      }
+      const list = { type: 'list', options: undefined, cb() {} }
+      const value = { type: 'value', options: { booleans: ['a.b'] }, cb() {} }
+
+      console.log = () => {}
+      Watch.reload(reader, 'test/config/shared.ini', { ...value, readers: [list, value] })
+
+      assert.deepEqual(loaded, [
+        ['list', undefined],
+        ['value', { booleans: ['a.b'] }],
+      ])
+    })
+
+    it('reload without readers uses the single registration', function () {
+      const Watch = loadWatch()
+      let called = 0
+      const reader = {
+        load_config() {},
+        last_load_error() {},
+      }
+
+      console.log = () => {}
+      Watch.reload(reader, 'test/config/test.ini', { type: 'ini', options: undefined, cb: () => called++ })
+
+      assert.equal(called, 1)
+    })
+
+    it('a throwing callback does not stop the other readers', function () {
+      const Watch = loadWatch()
+      const loaded = []
+      const errors = []
+      const reader = {
+        load_config(name, type) {
+          loaded.push(type)
+        },
+        last_load_error() {},
+      }
+
+      console.error = (...args) => errors.push(args)
+      console.log = () => {}
+
+      Watch.reload(reader, 'shared.ini', {
+        readers: [
+          {
+            type: 'ini',
+            options: undefined,
+            cb() {
+              throw new Error('plugin blew up')
+            },
+          },
+          { type: 'list', options: undefined, cb() {} },
+        ],
+      })
+
+      assert.deepEqual(loaded, ['ini', 'list'])
+      assert.match(errors[0][0], /Reload callback for shared.ini threw:/)
+      assert.equal(errors[0][1].message, 'plugin blew up')
+    })
+
+    it('reload announces a failure raised by any reader', function () {
+      const Watch = loadWatch()
+      const errors = []
+      const logs = []
+      const reader = {
+        load_config() {},
+        last_load_error(name, type, options) {
+          return options ? new Error('bad parse') : undefined
+        },
+      }
+
+      console.error = (msg) => errors.push(msg)
+      console.log = (msg) => logs.push(msg)
+
+      const err = Watch.reload(reader, 'shared.ini', {
+        readers: [
+          { type: 'ini', options: undefined, cb() {} },
+          { type: 'ini', options: { a: 1 }, cb() {} },
+        ],
+      })
+
+      assert.equal(err.message, 'bad parse')
+      assert.deepEqual(logs, [])
+      assert.equal(errors.length, 1)
+      assert.match(errors[0], /bad parse/)
+    })
+
+    it('reload skips a reader that asked for no_watch', function () {
+      const Watch = loadWatch()
+      const loaded = []
+      const called = []
+      const reader = {
+        load_config(name, type, options) {
+          loaded.push(options)
+        },
+        last_load_error() {},
+      }
+
+      console.log = () => {}
+      Watch.reload(reader, 'shared.ini', {
+        readers: [
+          { type: 'ini', options: undefined, cb: () => called.push('watching') },
+          { type: 'ini', options: { no_watch: true }, cb: () => called.push('no_watch') },
+        ],
+      })
+
+      assert.deepEqual(called, ['watching'])
+      assert.deepEqual(loaded, [undefined])
+    })
+
+    it('reload is silent when every reader asked for no_watch', function () {
+      const Watch = loadWatch()
+      const logs = []
+      let loads = 0
+      let calls = 0
+      const reader = {
+        load_config() {
+          loads++
+        },
+        last_load_error() {},
+      }
+
+      console.log = (msg) => logs.push(msg)
+      const err = Watch.reload(reader, 'shared.ini', {
+        readers: [{ type: 'ini', options: { no_watch: true }, cb: () => calls++ }],
+      })
+
+      assert.equal(loads, 0)
+      assert.equal(calls, 0)
+      assert.equal(err, undefined)
+      assert.deepEqual(logs, [], 'nothing was reloaded, so nothing is announced')
+    })
+
+    it('owners reading a file alike share one parse', function () {
+      const Watch = loadWatch()
+      const loaded = []
+      const called = []
+      const reader = {
+        load_config(name, type, options) {
+          loaded.push([type, options])
+        },
+        last_load_error() {},
+      }
+      const options = { booleans: ['main.bool'] }
+
+      console.log = () => {}
+      Watch.reload(reader, 'shared.ini', {
+        readers: [
+          { type: 'ini', options, cb: () => called.push('one') },
+          // a second owner, equal options by value, its own object
+          { type: 'ini', options: { ...options }, cb: () => called.push('two') },
+          { type: 'list', options: undefined, cb: () => called.push('three') },
+        ],
+      })
+
+      assert.deepEqual(
+        loaded,
+        [
+          ['ini', options],
+          ['list', undefined],
+        ],
+        'one parse per type+options, not one per owner',
+      )
+      assert.deepEqual(called, ['one', 'two', 'three'])
+    })
+
+    // Neither survives interpolation: no .message, no string form.
+    for (const [label, thrown] of [
+      ['null', null],
+      ['an object with no prototype', Object.create(null)],
+    ]) {
+      it(`a callback throwing ${label} does not abort the reload`, function () {
+        const Watch = loadWatch()
+        const loaded = []
+        const errors = []
+        const reader = {
+          load_config(name, type) {
+            loaded.push(type)
+          },
+          last_load_error() {},
+        }
+
+        console.error = (...args) => errors.push(args)
+        console.log = () => {}
+
+        Watch.reload(reader, 'shared.ini', {
+          readers: [
+            {
+              type: 'ini',
+              cb() {
+                throw thrown
+              },
+            },
+            { type: 'list', cb() {} },
+          ],
+        })
+
+        assert.deepEqual(loaded, ['ini', 'list'], 'the reader after the thrower still reloads')
+        assert.match(errors[0][0], /Reload callback for shared.ini threw:/)
+        assert.equal(errors[0][1], thrown)
+      })
+    }
   })
 })
