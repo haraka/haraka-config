@@ -110,10 +110,9 @@ class Config {
   }
 
   stop_watching(name) {
-    const full_path = safe_resolve(this.root_path, name)
-    // close both the path itself (getDir target) and its parent (get target)
-    reader.stop_watching(full_path)
-    reader.stop_watching(path.dirname(full_path))
+    // watch.close() releases the parent directory itself; naming it here would
+    // close it for every other file in the directory.
+    reader.stop_watching(safe_resolve(this.root_path, name), this)
   }
 
   module_config(defaults_path, overrides_path) {

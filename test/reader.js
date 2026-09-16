@@ -115,6 +115,46 @@ describe('reader', function () {
       assert.equal(this.cfreader._config_cache[slot], before, 'an opted-out reader keeps its parsed value')
     })
 
+    it("a departing owner leaves another owner's !file overrides alone", function () {
+      const main = path.join('test', 'config', 'main.json')
+      const injected = path.join(this.cfreader.config_path, 'smtpgreeting')
+      delete this.cfreader._read_args[main]
+      const listing = {}
+      const injecting = {}
+
+      const log = console.log
+      console.log = () => {}
+      try {
+        this.cfreader.read_config(main, 'list', () => {}, undefined, listing)
+        this.cfreader.read_config(main, 'json', () => {}, undefined, injecting)
+        assert.equal(this.cfreader._overrides[injected], true, 'the json parse injected them')
+
+        this.cfreader.stop_watching(main, injecting)
+        this.cfreader.read_config(main, 'list', () => {}, undefined, listing)
+      } finally {
+        console.log = log
+      }
+
+      // a retype would drop them, and a list parse never re-injects
+      assert.equal(this.cfreader._overrides[injected], true)
+    })
+
+    it('stop_watching drops only the calling owner', function () {
+      const mine = {}
+      const theirs = {}
+      this.cfreader.read_config(this.shared, 'ini', () => {}, undefined, mine)
+      this.cfreader.read_config(this.shared, 'ini', () => {}, undefined, theirs)
+
+      this.cfreader.stop_watching(this.shared, mine)
+
+      const left = this.cfreader._read_args[this.shared].readers
+      assert.equal(left.length, 1)
+      assert.equal(left[0].owner, theirs)
+
+      this.cfreader.stop_watching(this.shared, theirs)
+      assert.equal(this.cfreader._read_args[this.shared], undefined)
+    })
+
     it('a bare reader keeps its own cache slot when another passes options', function () {
       this.cfreader.read_config(this.shared, 'ini', () => {}, undefined, {})
       this.cfreader.read_config(this.shared, 'ini', () => {}, this.opts, {})

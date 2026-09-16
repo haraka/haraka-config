@@ -730,6 +730,26 @@ describe('getDir', function () {
   })
 })
 
+describe('stop_watching', function () {
+  beforeEach(testSetup)
+
+  it('is scoped to the calling Config', function () {
+    const reader = require('../lib/reader')
+    const full_path = path.resolve('test', 'config', 'test.ini')
+
+    const mine = this.config.module_config(path.resolve('test'))
+    const theirs = this.config.module_config(path.resolve('test'))
+    mine.get('test.ini', cb)
+    theirs.get('test.ini', cb)
+
+    mine.stop_watching('test.ini')
+
+    const left = reader._read_args[full_path].readers
+    assert.equal(left.length, 1)
+    assert.equal(left[0].owner, theirs, 'the Config that did not stop is the one still registered')
+  })
+})
+
 describe('hjsonOverrides', function () {
   beforeEach(testSetup)
 

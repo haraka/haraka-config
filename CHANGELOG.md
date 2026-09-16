@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - fix: apply no_watch per reader
 - fix: parse a reloaded file once per slot
 - fix: isolate a throwing reload callback
+- fix: key each watcher kind separately
+- fix: keep the dir watcher other files need
+- fix: scope stop_watching to its own Config
 
 ### [1.7.0] - 2026-09-02
 

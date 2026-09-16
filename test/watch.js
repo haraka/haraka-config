@@ -398,6 +398,7 @@ describe('watch', function () {
         return undefined
       },
     }
+    console.log = () => {}
 
     let watchCalls = 0
     fs.watch = () => {
@@ -777,6 +778,446 @@ describe('watch', function () {
 
     Watch.dir2(reader, dirPath)
     watchListener('change', 'host.pem')
+  })
+
+  // A config.get of a file inside a getDir'd directory puts both a dir watcher
+  // and a tree watcher on it, and one write wakes both. Neither attach order
+  // may skip a watcher, and neither wake order may cancel the other's reload.
+  function both_deliver(attach, wake) {
+    const Watch = loadWatch()
+    const dirPath = path.resolve('test/config/tls')
+    const filePath = path.join(dirPath, 'a.ini')
+    const effects = []
+    const reader = {
+      config_path: path.resolve('test/config'),
+      _read_args: {
+        [filePath]: {
+          type: 'ini',
+          options: undefined,
+          readers: [{ type: 'ini', options: undefined, cb: () => effects.push('file-cb') }],
+        },
+        [dirPath]: { opts: { watchCb: () => effects.push('watchCb') } },
+      },
+      load_config: () => effects.push('load_config'),
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    const listeners = {}
+    fs.watch = (target, opts, listener) => {
+      // Watch.dir passes no `recursive`; Watch.dir2 always does
+      listeners['recursive' in opts ? 'tree' : 'dir'] = listener
+      return { close() {}, unref() {} }
+    }
+    // a real queue: clearTimeout must actually cancel, as in production
+    const pending = new Map()
+    let id = 0
+    global.setTimeout = (fn) => {
+      pending.set(++id, fn)
+      return id
+    }
+    global.clearTimeout = (t) => pending.delete(t)
+    console.log = () => {}
+
+    const attach_watcher = {
+      dir: () => Watch.dir(reader, dirPath),
+      tree: () => Watch.dir2(reader, dirPath),
+    }
+    for (const kind of attach) attach_watcher[kind]()
+    assert.deepEqual(Object.keys(listeners).toSorted(), ['dir', 'tree'], 'neither attach may be skipped')
+
+    for (const kind of wake) listeners[kind]('change', 'a.ini')
+    for (const [t, fn] of [...pending]) {
+      pending.delete(t)
+      fn()
+    }
+
+    assert.deepEqual(effects.toSorted(), ['file-cb', 'load_config', 'watchCb'])
+  }
+
+  const orders = [
+    ['dir', 'tree'],
+    ['tree', 'dir'],
+  ]
+  for (const attach of orders) {
+    for (const wake of orders) {
+      it(`dir and dir2 both deliver: attached ${attach.join(' then ')}, woken ${wake.join(' then ')}`, () =>
+        both_deliver(attach, wake))
+    }
+  }
+
+  it('close() drops a watcher every remaining reader opted out of', function () {
+    const Watch = loadWatch()
+    const name = path.join('test', 'config', 'shared.ini')
+    const quiet = {}
+    const active = {}
+    const reader = {
+      _read_args: {
+        [name]: {
+          type: 'ini',
+          options: undefined,
+          readers: [
+            { type: 'ini', options: { no_watch: true }, owner: quiet, cb() {} },
+            { type: 'ini', options: undefined, owner: active, cb() {} },
+          ],
+        },
+      },
+      load_config() {},
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let closeCalls = 0
+    fs.watch = () => ({
+      close() {
+        closeCalls++
+      },
+      unref() {},
+    })
+
+    Watch.file(reader, name, 'ini', null, undefined)
+    Watch.close(reader, name, active)
+
+    // Watch.reload skips opted-out readers, so this watcher would serve nobody
+    assert.equal(closeCalls, 1)
+  })
+
+  it('close() unqueues a pending directory once its last file stops', function () {
+    const Watch = loadWatch()
+    const dirPath = path.resolve('test/config/not-yet-created')
+    const filePath = path.join(dirPath, 'a.ini')
+    const owner = {}
+    const reader = {
+      config_path: path.resolve('test/config'),
+      _read_args: {
+        [filePath]: {
+          type: 'ini',
+          options: undefined,
+          readers: [{ type: 'ini', options: undefined, owner, cb() {} }],
+        },
+      },
+      load_config() {},
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    const attached = []
+    fs.watch = () => {
+      const err = new Error('missing')
+      err.code = 'ENOENT'
+      throw err
+    }
+    fs.stat = (target, cb) => cb(null, {})
+    let timerFn
+    global.setInterval = (fn) => {
+      timerFn = fn
+      return { unref() {} }
+    }
+
+    Watch.dir(reader, dirPath) // ENOENT: queued for the poller, no watcher yet
+    Watch.close(reader, filePath, owner)
+
+    fs.watch = (target) => {
+      attached.push(target)
+      return { close() {}, unref() {} }
+    }
+    timerFn()
+
+    assert.deepEqual(attached, [], 'nothing reads that directory any more')
+  })
+
+  it('close() leaves the shared directory watcher to the files still read', function () {
+    const Watch = loadWatch()
+    const cfgPath = path.resolve('test/config')
+    const stopped = path.join(cfgPath, 'a.ini')
+    const kept = path.join(cfgPath, 'b.ini')
+    const reader = {
+      config_path: cfgPath,
+      _read_args: {
+        [stopped]: { type: 'ini', options: {}, cb() {} },
+        [kept]: { type: 'ini', options: {}, cb() {} },
+      },
+      load_config_calls: 0,
+      load_config() {
+        this.load_config_calls++
+      },
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    const closed = []
+    let listener
+    fs.watch = (target, opts, l) => {
+      listener = l
+      return {
+        close() {
+          closed.push(target)
+        },
+        unref() {},
+      }
+    }
+    global.setTimeout = (fn) => {
+      fn()
+      return 1
+    }
+    global.clearTimeout = () => {}
+    console.log = () => {}
+
+    Watch.dir(reader, cfgPath)
+    // only the last tracked file inside it releases the dir watcher
+    Watch.close(reader, stopped)
+    Watch.close(reader, cfgPath)
+
+    assert.deepEqual(closed, [], 'the dir watcher serves b.ini too')
+    listener('change', 'b.ini')
+    assert.equal(reader.load_config_calls, 1, 'b.ini still hot reloads')
+  })
+
+  it('dir avoids duplicate watchers on one directory', function () {
+    const Watch = loadWatch()
+    const cfgPath = path.resolve('test/config')
+    let watchCalls = 0
+    fs.watch = () => {
+      watchCalls++
+      return { close() {}, unref() {} }
+    }
+
+    Watch.dir({ config_path: cfgPath, _read_args: {} }, cfgPath)
+    Watch.dir({ config_path: cfgPath, _read_args: {} }, cfgPath)
+
+    assert.equal(watchCalls, 1)
+  })
+
+  it('close() drops the directory watcher once its last file stops', function () {
+    const Watch = loadWatch()
+    const cfgPath = path.resolve('test/config')
+    const only = path.join(cfgPath, 'a.ini')
+    const subdir = path.join(cfgPath, 'tls')
+    const reader = {
+      config_path: cfgPath,
+      _read_args: {
+        [only]: { type: 'ini', options: {}, cb() {} },
+        // a getDir slot in the same dir must not keep the watcher alive
+        [subdir]: { opts: {} },
+        // nor may a file in a subdirectory: its own dir watcher serves it
+        [path.join(subdir, 'deep.ini')]: { type: 'ini', options: {}, cb() {} },
+      },
+    }
+
+    const closed = []
+    fs.watch = (target) => ({
+      close() {
+        closed.push(target)
+      },
+      unref() {},
+    })
+
+    Watch.dir(reader, cfgPath)
+    Watch.close(reader, only)
+
+    assert.deepEqual(closed, [cfgPath])
+  })
+
+  it('close() drops only the calling owner, keeping the watcher for the rest', function () {
+    const Watch = loadWatch()
+    const name = path.join('test', 'config', 'shared.ini')
+    const leaving = {}
+    const staying = {}
+    const reloaded = []
+    const reader = {
+      _read_args: {
+        [name]: {
+          type: 'list',
+          options: undefined,
+          readers: [
+            { type: 'ini', options: undefined, owner: staying, cb: () => reloaded.push('staying') },
+            { type: 'list', options: undefined, owner: leaving, cb: () => reloaded.push('leaving') },
+          ],
+        },
+      },
+      load_config() {},
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let closeCalls = 0
+    let listener
+    fs.watch = (target, opts, l) => {
+      listener = l
+      return {
+        close() {
+          closeCalls++
+        },
+        unref() {},
+      }
+    }
+    global.setTimeout = (fn) => {
+      fn()
+      return 1
+    }
+    global.clearTimeout = () => {}
+    console.log = () => {}
+
+    Watch.file(reader, name, 'ini', null, {})
+    Watch.close(reader, name, leaving)
+
+    assert.equal(closeCalls, 0, 'a file another owner still reads stays watched')
+    assert.equal(reader._read_args[name].type, 'ini', 'the flat fields follow a surviving registration')
+
+    listener('change')
+    assert.deepEqual(reloaded, ['staying'])
+
+    Watch.close(reader, name, staying)
+    assert.equal(closeCalls, 1)
+    assert.equal(reader._read_args[name], undefined)
+  })
+
+  it('close() on a file leaves a getDir watchCb pending for its directory', function () {
+    const Watch = loadWatch()
+    const dirPath = path.resolve('test/config/tls')
+    const filePath = path.join(dirPath, 'a.pem')
+    const owner = {}
+    const effects = []
+    const reader = {
+      _read_args: {
+        [dirPath]: { opts: { watchCb: () => effects.push('watchCb') } },
+        [filePath]: {
+          type: 'binary',
+          options: undefined,
+          readers: [{ type: 'binary', options: undefined, owner, cb() {} }],
+        },
+      },
+      load_config() {},
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let treeListener
+    fs.watch = (target, opts, listener) => {
+      if ('recursive' in opts) treeListener = listener
+      return { close() {}, unref() {} }
+    }
+    const pending = new Map()
+    let id = 0
+    global.setTimeout = (fn) => {
+      pending.set(++id, fn)
+      return id
+    }
+    global.clearTimeout = (t) => pending.delete(t)
+
+    Watch.dir2(reader, dirPath)
+    treeListener('change', 'a.pem')
+    // another owner stops that one file while the directory's watchCb is pending
+    Watch.close(reader, filePath, owner)
+    for (const [t, fn] of [...pending]) {
+      pending.delete(t)
+      fn()
+    }
+
+    assert.deepEqual(effects, ['watchCb'], 'the getDir consumer still hears about its directory')
+  })
+
+  it('onEvent does not reload a slot that has become a getDir target', function () {
+    const Watch = loadWatch()
+    const name = path.resolve('test/config/tls')
+    const loads = []
+    const reader = {
+      _read_args: { [name]: { type: 'binary', options: undefined, cb() {} } },
+      load_config: (file) => loads.push(file),
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let listener
+    fs.watch = (target, opts, l) => {
+      listener = l
+      return { close() {}, unref() {} }
+    }
+    global.setTimeout = (fn) => {
+      fn()
+      return 1
+    }
+    global.clearTimeout = () => {}
+    console.log = () => {}
+
+    Watch.file(reader, name, 'binary', null, undefined)
+    reader._read_args[name] = { opts: { watchCb() {} } } // a getDir of the same path
+    listener('change')
+
+    assert.deepEqual(loads, [], 'load_config on a directory would throw EISDIR')
+  })
+
+  it('close() without an owner speaks for every owner', function () {
+    const Watch = loadWatch()
+    const name = path.join('test', 'config', 'shared.ini')
+    const reader = {
+      _read_args: {
+        [name]: {
+          type: 'ini',
+          options: undefined,
+          readers: [
+            { type: 'ini', options: undefined, owner: {}, cb() {} },
+            { type: 'ini', options: undefined, owner: {}, cb() {} },
+          ],
+        },
+      },
+      load_config() {},
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    let closeCalls = 0
+    fs.watch = () => ({
+      close() {
+        closeCalls++
+      },
+      unref() {},
+    })
+
+    Watch.file(reader, name, 'ini', null, undefined)
+    Watch.close(reader, name)
+
+    assert.equal(closeCalls, 1)
+    assert.equal(reader._read_args[name], undefined)
+  })
+
+  it('closeAll() closes every kind of watcher', function () {
+    const Watch = loadWatch()
+    const cfgPath = path.resolve('test/config')
+    const filePath = path.join(cfgPath, 'a.ini')
+    const treePath = path.join(cfgPath, 'tls')
+    const reader = {
+      config_path: cfgPath,
+      _read_args: { [treePath]: { opts: { watchCb() {} } } },
+      load_config() {},
+      last_load_error() {
+        return undefined
+      },
+    }
+
+    const closed = []
+    fs.watch = (target) => ({
+      close() {
+        closed.push(target)
+      },
+      unref() {},
+    })
+
+    Watch.file(reader, filePath, 'ini', null, undefined)
+    Watch.dir(reader, cfgPath)
+    Watch.dir2(reader, treePath)
+
+    Watch.closeAll()
+
+    assert.deepEqual(closed.toSorted(), [filePath, cfgPath, treePath].toSorted())
   })
 
   it('close() shuts the watcher, clears pending sedation timers, and is idempotent', function () {
