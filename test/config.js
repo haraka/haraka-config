@@ -796,6 +796,44 @@ describe('path containment', function () {
   })
 })
 
+describe('stop_watching', function () {
+  beforeEach(testSetup)
+
+  it('stops both layers of a module config', function () {
+    const cfg = this.config.module_config(path.join('test', 'default'), path.join('test', 'override'))
+    cfg.get('test.int')
+    const reader = require('../lib/reader')
+    const layers = [path.resolve('test/default/config/test.int'), path.resolve('test/override/config/test.int')]
+    assert.deepEqual(
+      layers.map((p) => p in reader._read_args),
+      [true, true],
+    )
+
+    cfg.stop_watching('test.int')
+
+    assert.deepEqual(
+      layers.map((p) => p in reader._read_args),
+      [false, false],
+    )
+  })
+
+  it('is scoped to the calling Config', function () {
+    const reader = require('../lib/reader')
+    const full_path = path.resolve('test', 'config', 'test.ini')
+
+    const mine = this.config.module_config(path.resolve('test'))
+    const theirs = this.config.module_config(path.resolve('test'))
+    mine.get('test.ini', cb)
+    theirs.get('test.ini', cb)
+
+    mine.stop_watching('test.ini')
+
+    const left = reader._read_args[full_path].readers
+    assert.equal(left.length, 1)
+    assert.equal(left[0].owner, theirs)
+  })
+})
+
 describe('reload failure', function () {
   let tmpDir
   let reader
@@ -810,7 +848,7 @@ describe('reload failure', function () {
     delete require.cache[`${path.resolve(__dirname, '..', 'lib', 'watch')}.js`]
     reader = require('../lib/reader')
     Watch = require('../lib/watch')
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hc-c1-'))
+    tmpDir = await fs.mkdtemp(path.join(realpathSync.native(os.tmpdir()), 'hc-c1-'))
     file = path.join(tmpDir, 'a.json')
     await fs.writeFile(file, '{"k":"good"}')
     calls = []

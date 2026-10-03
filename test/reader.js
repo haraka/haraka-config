@@ -115,6 +115,46 @@ describe('reader', function () {
       assert.equal(this.cfreader._config_cache[slot], before, 'an opted-out reader keeps its parsed value')
     })
 
+    it("a departing owner leaves another owner's !file overrides alone", function () {
+      const main = path.join('test', 'config', 'main.json')
+      const injected = path.join(this.cfreader.config_path, 'smtpgreeting')
+      delete this.cfreader._read_args[main]
+      const listing = {}
+      const injecting = {}
+
+      const log = console.log
+      console.log = () => {}
+      try {
+        this.cfreader.read_config(main, 'list', () => {}, undefined, listing)
+        this.cfreader.read_config(main, 'json', () => {}, undefined, injecting)
+        assert.equal(this.cfreader._overrides[injected], true, 'the json parse injected them')
+
+        this.cfreader.stop_watching(main, injecting)
+        this.cfreader.read_config(main, 'list', () => {}, undefined, listing)
+      } finally {
+        console.log = log
+      }
+
+      // a retype would drop them, and a list parse never re-injects
+      assert.equal(this.cfreader._overrides[injected], true)
+    })
+
+    it('stop_watching drops only the calling owner', function () {
+      const mine = {}
+      const theirs = {}
+      this.cfreader.read_config(this.shared, 'ini', () => {}, undefined, mine)
+      this.cfreader.read_config(this.shared, 'ini', () => {}, undefined, theirs)
+
+      this.cfreader.stop_watching(this.shared, mine)
+
+      const left = this.cfreader._read_args[this.shared].readers
+      assert.equal(left.length, 1)
+      assert.equal(left[0].owner, theirs)
+
+      this.cfreader.stop_watching(this.shared, theirs)
+      assert.equal(this.cfreader._read_args[this.shared], undefined)
+    })
+
     it('a bare reader keeps its own cache slot when another passes options', function () {
       this.cfreader.read_config(this.shared, 'ini', () => {}, undefined, {})
       this.cfreader.read_config(this.shared, 'ini', () => {}, this.opts, {})
@@ -600,6 +640,31 @@ describe('reader', function () {
     it('successful fallback clears a prior load error', function () {
       this.cfreader.load_config('test/config/js-fallback', 'value')
       assert.equal(this.cfreader.last_load_error('test/config/js-fallback', 'value'), undefined)
+    })
+  })
+
+  describe('fallbacks', function () {
+    it('a json or hjson name may be read from its yaml twin', function () {
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.json'), ['/etc/haraka/x.yaml'])
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.hjson'), ['/etc/haraka/x.yaml'])
+    })
+
+    it('other names fall back to a .js twin only with HARAKA_JS_CONFIG', function () {
+      assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/me'), [])
+      process.env.HARAKA_JS_CONFIG = '1'
+      try {
+        assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/me'), ['/etc/haraka/me.js'])
+        assert.deepEqual(this.cfreader.fallbacks('/etc/haraka/x.js'), [])
+      } finally {
+        delete process.env.HARAKA_JS_CONFIG
+      }
+    })
+
+    it('read_config records them on the slot, even before any file exists', function () {
+      const name = path.resolve('test/config/never.json')
+      this.cfreader.read_config(name, 'json')
+      assert.deepEqual(this.cfreader._read_args[name].fallbacks, [path.resolve('test/config/never.yaml')])
+      this.cfreader.stop_watching(name)
     })
   })
 

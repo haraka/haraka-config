@@ -353,7 +353,7 @@ Haraka automatically reloads configuration files, but this only works if whateve
 
 Configuration files are watched for changes using filesystem events which are inexpensive. Due to caching, calling config.get() is normally a lightweight process.
 
-On Linux/Windows, newly created files that Haraka has tried to read in the past will be noticed immediately and loaded. For other operating systems, it may take up to 60 seconds to load, due to differences between in the kernel APIs for watching files or directories.
+Haraka watches the directory containing each config file it has read, so a file that is created later is noticed as soon as it appears. On the BSDs, where directory events do not report writes, each config file is also watched directly. Once a minute, a reconcile pass re-checks every watched directory and config file: a directory that did not exist yet is watched once it appears, and a change that produced no event, such as a symlinked certificate being re-pointed or an edit inside a getDir() directory on the BSDs, is picked up within the minute.
 
 Haraka reads a number of configuration files at startup. Any files read in a plugins register() function are read _before_ Haraka drops privileges. Be sure that Haraka's user/group has permission to read these files else Haraka will be unable to read updates after they change.
 
