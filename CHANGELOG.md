@@ -6,14 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [1.8.0] - 2026-10-02
 
-#### Fixed
-
 - reload every reader of a config file (#98)
-
-#### Other
-
 - rework file watching (#97)
-
 - change: watch config dirs, plus files on the BSDs
 - change: getDir() watches recursively on Linux too
 - feat: a minutely pass reloads what events missed
