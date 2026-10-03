@@ -4,11 +4,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- change: watch config dirs, plus files on the BSDs
+- change: getDir() watches recursively on Linux too
+- feat: a minutely pass reloads what events missed
+- fix: macOS and the BSDs notice new files at once
+- fix: reload configs when a missing dir appears
+- fix: retry a watcher that failed to open
+- fix: rewatch a config dir that was replaced
+- fix: stop_watching() keeps a shared dir watcher
+- fix: stop_watching() covers the overrides layer
+- fix: get() and getDir() share a dir's watcher
+- fix: reload a symlinked config on target change
+- fix: reload a config read via its fallback file
+- fix: reload when a dir event names no child file
+- fix: log a watcher error, then reopen the watcher
 - fix: reload every reader of a config file
 - fix: key the config cache by type
 - fix: apply no_watch per reader
 - fix: parse a reloaded file once per slot
 - fix: isolate a throwing reload callback
+- fix: stop_watching() drops only its own readers
 
 ### [1.7.0] - 2026-09-02
 
