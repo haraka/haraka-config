@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.8.0] - 2026-10-02
+
+- reload every reader of a config file (#98)
+- rework file watching (#97)
 - change: watch config dirs, plus files on the BSDs
 - change: getDir() watches recursively on Linux too
 - feat: a minutely pass reloads what events missed
@@ -266,3 +270,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.6.2]: https://github.com/haraka/haraka-config/releases/tag/v1.6.2
 [1.6.3]: https://github.com/haraka/haraka-config/releases/tag/v1.6.3
 [1.7.0]: https://github.com/haraka/haraka-config/releases/tag/v1.7.0
+[1.8.0]: https://github.com/haraka/haraka-config/releases/tag/v1.8.0
